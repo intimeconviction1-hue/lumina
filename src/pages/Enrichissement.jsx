@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useWorks, WORKS_KEY } from "@/hooks/useWorks";
-import { base44 } from "@/api/base44Client";
+import { worksApi } from "@/api/works";
 import { BookImage } from "lucide-react";
 
 const PAUSE_MS = 400;
@@ -106,7 +106,7 @@ export default function Enrichissement() {
         }
 
         if (image) {
-          await base44.entities.Works.update(book.id, { cover_image: image });
+          await worksApi.update(book.id, { cover_image: image });
           found++;
         } else if (isLimited) {
           limited++;

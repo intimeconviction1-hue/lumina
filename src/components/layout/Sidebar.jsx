@@ -5,7 +5,6 @@ import { Home, LayoutGrid, Clock, Eye, Archive, Sun, Moon, Clapperboard, Calenda
 import { useQueryClient } from "@tanstack/react-query";
 import { useWorks } from "@/hooks/useWorks";
 import { worksApi } from "@/api/works";
-import { base44 } from "@/api/base44Client";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 const navItems = [
@@ -48,7 +47,6 @@ export default function Sidebar({ currentPage, darkMode, onToggleDark }) {
       await Promise.all(works.map(w => worksApi.remove(w.id)));
     });
     queryClient.invalidateQueries({ queryKey: ["works"] });
-    base44.auth.logout();
   };
   const currentPath = window.location.pathname + window.location.search;
 
