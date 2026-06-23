@@ -1,0 +1,21 @@
+{
+  "name": "Ma Cultura Perso",
+  "short_name": "Ma Cultura",
+  "description": "Mon journal culturel personnel — films, séries, livres, podcasts.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0B2545",
+  "theme_color": "#0B2545",
+  "lang": "fr",
+  "icons": [
+    {
+      "src": "https://base44.com/logo_v2.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["entertainment", "lifestyle"],
+  "screenshots": []
+}

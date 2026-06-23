@@ -1,0 +1,49 @@
+/**
+ * Système de statuts et d'actions — source de vérité unique
+ * Utilisé par : WorkCard, WorkDetail, WorkFormModal, AllWorks, FiltersPanel, Home, Sidebar
+ */
+
+// Les statuts officiels
+export const STATUSES = ["À voir", "En cours", "Visionné", "Pas sorti", "Envie de lire"];
+
+// Config visuelle par statut
+export const STATUS_CONFIG = {
+  "À voir":         { color: "#94A3B8", bg: "rgba(148,163,184,0.1)", dot: "#94A3B8", label: "À voir" },
+  "En cours":       { color: "#D4AF37", bg: "rgba(212,175,55,0.1)",  dot: "#D4AF37", label: "En cours" },
+  "Visionné":       { color: "#2AA6A0", bg: "rgba(42,166,160,0.1)",  dot: "#2AA6A0", label: "Visionné" },
+  "Pas sorti":      { color: "#6366F1", bg: "rgba(99,102,241,0.1)",  dot: "#6366F1", label: "Pas sorti" },
+  "Envie de lire":  { color: "#8B5CF6", bg: "rgba(139,92,246,0.1)", dot: "#8B5CF6", label: "Envie de lire" },
+};
+
+// Actions contextuelles par statut
+export const STATUS_ACTIONS = {
+  "À voir": [
+    { id: "start",   label: "Commencer",       icon: "Play",         targetStatus: "En cours",  variant: "primary" },
+  ],
+  "En cours": [
+    { id: "pause",   label: "Mettre en pause", icon: "Pause",        targetStatus: "À voir",    variant: "secondary" },
+    { id: "finish",  label: "Terminer",         icon: "CheckCircle2", targetStatus: "Visionné",  variant: "primary" },
+  ],
+  "Visionné": [
+    { id: "rewatch", label: "Revoir",           icon: "RotateCcw",   targetStatus: "En cours",  variant: "secondary" },
+  ],
+  "Pas sorti": [],
+};
+
+// Migration legacy → statut officiel
+export function normalizeStatus(status) {
+  if (!status) return "À voir";
+  const map = {
+    "terminé":     "Visionné",
+    "à découvrir": "À voir",
+    "abandonné":   "À voir",
+    "done":        "Visionné",
+    "en cours":    "En cours",
+    "En cours":    "En cours",
+    "En veille":   "À voir",
+    "À voir":      "À voir",
+    "Visionné":    "Visionné",
+    "Pas sorti":   "Pas sorti",
+  };
+  return map[status] || "À voir";
+}

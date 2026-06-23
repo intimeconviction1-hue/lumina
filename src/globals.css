@@ -1,0 +1,256 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;1,14..32,400&display=swap');
+
+:root {
+  /* Brand Palette */
+  --brand-navy: #0B2545;
+  --brand-gold: #E56B3A;
+  --brand-teal: #7E9A73;
+  --brand-navy-deep: #071b35;
+
+  /* Light mode — fond très clair, texte noir */
+  --bg: #f8f9fa;
+  --surface: #ffffff;
+  --card-bg: #ffffff;
+  --text-primary: #1a1a1a;
+  --text-secondary: #4a4a4a;
+  --text-muted: #888888;
+  --border: #e2e2e2;
+  --border-subtle: #f0f0f0;
+  --shadow-card: 0 1px 4px rgba(0,0,0,0.08), 0 2px 10px rgba(0,0,0,0.05);
+  --shadow-elevated: 0 4px 20px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.06);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.07);
+  --radius-card: 12px;
+  --radius-btn: 10px;
+  --radius-input: 10px;
+  --radius-modal: 16px;
+  --sidebar-width: 256px;
+  --transition: 180ms cubic-bezier(0.4,0,0.2,1);
+  --accent: #E56B3A;
+  --accent-soft: rgba(229,107,58,0.1);
+  --primary: #E56B3A;
+  --secondary: #7E9A73;
+
+  /* Status colors */
+  --status-a-voir: #F4A261;
+  --status-en-cours: #E9C46A;
+  --status-visionne: #7E9A73;
+  --status-pas-sorti: #6D6875;
+
+  /* Type colors */
+  --type-film: #2F6690;
+  --type-serie: #7E9A73;
+  --type-livre: #9B6A6C;
+  --type-podcast: #B5838D;
+  --type-documentaire: #6D6875;
+
+  /* Legacy compat */
+  --cinema-navy: #1a1a1a;
+  --cinema-gold: #E56B3A;
+  --cinema-gold-soft: #E56B3A;
+  --cinema-border: rgba(229,107,58,0.12);
+  --cinema-border-subtle: rgba(0,0,0,0.04);
+  --cinema-surface: #ffffff;
+  --cinema-card: #ffffff;
+}
+
+[data-theme="dark"] {
+  --bg: #071b35;
+  --surface: #0e2440;
+  --card-bg: #122952;
+  --text-primary: #EEF2F8;
+  --text-secondary: #94A3B8;
+  --text-muted: #4A6080;
+  --border: rgba(212,175,55,0.1);
+  --border-subtle: rgba(255,255,255,0.04);
+  --shadow-card: 0 2px 12px rgba(0,0,0,0.35);
+  --shadow-elevated: 0 12px 36px rgba(0,0,0,0.55);
+  --shadow-sm: 0 1px 6px rgba(0,0,0,0.25);
+}
+
+* {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  box-sizing: border-box;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior-y: none;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+
+button, a, [role="button"] {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Cinema grain overlay for dark mode */
+[data-theme="dark"] body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 128px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* Focus ring */
+:focus-visible {
+  outline: 2px solid var(--cinema-gold);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Animations */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes shimmer {
+  from { background-position: -200% 0; }
+  to { background-position: 200% 0; }
+}
+@keyframes pulse-gold {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.fade-up { animation: fadeUp 0.35s ease both; }
+
+.skeleton {
+  background: linear-gradient(90deg, var(--border-subtle) 25%, var(--border) 50%, var(--border-subtle) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+/* Cinema card hover glow for dark mode */
+[data-theme="dark"] .cinema-card:hover {
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(201,168,76,0.15) !important;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Force dialog/sheet backgrounds to be opaque */
+[role="dialog"] {
+  background-color: #ffffff !important;
+  color: #0F1724 !important;
+}
+
+[data-theme="dark"] [role="dialog"] {
+  background-color: #1A2438 !important;
+  color: #EEF2F8 !important;
+  border-color: rgba(201,168,76,0.12) !important;
+}
+
+/* ============================================
+   MOBILE — max-width: 767px
+   ============================================ */
+@media (max-width: 767px) {
+
+  /* Fond clair sur mobile — même palette que desktop */
+  :root {
+    --bg: #f8f9fa;
+    --surface: #ffffff;
+    --card-bg: #ffffff;
+    --border: #e2e2e2;
+    --border-subtle: #f0f0f0;
+    --text-primary: #1a1a1a;
+    --text-secondary: #4a4a4a;
+    --text-muted: #888888;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.07);
+    --shadow-card: 0 1px 4px rgba(0,0,0,0.08), 0 2px 10px rgba(0,0,0,0.05);
+  }
+
+  /* Police légèrement plus grande sur mobile */
+  body {
+    font-size: 15px;
+  }
+
+  /* Cartes : espacement interne plus généreux */
+  .cinema-card,
+  [class*="rounded-[12px]"],
+  [class*="rounded-[14px]"],
+  [class*="rounded-[16px]"] {
+    border-radius: 14px !important;
+  }
+
+  /* Grille de cartes : gap plus large */
+  .grid {
+    gap: 1rem;
+  }
+
+  /* Header sticky — z-index sûr, ne recouvre pas le contenu */
+  header,
+  [class*="sticky"] {
+    z-index: 20 !important;
+  }
+
+  /* BottomNav : au-dessus du contenu mais pas du modal */
+  nav.fixed.bottom-0 {
+    z-index: 40 !important;
+  }
+
+  /* Sidebar mobile slide-over : z-index correct */
+  aside {
+    z-index: 45 !important;
+  }
+
+  /* Overlay sidebar mobile */
+  .fixed.inset-0.bg-black\/40 {
+    z-index: 44 !important;
+  }
+
+  /* Modals/dialogs : toujours au-dessus de tout */
+  [role="dialog"] {
+    z-index: 60 !important;
+  }
+
+  /* Texte plus lisible dans les cards */
+  .text-\[12px\]  { font-size: 13px !important; }
+  .text-\[13px\]  { font-size: 14px !important; }
+  .text-\[11px\]  { font-size: 12px !important; }
+  .text-\[10px\]  { font-size: 11px !important; }
+
+  /* Espacement vertical entre sections */
+  .space-y-5 > * + * { margin-top: 1.25rem; }
+  .space-y-6 > * + * { margin-top: 1.5rem; }
+
+  /* Sections card : padding interne plus aéré */
+  .p-4 { padding: 1rem !important; }
+  .p-5 { padding: 1.125rem !important; }
+  .p-6 { padding: 1.25rem !important; }
+}
+
+/* Dark mode mobile — préserver les couleurs sombres */
+@media (max-width: 767px) {
+  [data-theme="dark"] {
+    --bg: #071b35;
+    --surface: #0e2440;
+    --card-bg: #122952;
+    --text-primary: #EEF2F8;
+    --text-secondary: #94A3B8;
+    --border: rgba(212,175,55,0.12);
+  }
+}
+
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }

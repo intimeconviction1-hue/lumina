@@ -1,0 +1,151 @@
+{
+  "name": "Works",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Titre de l'\u0153uvre"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "film",
+        "s\u00e9rie",
+        "livre",
+        "documentaire",
+        "podcast",
+        "vid\u00e9o",
+        "article"
+      ],
+      "default": "film",
+      "description": "Type d'\u0153uvre"
+    },
+    "creator": {
+      "type": "string",
+      "description": "R\u00e9alisateur, auteur, cr\u00e9ateur"
+    },
+    "creator_name": {
+      "type": "string",
+      "description": "Alias creator_name (legacy)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "\u00c0 voir",
+        "En cours",
+        "Visionn\u00e9",
+        "Pas sorti",
+        "Envie de lire"
+      ],
+      "default": "\u00c0 voir"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "urgent",
+        "normal",
+        "plus tard"
+      ],
+      "default": "normal",
+      "description": "Priorit\u00e9 de visionnage"
+    },
+    "genre": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Genres de l'\u0153uvre"
+    },
+    "platform": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Plateformes ou sources"
+    },
+    "year": {
+      "type": "number",
+      "description": "Ann\u00e9e de sortie"
+    },
+    "released_year": {
+      "type": "number",
+      "description": "Alias released_year (legacy)"
+    },
+    "language": {
+      "type": "string",
+      "enum": [
+        "VO",
+        "VF"
+      ],
+      "description": "Langue originale"
+    },
+    "country": {
+      "type": "string",
+      "description": "Pays d'origine"
+    },
+    "duration_minutes": {
+      "type": "number",
+      "description": "Dur\u00e9e en minutes"
+    },
+    "rating": {
+      "type": "number",
+      "description": "Note 1-5"
+    },
+    "favorite": {
+      "type": "boolean",
+      "default": false
+    },
+    "cover_image": {
+      "type": "string",
+      "description": "URL affiche"
+    },
+    "description": {
+      "type": "string"
+    },
+    "personal_note": {
+      "type": "string"
+    },
+    "short_review": {
+      "type": "string"
+    },
+    "source_url": {
+      "type": "string"
+    },
+    "mood": {
+      "type": "string"
+    },
+    "recommended_by": {
+      "type": "string"
+    },
+    "difficulty_level": {
+      "type": "string",
+      "enum": [
+        "facile",
+        "moyen",
+        "exigeant"
+      ]
+    },
+    "page_count": {
+      "type": "number"
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date"
+    },
+    "finished_at": {
+      "type": "string",
+      "format": "date"
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Tags libres"
+    }
+  },
+  "required": [
+    "title",
+    "type"
+  ]
+}
