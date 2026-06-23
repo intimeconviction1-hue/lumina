@@ -9,7 +9,6 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { useWorks, WORKS_KEY } from "@/hooks/useWorks";
 import { worksApi } from "@/api/works";
-import { base44 } from "@/api/base44Client";
 
 const CHILD_SCREENS = ["WorkDetail"]; // pages that get a back button on mobile
 
@@ -91,16 +90,7 @@ export default function Layout({ children, currentPageName }) {
     return [...s].sort();
   }, [works]);
 
-  // Run migration once on mount
-  React.useEffect(() => {
-    const migrated = localStorage.getItem("cg-tags-migrated-v2");
-    if (!migrated) {
-      base44.functions.invoke("migrateWorks", {}).then(() => {
-        localStorage.setItem("cg-tags-migrated-v2", "true");
-        queryClient.invalidateQueries({ queryKey: WORKS_KEY });
-      }).catch(() => {});
-    }
-  }, []);
+  // Migration des données déjà effectuée lors de l'import Neon — plus rien à lancer ici.
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", darkMode ? "dark" : "light");
