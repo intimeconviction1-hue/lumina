@@ -4,46 +4,21 @@ import { useWorks, WORKS_KEY } from "@/hooks/useWorks";
 import { worksApi } from "@/api/works";
 import { BookImage } from "lucide-react";
 
-const PAUSE_MS = 400;
-const RETRY_WAIT_MS = 2000;
+const PAUSE_MS = 250;
 
 function sleep(ms) {
   return new Promise(r => setTimeout(r, ms));
 }
 
-async function fetchCoverOpenLibrary(title, author) {
-  const q = `https://openlibrary.org/search.json?title=${encodeURIComponent(title)}&author=${encodeURIComponent(author)}&limit=1`;
+// Recherche de couverture via la fonction serverless (Google Books + Open Library).
+// Renvoie { image, limited, networkError }.
+async function fetchCover(title, author) {
   try {
-    const res = await fetch(q);
-    if (!res.ok) return null;
-    const data = await res.json();
-    const coverId = data?.docs?.[0]?.cover_i;
-    if (coverId) return `https://covers.openlibrary.org/b/id/${coverId}-L.jpg`;
-  } catch { /* ignore */ }
-  return null;
-}
-
-// Returns { image, limited }
-async function fetchCoverGoogle(title, author) {
-  const q = encodeURIComponent(`${title} ${author}`.trim());
-  const url = `https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=1&country=FR`;
-  const tryFetch = async () => {
+    const url = `/api/cover?title=${encodeURIComponent(title)}&author=${encodeURIComponent(author || "")}`;
     const res = await fetch(url);
-    return res;
-  };
-  try {
-    let res = await tryFetch();
-    if (res.status === 429) {
-      await sleep(RETRY_WAIT_MS);
-      res = await tryFetch();
-      if (res.status === 429) return { image: null, limited: true };
-    }
-    if (!res.ok) return { image: null, limited: false };
+    if (!res.ok) return { image: null, limited: false, networkError: true };
     const data = await res.json();
-    const info = data?.items?.[0]?.volumeInfo?.imageLinks;
-    const raw = info?.thumbnail || info?.smallThumbnail || null;
-    if (!raw) return { image: null, limited: false };
-    return { image: raw.replace(/^http:/, "https:").replace(/&edge=curl/g, ""), limited: false };
+    return { image: data?.image || null, limited: !!data?.limited, networkError: false };
   } catch {
     return { image: null, limited: false, networkError: true };
   }
@@ -83,18 +58,7 @@ export default function Enrichissement() {
       const isDiag = i < 3;
 
       try {
-        // 1. Open Library first
-        let image = await fetchCoverOpenLibrary(book.title, author);
-
-        // 2. Google Books fallback
-        let isLimited = false;
-        let isNetworkError = false;
-        if (!image) {
-          const gResult = await fetchCoverGoogle(book.title, author);
-          image = gResult.image;
-          isLimited = gResult.limited;
-          isNetworkError = gResult.networkError;
-        }
+        const { image, limited: isLimited, networkError } = await fetchCover(book.title, author);
 
         if (isDiag) {
           diagItems.push({
@@ -110,7 +74,7 @@ export default function Enrichissement() {
           found++;
         } else if (isLimited) {
           limited++;
-        } else if (isNetworkError) {
+        } else if (networkError) {
           errors++;
         } else {
           noImage++;
@@ -141,7 +105,7 @@ export default function Enrichissement() {
         </div>
         <div>
           <h1 className="text-[20px] font-bold" style={{ color: "var(--text-primary)" }}>Enrichissement des couvertures</h1>
-          <p className="text-[13px]" style={{ color: "var(--text-muted)" }}>Open Library en priorité, Google Books en secours</p>
+          <p className="text-[13px]" style={{ color: "var(--text-muted)" }}>Google Books en priorité, Open Library en secours</p>
         </div>
       </div>
 
