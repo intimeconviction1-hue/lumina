@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
 import { Film, Tv, BookOpen, FileText, Mic, Video, Radio, Sparkles, RotateCcw, Plus, ArrowRight } from "lucide-react";
 
 const TYPE_ICONS = {
@@ -29,6 +28,116 @@ const CONTEXT_OPTIONS = [
   { value: "en groupe ou en famille", label: "À plusieurs" },
 ];
 
+const TIME_MAX_MIN = {
+  "moins de 30 min": 30,
+  "environ 1 heure": 75,
+  "environ 2 heures": 150,
+  "toute la soirée": Infinity,
+};
+
+// Durée par défaut quand l'œuvre n'a pas de durée saisie (≈ minutes).
+// null = format à durée libre (un livre se lit en plusieurs séances).
+const DEFAULT_DURATION = {
+  film: 115, série: 50, documentaire: 90, vidéo: 20, article: 12, podcast: 45, livre: null,
+};
+
+const WATCHABLE = new Set(["film", "série", "documentaire", "vidéo"]);
+
+const MOOD_GENRES = {
+  "légère et divertissante": ["comédie", "comedy", "feel", "aventure", "famille", "animation", "romance", "musical", "jeunesse", "humour"],
+  "intense et prenante": ["thriller", "drame", "policier", "polar", "horreur", "guerre", "crime", "suspense", "noir", "procès", "enquête", "espionnage"],
+};
+
+const GENRE_LABEL = {
+  polar: "Polar", thriller: "Thriller", drame: "Drame", comédie: "Comédie",
+  guerre: "Film de guerre", procès: "Drame judiciaire", "enquête": "Enquête",
+  famille: "Film familial", religion: "Récit", classique: "Classique",
+};
+
+function effectiveDuration(w) {
+  if (typeof w.duration_minutes === "number" && w.duration_minutes > 0) return w.duration_minutes;
+  const def = DEFAULT_DURATION[w.type];
+  return def === undefined ? null : def;
+}
+
+// Système de score pondéré — correspond autant que la donnée le permet, sans rien exclure inutilement.
+function localSuggest({ time, mood, context, candidates }) {
+  if (!candidates || candidates.length === 0) {
+    return { no_match: true, reason: "Ta liste en veille est vide." };
+  }
+
+  const groupe = context === "en groupe ou en famille";
+  const maxMin = TIME_MAX_MIN[time] ?? Infinity;
+  const moodGenres = MOOD_GENRES[mood] || null;
+
+  // Contexte « à plusieurs » : on ne garde que le visionnable (filtre dur, c'est le signal fiable).
+  let pool = candidates;
+  if (groupe) {
+    pool = candidates.filter((w) => WATCHABLE.has(w.type));
+    if (pool.length === 0) {
+      return { no_match: true, reason: "Rien à regarder à plusieurs — ajoute des films ou séries." };
+    }
+  }
+
+  const scored = pool.map((w) => {
+    let score = 0;
+    const matched = { mood: null, timeFits: false };
+
+    // — Temps disponible —
+    const eff = effectiveDuration(w);
+    if (eff === null) {
+      // Format libre (livre) : pénalisé pour un court créneau, neutre sinon.
+      if (maxMin <= 30) score -= 4;
+    } else if (eff <= maxMin) {
+      score += 2; matched.timeFits = true;
+    } else if (eff <= maxMin * 1.3) {
+      score += 0; // limite, toléré
+    } else {
+      score -= 4; // trop long pour le créneau
+    }
+
+    // — Humeur ↔ genre —
+    if (moodGenres) {
+      const genres = (w.genre || []).map((g) => String(g).toLowerCase());
+      const hit = genres.find((g) => moodGenres.some((mg) => g.includes(mg)));
+      if (hit) { score += 3; matched.mood = hit; }
+    }
+
+    // — Contexte (solo : léger bonus aux formats immersifs ; groupe déjà filtré) —
+    if (!groupe && WATCHABLE.has(w.type)) score += 0.3;
+
+    // Aléa pour varier les suggestions à chaque clic.
+    score += Math.random() * 1.6;
+
+    return { w, score, matched };
+  });
+
+  // On garde les meilleurs (à 1.5 pt du max) puis tirage parmi eux.
+  scored.sort((a, b) => b.score - a.score);
+  const top = scored.filter((s) => s.score >= scored[0].score - 1.5);
+  const pick = top[Math.floor(Math.random() * top.length)];
+  const w = pick.w;
+
+  // — Raison, selon le critère le plus fort —
+  let reason;
+  if (pick.matched.mood) {
+    const lbl = GENRE_LABEL[pick.matched.mood] || (pick.matched.mood.charAt(0).toUpperCase() + pick.matched.mood.slice(1));
+    reason = mood === "intense et prenante" ? `${lbl}, pour une soirée intense` : `${lbl}, léger et plaisant`;
+  } else if (groupe) {
+    reason = "Idéal à regarder à plusieurs";
+  } else if (pick.matched.timeFits && time === "moins de 30 min") {
+    reason = "Format court pour ce soir";
+  } else if (pick.matched.timeFits && time === "toute la soirée") {
+    reason = "Parfait pour toute la soirée";
+  } else if (pick.matched.timeFits) {
+    reason = "Tient dans ton créneau";
+  } else {
+    reason = "Pioché dans ta liste en veille";
+  }
+
+  return { work: w, reason };
+}
+
 function Pill({ label, active, onClick }) {
   return (
     <button
@@ -53,37 +162,18 @@ export default function TonightPick({ enVeille, onAddWork }) {
   const [result, setResult] = useState(null); // { work, reason } | { no_match, reason }
   const [error, setError] = useState(null);
 
-  const handleAsk = async () => {
+  const handleAsk = () => {
     if (enVeille.length === 0) return;
     setLoading(true);
     setResult(null);
     setError(null);
 
-    // On envoie uniquement les champs utiles au LLM (pas les IDs, notes perso, etc.)
-    const candidates = enVeille.map(w => ({
-      id: w.id,
-      title: w.title,
-      type: w.type,
-      genre: w.genre || [],
-      platform: Array.isArray(w.platform) ? w.platform : (w.platform ? [w.platform] : []),
-      duration_minutes: w.duration_minutes || null,
-    }));
-
-    const res = await base44.functions.invoke("suggestWork", {
-      time_available: time,
-      mood,
-      context,
-      candidates,
-    });
-
-    setLoading(false);
-
-    const data = res.data;
-    if (!data || (!data.work && !data.no_match)) {
-      setError("Réponse inattendue. Réessaie.");
-      return;
-    }
-    setResult(data);
+    // Petit délai pour l'animation, puis calcul local instantané
+    setTimeout(() => {
+      const data = localSuggest({ time, mood, context, candidates: enVeille });
+      setLoading(false);
+      setResult(data);
+    }, 450);
   };
 
   const reset = () => { setResult(null); setError(null); };
@@ -115,7 +205,7 @@ export default function TonightPick({ enVeille, onAddWork }) {
           <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-60 transition-opacity" style={{ color: "var(--text-muted)" }} />
         </Link>
         <button
-          onClick={reset}
+          onClick={handleAsk}
           className="flex items-center gap-1.5 mt-2 mx-auto text-[11.5px] font-medium transition-opacity hover:opacity-70"
           style={{ color: "var(--text-muted)" }}
         >
@@ -147,7 +237,7 @@ export default function TonightPick({ enVeille, onAddWork }) {
           <span className="text-[13px] font-bold" style={{ color: "var(--text-primary)" }}>
             Ce soir je regarde quoi ?
           </span>
-          <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>IA · basé sur ta liste</p>
+          <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>Basé sur ta liste</p>
         </div>
       </div>
 
