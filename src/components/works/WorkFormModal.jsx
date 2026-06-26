@@ -3,7 +3,6 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { X, Upload, Heart, Link2, Search, ChevronDown, ChevronUp } from "lucide-react";
-import { base44 } from "@/api/base44Client";
 import { STATUSES, STATUS_CONFIG } from "@/lib/statusActions";
 import StarRating from "./StarRating";
 
@@ -122,12 +121,40 @@ export default function WorkFormModal({ open, onClose, work, onSave }) {
 
   const set = (field, value) => setForm(p => ({ ...p, [field]: value }));
 
+  const fileToDataUrl = (file) =>
+    new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.onerror = reject;
+      r.readAsDataURL(file);
+    });
+
+  const uploadCover = async (dataUrl, filename = "cover") => {
+    const res = await fetch("/api/upload", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ dataUrl, filename }),
+    });
+    if (!res.ok) {
+      let msg = "Échec de l'upload";
+      try { const d = await res.json(); if (d?.error) msg = d.error; } catch { /* */ }
+      throw new Error(msg);
+    }
+    const { url } = await res.json();
+    return url;
+  };
+
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     setUploading(true);
-    const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    set("cover_image", file_url);
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      const url = await uploadCover(dataUrl, file.name);
+      set("cover_image", url);
+    } catch (err) {
+      console.error("Image upload failed:", err);
+    }
     setUploading(false);
   };
 
@@ -136,18 +163,10 @@ export default function WorkFormModal({ open, onClose, work, onSave }) {
     setSaving(true);
     try {
       let cover_image = form.cover_image;
-      // If the cover_image is a base64 data URL, convert it to File and upload
+      // Si la couverture est encore une data-URL base64, on l'envoie au Blob avant de sauver.
       if (cover_image && cover_image.startsWith("data:")) {
         try {
-          const arr = cover_image.split(',');
-          const mime = arr[0].match(/:(.*?);/)[1];
-          const bstr = atob(arr[1]);
-          const n = bstr.length;
-          const u8arr = new Uint8Array(n);
-          for (let i = 0; i < n; i++) u8arr[i] = bstr.charCodeAt(i);
-          const file = new File([u8arr], "cover.jpg", { type: mime });
-          const { file_url } = await base44.integrations.Core.UploadFile({ file });
-          cover_image = file_url;
+          cover_image = await uploadCover(cover_image, "cover");
         } catch (uploadErr) {
           console.error("Image upload failed:", uploadErr);
           cover_image = "";
