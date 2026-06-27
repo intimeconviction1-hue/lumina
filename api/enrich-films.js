@@ -1,10 +1,10 @@
 // api/enrich-films.js
 // Enrichissement automatique des films / séries / documentaires via TMDB.
 // - Non destructif : ne remplit QUE les champs vides.
-// - Deux modes : "dry" (test, n'écrit rien) et "run" (écrit en base).
-// - Piloté depuis le navigateur : ouvrir /api/enrich-films pour le panneau de contrôle.
+// - Modes : "dry" (test, n'écrit rien) et "run" (écrit, paginé par curseur).
+// - Piloté depuis le navigateur : ouvrir /api/enrich-films pour le panneau.
 //
-// Variables d'environnement requises (Vercel) :
+// Variables d'environnement Vercel requises :
 //   DATABASE_URL    -> chaîne de connexion Neon (déjà présente)
 //   TMDB_API_KEY    -> clé API v3 (32 caractères) de themoviedb.org
 
@@ -13,21 +13,28 @@ import { neon } from '@neondatabase/serverless';
 const TMDB = 'https://api.themoviedb.org/3';
 const IMG = 'https://image.tmdb.org/t/p/w500';
 
-// Normalise un type ("Série" -> "serie") pour comparer sans accent ni casse.
+// Filtre SQL commun : œuvres film/série/doc à qui il manque au moins un champ.
+const TYPE_FILTER = "lower(type) IN ('film', 'série', 'serie', 'documentaire', 'documentary')";
+const MISSING_FILTER = `(
+  genre IS NULL OR cardinality(genre) = 0
+  OR duration_minutes IS NULL
+  OR year IS NULL OR released_year IS NULL
+  OR cover_image IS NULL OR cover_image = ''
+  OR description IS NULL OR description = ''
+)`;
+
 function norm(s) {
-  return (s || '')
-    .toString()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .trim();
+  return (s || '').toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 }
 
-// Nettoie un titre pour une 2e tentative de recherche si la 1re échoue.
+// Nettoie un titre pour une 2e tentative : retire (parenthèses), points de
+// suspension, et suffixes de métadonnées collés du genre "· 1 saison", "2025".
 function cleanTitle(t) {
   return (t || '')
-    .replace(/\([^)]*\)/g, ' ')   // retire (parenthèses)
-    .replace(/\.\.\.|…/g, ' ')    // retire les points de suspension
+    .replace(/\([^)]*\)/g, ' ')
+    .replace(/\.\.\.|…/g, ' ')
+    .replace(/[·|–—-]\s*\d+\s*saisons?.*/i, ' ')
+    .replace(/[·|–—-]\s*saison\s*\d+.*/i, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -42,25 +49,22 @@ async function tmdbJSON(path, key, params = {}) {
   return r.json();
 }
 
-// Choisit l'endpoint de recherche selon le type Lumina.
 function searchKind(type) {
   const t = norm(type);
   if (t === 'film') return 'movie';
   if (t === 'serie') return 'tv';
-  return 'multi'; // documentaire (ou inconnu) : film ou série
+  return 'multi';
 }
 
-// Recherche TMDB + récupération des détails. Renvoie un objet normalisé ou null.
 async function findOnTmdb(title, type, key) {
   const kind = searchKind(type);
-
   async function runSearch(q) {
+    if (!q) return null;
     const data = await tmdbJSON('/search/' + kind, key, { query: q, include_adult: 'false' });
     let results = data.results || [];
     if (kind === 'multi') results = results.filter((x) => x.media_type === 'movie' || x.media_type === 'tv');
     return results[0] || null;
   }
-
   let hit = await runSearch(title);
   if (!hit) {
     const cleaned = cleanTitle(title);
@@ -69,33 +73,44 @@ async function findOnTmdb(title, type, key) {
   if (!hit) return null;
 
   const media = kind === 'multi' ? hit.media_type : kind;
-  const details = await tmdbJSON('/' + media + '/' + hit.id, key);
-
-  const date = media === 'movie' ? details.release_date : details.first_air_date;
+  const d = await tmdbJSON('/' + media + '/' + hit.id, key);
+  const date = media === 'movie' ? d.release_date : d.first_air_date;
   const yr = date ? parseInt(date.slice(0, 4), 10) : null;
   const runtime = media === 'movie'
-    ? (details.runtime || null)
-    : (Array.isArray(details.episode_run_time) && details.episode_run_time.length ? details.episode_run_time[0] : null);
+    ? (d.runtime || null)
+    : (Array.isArray(d.episode_run_time) && d.episode_run_time.length ? d.episode_run_time[0] : null);
 
   return {
-    tmdbTitle: details.title || details.name || hit.title || hit.name || '?',
-    media,
+    tmdbTitle: d.title || d.name || hit.title || hit.name || '?',
     year: Number.isFinite(yr) ? yr : null,
     duration: runtime && runtime > 0 ? runtime : null,
-    genres: (details.genres || []).map((g) => g.name).filter(Boolean),
-    poster: details.poster_path ? IMG + details.poster_path : null,
-    overview: (details.overview || '').trim() || null,
+    genres: (d.genres || []).map((g) => g.name).filter(Boolean),
+    poster: d.poster_path ? IMG + d.poster_path : null,
+    overview: (d.overview || '').trim() || null,
   };
 }
 
-// Un champ est-il vide en base ?
 function emptyArr(a) { return a == null || (Array.isArray(a) && a.length === 0); }
 function emptyStr(s) { return s == null || String(s).trim() === ''; }
+
+// Construit l'objet "ce qu'il faut remplir" pour une ligne donnée.
+function planFill(w, info) {
+  const sets = [];
+  const params = [];
+  const fills = [];
+  let i = 1;
+  if (emptyArr(w.genre) && info.genres.length) { sets.push('genre = $' + i + '::text[]'); params.push(info.genres); i++; fills.push('genre'); }
+  if (w.duration_minutes == null && info.duration != null) { sets.push('duration_minutes = $' + i); params.push(info.duration); i++; fills.push('durée'); }
+  if (w.year == null && info.year != null) { sets.push('year = $' + i); params.push(info.year); i++; fills.push('année'); }
+  if (w.released_year == null && info.year != null) { sets.push('released_year = $' + i); params.push(info.year); i++; fills.push('released_year'); }
+  if (emptyStr(w.cover_image) && info.poster) { sets.push('cover_image = $' + i); params.push(info.poster); i++; fills.push('affiche'); }
+  if (emptyStr(w.description) && info.overview) { sets.push('description = $' + i); params.push(info.overview); i++; fills.push('résumé'); }
+  return { sets, params, fills, nextIdx: i };
+}
 
 export default async function handler(req, res) {
   const action = (req.query.action || '').toString();
 
-  // Sans action : on sert le panneau de contrôle HTML.
   if (!action) {
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     return res.status(200).send(PANEL_HTML);
@@ -103,120 +118,98 @@ export default async function handler(req, res) {
 
   const key = process.env.TMDB_API_KEY;
   const dbUrl = process.env.DATABASE_URL;
-  if (!key) return res.status(500).json({ ok: false, error: "TMDB_API_KEY manquante dans les variables d'environnement Vercel." });
+  if (!key) return res.status(500).json({ ok: false, error: "TMDB_API_KEY manquante dans Vercel." });
   if (!dbUrl) return res.status(500).json({ ok: false, error: 'DATABASE_URL manquante.' });
 
   const sql = neon(dbUrl);
   const dry = action === 'dry';
   let limit = parseInt(req.query.limit, 10);
-  if (!Number.isFinite(limit) || limit < 1) limit = dry ? 10 : 12;
-  if (limit > 40) limit = 40;
+  if (!Number.isFinite(limit) || limit < 1) limit = dry ? 10 : 6;
+  if (limit > 25) limit = 25;
 
   try {
-    // Sélectionne les œuvres film/série/doc à qui il manque au moins un champ.
-    const rows = await sql`
-      SELECT id, title, type, genre, duration_minutes, year, released_year, cover_image, description
-      FROM works
-      WHERE lower(type) IN ('film', 'série', 'serie', 'documentaire', 'documentary')
-        AND (
-          genre IS NULL OR cardinality(genre) = 0
-          OR duration_minutes IS NULL
-          OR year IS NULL OR released_year IS NULL
-          OR cover_image IS NULL OR cover_image = ''
-          OR description IS NULL OR description = ''
-        )
-      ORDER BY created_date DESC
-      LIMIT ${limit}
-    `;
+    // ---------------- MODE TEST (dry) : échantillon récent, aucune écriture ----------------
+    if (dry) {
+      const rows = await sql`
+        SELECT id, title, type, genre, duration_minutes, year, released_year, cover_image, description
+        FROM works
+        WHERE lower(type) IN ('film', 'série', 'serie', 'documentaire', 'documentary')
+          AND (genre IS NULL OR cardinality(genre) = 0 OR duration_minutes IS NULL
+               OR year IS NULL OR released_year IS NULL
+               OR cover_image IS NULL OR cover_image = ''
+               OR description IS NULL OR description = '')
+        ORDER BY created_date DESC
+        LIMIT ${limit}`;
+      const totalRows = await sql`
+        SELECT count(*)::int AS n FROM works
+        WHERE lower(type) IN ('film', 'série', 'serie', 'documentaire', 'documentary')
+          AND (genre IS NULL OR cardinality(genre) = 0 OR duration_minutes IS NULL
+               OR year IS NULL OR released_year IS NULL
+               OR cover_image IS NULL OR cover_image = ''
+               OR description IS NULL OR description = '')`;
+      const details = [];
+      let notFound = 0;
+      for (const w of rows) {
+        let info = null;
+        try { info = await findOnTmdb(w.title, w.type, key); }
+        catch (e) { details.push({ title: w.title, status: 'erreur', message: String(e.message || e) }); continue; }
+        if (!info) { notFound++; details.push({ title: w.title, status: 'introuvable' }); continue; }
+        const plan = planFill(w, info);
+        const label = info.tmdbTitle + (info.year ? ' (' + info.year + ')' : '');
+        details.push({ title: w.title, status: plan.fills.length ? 'à remplir' : 'rien à remplir', match: label, fields: plan.fills });
+      }
+      return res.status(200).json({ ok: true, mode: 'dry', processed: rows.length, updated: 0, notFound, remaining: totalRows[0] ? totalRows[0].n : 0, details });
+    }
 
-    // Compte total restant (pour la barre de progression côté panneau).
-    const remainingRows = await sql`
-      SELECT count(*)::int AS n
-      FROM works
-      WHERE lower(type) IN ('film', 'série', 'serie', 'documentaire', 'documentary')
-        AND (
-          genre IS NULL OR cardinality(genre) = 0
-          OR duration_minutes IS NULL
-          OR year IS NULL OR released_year IS NULL
-          OR cover_image IS NULL OR cover_image = ''
-          OR description IS NULL OR description = ''
-        )
-    `;
-    const remainingBefore = remainingRows[0] ? remainingRows[0].n : 0;
+    // ---------------- MODE RUN : pagination par curseur (created_date, id) ----------------
+    const before = req.query.before ? String(req.query.before) : null;
+    const beforeId = req.query.beforeId ? String(req.query.beforeId) : null;
+
+    // Total à traiter renvoyé uniquement au 1er appel (curseur vide).
+    let total = null;
+    if (!before) {
+      const t = await sql`
+        SELECT count(*)::int AS n FROM works
+        WHERE lower(type) IN ('film', 'série', 'serie', 'documentaire', 'documentary')
+          AND (genre IS NULL OR cardinality(genre) = 0 OR duration_minutes IS NULL
+               OR year IS NULL OR released_year IS NULL
+               OR cover_image IS NULL OR cover_image = ''
+               OR description IS NULL OR description = '')`;
+      total = t[0] ? t[0].n : 0;
+    }
+
+    const selectText =
+      'SELECT id, title, type, genre, duration_minutes, year, released_year, cover_image, description, created_date ' +
+      'FROM works ' +
+      'WHERE ' + TYPE_FILTER + ' AND ' + MISSING_FILTER + ' ' +
+      'AND ($1::timestamptz IS NULL OR (created_date, id) < ($1::timestamptz, $2::text)) ' +
+      'ORDER BY created_date DESC, id DESC ' +
+      'LIMIT $3';
+    const rows = await sql.query(selectText, [before, beforeId, limit]);
 
     const details = [];
     let updated = 0;
     let notFound = 0;
-
     for (const w of rows) {
       let info = null;
-      try {
-        info = await findOnTmdb(w.title, w.type, key);
-      } catch (e) {
-        details.push({ title: w.title, status: 'erreur', message: String(e.message || e) });
-        continue;
-      }
-
-      if (!info) {
-        notFound++;
-        details.push({ title: w.title, status: 'introuvable' });
-        continue;
-      }
-
-      // Construit dynamiquement le SET : uniquement les champs vides en base.
-      const sets = [];
-      const params = [];
-      const fills = [];
-      let i = 1;
-
-      if (emptyArr(w.genre) && info.genres.length) {
-        sets.push('genre = $' + i + '::text[]'); params.push(info.genres); i++; fills.push('genre');
-      }
-      if (w.duration_minutes == null && info.duration != null) {
-        sets.push('duration_minutes = $' + i); params.push(info.duration); i++; fills.push('durée');
-      }
-      if (w.year == null && info.year != null) {
-        sets.push('year = $' + i); params.push(info.year); i++; fills.push('année');
-      }
-      if (w.released_year == null && info.year != null) {
-        sets.push('released_year = $' + i); params.push(info.year); i++; fills.push('released_year');
-      }
-      if (emptyStr(w.cover_image) && info.poster) {
-        sets.push('cover_image = $' + i); params.push(info.poster); i++; fills.push('affiche');
-      }
-      if (emptyStr(w.description) && info.overview) {
-        sets.push('description = $' + i); params.push(info.overview); i++; fills.push('résumé');
-      }
-
+      try { info = await findOnTmdb(w.title, w.type, key); }
+      catch (e) { details.push({ title: w.title, status: 'erreur', message: String(e.message || e) }); continue; }
+      if (!info) { notFound++; details.push({ title: w.title, status: 'introuvable' }); continue; }
+      const plan = planFill(w, info);
       const label = info.tmdbTitle + (info.year ? ' (' + info.year + ')' : '');
-
-      if (!sets.length) {
-        details.push({ title: w.title, status: 'rien à remplir', match: label });
-        continue;
-      }
-
-      if (dry) {
-        details.push({ title: w.title, status: 'à remplir', match: label, fields: fills });
-      } else {
-        params.push(w.id);
-        const text = 'UPDATE works SET ' + sets.join(', ') + ', updated_date = now() WHERE id = $' + i;
-        await sql.query(text, params);
-        updated++;
-        details.push({ title: w.title, status: 'rempli', match: label, fields: fills });
-      }
+      if (!plan.sets.length) { details.push({ title: w.title, status: 'rien à remplir', match: label }); continue; }
+      plan.params.push(w.id);
+      const text = 'UPDATE works SET ' + plan.sets.join(', ') + ', updated_date = now() WHERE id = $' + plan.nextIdx;
+      await sql.query(text, plan.params);
+      updated++;
+      details.push({ title: w.title, status: 'rempli', match: label, fields: plan.fills });
     }
 
-    const remainingAfter = dry ? remainingBefore : Math.max(0, remainingBefore - updated);
+    const last = rows.length ? rows[rows.length - 1] : null;
+    const cursor = last ? { d: last.created_date, id: last.id } : null;
+    const done = rows.length < limit;
 
-    return res.status(200).json({
-      ok: true,
-      mode: dry ? 'dry' : 'run',
-      processed: rows.length,
-      updated,
-      notFound,
-      remaining: remainingAfter,
-      details,
-    });
+    return res.status(200).json({ ok: true, mode: 'run', processed: rows.length, updated, notFound, cursor, done, total, details });
   } catch (e) {
     return res.status(500).json({ ok: false, error: String(e.message || e) });
   }
@@ -249,7 +242,7 @@ const PANEL_HTML = [
 '.muted{color:#6b7280}',
 '</style></head><body><div class="wrap">',
 '<h1>Lumina — Enrichissement films (TMDB)</h1>',
-'<p class="sub">Non destructif : ne remplit que les champs vides (genre, durée, année, affiche, résumé). Teste d\'abord, puis lance.</p>',
+'<p class="sub">Non destructif : ne remplit que les champs vides (genre, durée, année, affiche, résumé). Teste d\'abord, puis lance. La progression reprend toute seule en cas de lenteur réseau.</p>',
 '<div class="btns">',
 '<button class="test" id="bTest">Tester sur 10 (n\'écrit rien)</button>',
 '<button class="go" id="bRun">Lancer l\'enrichissement complet</button>',
@@ -265,9 +258,16 @@ const PANEL_HTML = [
 'function fieldsTags(f){if(!f||!f.length)return "<span class=\\"muted\\">—</span>";return f.map(function(x){return "<span class=\\"tag\\">"+esc(x)+"</span>";}).join("");}',
 'function addRows(d){d.forEach(function(r){var tr=document.createElement("tr");tr.innerHTML="<td>"+esc(r.title)+"</td><td>"+(r.match?esc(r.match):"<span class=\\"muted\\">—</span>")+"</td><td>"+fieldsTags(r.fields)+"</td><td>"+badge(r.status)+(r.message?" <span class=\\"muted\\">"+esc(r.message)+"</span>":"")+"</td>";rowsEl.appendChild(tr);});}',
 'function disable(v){bTest.disabled=v;bRun.disabled=v;}',
-'function call(action,limit){return fetch("?action="+action+"&limit="+limit).then(function(r){return r.json();});}',
-'bTest.onclick=function(){disable(true);rowsEl.innerHTML="";bar.style.width="0";stat.textContent="Test en cours…";call("dry",10).then(function(j){if(!j.ok){stat.textContent="Erreur : "+j.error;disable(false);return;}addRows(j.details);stat.textContent="Test : "+j.processed+" analysés, "+j.remaining+" restants au total. Rien n\'a été écrit.";disable(false);}).catch(function(e){stat.textContent="Erreur réseau : "+e;disable(false);});};',
-'bRun.onclick=function(){disable(true);rowsEl.innerHTML="";var done=0,total=0;function step(){call("run",12).then(function(j){if(!j.ok){stat.textContent="Erreur : "+j.error;disable(false);return;}addRows(j.details);done+=j.updated;if(total===0)total=j.remaining+j.updated;var pct=total?Math.round(100*(total-j.remaining)/total):100;bar.style.width=pct+"%";stat.textContent=done+" enrichis · "+j.remaining+" restants ("+pct+"%)";if(j.processed>0&&j.remaining>0){setTimeout(step,250);}else{stat.textContent="Terminé : "+done+" œuvres enrichies. "+j.remaining+" restants (introuvables sur TMDB).";disable(false);}});}step();};',
+// fetch avec délai d abandon (25 s) pour ne jamais rester bloqué
+'function callJSON(url){var ctrl=new AbortController();var to=setTimeout(function(){ctrl.abort();},25000);return fetch(url,{signal:ctrl.signal}).then(function(r){clearTimeout(to);return r.json();}).catch(function(e){clearTimeout(to);throw e;});}',
+// TEST
+'bTest.onclick=function(){disable(true);rowsEl.innerHTML="";bar.style.width="0";stat.textContent="Test en cours…";callJSON("?action=dry&limit=10").then(function(j){if(!j.ok){stat.textContent="Erreur : "+j.error;disable(false);return;}addRows(j.details);stat.textContent="Test : "+j.processed+" analysés, "+j.remaining+" restants au total. Rien n\'a été écrit.";disable(false);}).catch(function(e){stat.textContent="Erreur réseau : "+e+" (réessaie).";disable(false);});};',
+// RUN paginé par curseur, avec reprise auto du même lot en cas d échec
+'bRun.onclick=function(){disable(true);rowsEl.innerHTML="";var done=0,total=0,cursor=null,fails=0;',
+'function finish(msg){stat.textContent=msg;disable(false);}',
+'function step(){var url="?action=run&limit=6";if(cursor){url+="&before="+encodeURIComponent(cursor.d)+"&beforeId="+encodeURIComponent(cursor.id);}callJSON(url).then(function(j){if(!j.ok){finish("Erreur : "+j.error);return;}fails=0;if(j.total!=null&&total===0)total=j.total;addRows(j.details);done+=j.updated;var pct=total?Math.min(100,Math.round(100*rowsEl.children.length/total)):100;bar.style.width=pct+"%";stat.textContent=done+" enrichis · "+pct+"% parcouru";cursor=j.cursor;if(j.done||!j.cursor){finish("Terminé : "+done+" œuvres enrichies sur "+total+" analysées. Les non-trouvées (titres trop approximatifs) sont restées vides.");}else{setTimeout(step,200);}}).catch(function(e){fails++;if(fails<=4){stat.textContent="Lenteur réseau, reprise du lot ("+fails+"/4)…";setTimeout(step,800*fails);}else{finish("Arrêt après plusieurs échecs réseau. "+done+" déjà enrichis — relance \\"Lancer l\'enrichissement complet\\" pour reprendre où ça s\'est arrêté.");}});}',
+// compteur d avancement basé sur le nombre de lignes déjà affichées
+'step();};',
 '</script>',
 '</div></body></html>',
 ].join('\n');
