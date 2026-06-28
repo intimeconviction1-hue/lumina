@@ -161,13 +161,14 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true, mode: 'dry', processed: rows.length, updated: 0, notFound, remaining: totalRows[0] ? totalRows[0].n : 0, details });
     }
 
-    // ---------------- MODE RUN : pagination par curseur (created_date, id) ----------------
-    const before = req.query.before ? String(req.query.before) : null;
-    const beforeId = req.query.beforeId ? String(req.query.beforeId) : null;
+    // ---------------- MODE RUN : pagination par curseur sur id seul (NULL-safe) ----------------
+    // id est clé primaire (jamais NULL, toujours comparable) -> curseur incassable,
+    // contrairement à created_date qui peut être NULL sur les lignes importées.
+    const afterId = req.query.afterId ? String(req.query.afterId) : '';
 
     // Total à traiter renvoyé uniquement au 1er appel (curseur vide).
     let total = null;
-    if (!before) {
+    if (!afterId) {
       const t = await sql`
         SELECT count(*)::int AS n FROM works
         WHERE lower(type) IN ('film', 'série', 'serie', 'documentaire', 'documentary')
@@ -179,13 +180,13 @@ export default async function handler(req, res) {
     }
 
     const selectText =
-      'SELECT id, title, type, genre, duration_minutes, year, released_year, cover_image, description, created_date ' +
+      'SELECT id, title, type, genre, duration_minutes, year, released_year, cover_image, description ' +
       'FROM works ' +
       'WHERE ' + TYPE_FILTER + ' AND ' + MISSING_FILTER + ' ' +
-      'AND ($1::timestamptz IS NULL OR (created_date, id) < ($1::timestamptz, $2::text)) ' +
-      'ORDER BY created_date DESC, id DESC ' +
-      'LIMIT $3';
-    const rows = await sql.query(selectText, [before, beforeId, limit]);
+      'AND id > $1 ' +
+      'ORDER BY id ASC ' +
+      'LIMIT $2';
+    const rows = await sql.query(selectText, [afterId, limit]);
 
     const details = [];
     let updated = 0;
@@ -206,7 +207,7 @@ export default async function handler(req, res) {
     }
 
     const last = rows.length ? rows[rows.length - 1] : null;
-    const cursor = last ? { d: last.created_date, id: last.id } : null;
+    const cursor = last ? { id: last.id } : null;
     const done = rows.length < limit;
 
     return res.status(200).json({ ok: true, mode: 'run', processed: rows.length, updated, notFound, cursor, done, total, details });
@@ -265,7 +266,7 @@ const PANEL_HTML = [
 // RUN paginé par curseur, avec reprise auto du même lot en cas d échec
 'bRun.onclick=function(){disable(true);rowsEl.innerHTML="";var done=0,total=0,cursor=null,fails=0;',
 'function finish(msg){stat.textContent=msg;disable(false);}',
-'function step(){var url="?action=run&limit=6";if(cursor){url+="&before="+encodeURIComponent(cursor.d)+"&beforeId="+encodeURIComponent(cursor.id);}callJSON(url).then(function(j){if(!j.ok){finish("Erreur : "+j.error);return;}fails=0;if(j.total!=null&&total===0)total=j.total;addRows(j.details);done+=j.updated;var pct=total?Math.min(100,Math.round(100*rowsEl.children.length/total)):100;bar.style.width=pct+"%";stat.textContent=done+" enrichis · "+pct+"% parcouru";cursor=j.cursor;if(j.done||!j.cursor){finish("Terminé : "+done+" œuvres enrichies sur "+total+" analysées. Les non-trouvées (titres trop approximatifs) sont restées vides.");}else{setTimeout(step,200);}}).catch(function(e){fails++;if(fails<=4){stat.textContent="Lenteur réseau, reprise du lot ("+fails+"/4)…";setTimeout(step,800*fails);}else{finish("Arrêt après plusieurs échecs réseau. "+done+" déjà enrichis — relance \\"Lancer l\'enrichissement complet\\" pour reprendre où ça s\'est arrêté.");}});}',
+'function step(){var url="?action=run&limit=6";if(cursor){url+="&afterId="+encodeURIComponent(cursor.id);}callJSON(url).then(function(j){if(!j.ok){finish("Erreur : "+j.error);return;}fails=0;if(j.total!=null&&total===0)total=j.total;addRows(j.details);done+=j.updated;var pct=total?Math.min(100,Math.round(100*rowsEl.children.length/total)):100;bar.style.width=pct+"%";stat.textContent=done+" enrichis · "+pct+"% parcouru";cursor=j.cursor;if(j.done||!j.cursor){finish("Terminé : "+done+" œuvres enrichies sur "+total+" analysées. Les non-trouvées (titres trop approximatifs) sont restées vides.");}else{setTimeout(step,200);}}).catch(function(e){fails++;if(fails<=4){stat.textContent="Lenteur réseau, reprise du lot ("+fails+"/4)…";setTimeout(step,800*fails);}else{finish("Arrêt après plusieurs échecs réseau. "+done+" déjà enrichis — relance \\"Lancer l\'enrichissement complet\\" pour reprendre où ça s\'est arrêté.");}});}',
 // compteur d avancement basé sur le nombre de lignes déjà affichées
 'step();};',
 '</script>',
