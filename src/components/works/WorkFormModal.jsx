@@ -258,15 +258,22 @@ export default function WorkFormModal({ open, onClose, work, onSave }) {
             <label className="text-[11.5px] font-semibold uppercase tracking-[0.1em] text-gray-400 mb-2 block">Statut</label>
             <div className="flex gap-2 flex-wrap">
               {STATUSES.map(s => {
-                // Pour les livres, afficher "Lu" au lieu de "Visionné"
-                const displayLabel = form.type === "livre" && s === "Visionné" ? "Lu" : s;
-                const confKey = s;
-                const conf = STATUS_CONFIG[confKey];
-                // Mapping pour l'état actif: "Visionné" → "Lu" pour les livres
-                const statusForComparison = form.type === "livre" && s === "Visionné" ? "Lu" : s;
-                const isActive = form.status === statusForComparison || (form.type !== "livre" && form.status === s);
+                const isBook = form.type === "livre";
+                // Livres : pas de "À voir" — le vocabulaire lecture est "À lire" (= Envie de lire).
+                if (isBook && s === "À voir") return null;
+                // Libellés livres : "Envie de lire" → "À lire", "Visionné" → "Lu".
+                const displayLabel = isBook
+                  ? (s === "Visionné" ? "Lu" : s === "Envie de lire" ? "À lire" : s)
+                  : s;
+                const conf = STATUS_CONFIG[s];
+                // Valeur réellement stockée (livre terminé = "Lu").
+                const storeVal = isBook && s === "Visionné" ? "Lu" : s;
+                let isActive = form.status === storeVal;
+                // Récupère les livres legacy (stockés "À voir"/"Visionné").
+                if (isBook && s === "Envie de lire" && form.status === "À voir") isActive = true;
+                if (isBook && s === "Visionné" && form.status === "Visionné") isActive = true;
                 return (
-                  <button key={s} type="button" onClick={() => set("status", statusForComparison)}
+                  <button key={s} type="button" onClick={() => set("status", storeVal)}
                     className="px-4 py-2 rounded-full text-[12.5px] font-semibold border transition-all"
                     style={{
                       borderColor: isActive ? conf.color : "#E2E8F0",
@@ -281,8 +288,8 @@ export default function WorkFormModal({ open, onClose, work, onSave }) {
             </div>
           </div>
 
-          {/* — PRIORITÉ (visible si "À voir") — */}
-          {form.status === "À voir" && (
+          {/* — PRIORITÉ (visible si à consommer : "À voir" ou "Envie de lire") — */}
+          {(form.status === "À voir" || form.status === "Envie de lire") && (
             <div>
               <label className="text-[11.5px] font-semibold uppercase tracking-[0.1em] text-gray-400 mb-2 block">Priorité</label>
               <div className="flex gap-2">

@@ -1,6 +1,7 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { RotateCcw, Heart, Check, SlidersHorizontal } from "lucide-react";
+import { TYPE_COLORS } from "@/lib/statusActions";
 
 const STATUSES = ["À voir", "En cours", "Visionné", "Pas sorti", "Envie de lire"];
 const PLATFORMS = ["Netflix", "Prime Video", "Disney+", "Canal+", "HBO", "Apple TV+", "Arte", "FranceTV", "Ciné", "OneDrive", "Yggtorrent", "Khan Israël", "IKROMI", "Lenny", "OKRU"];
@@ -23,7 +24,7 @@ const STATUS_COLORS = {
 
 const EMPTY_FILTERS = {
   type: "", status: [], genre: [], platform: [], tags: [],
-  year_min: "", year_max: "", favorite: false, min_rating: "", sort: "-created_date",
+  year_min: "", year_max: "", favorite: false, min_rating: "", priority: "", sort: "-created_date",
 };
 
 const Section = ({ label, children }) => (
@@ -172,7 +173,7 @@ export default function FiltersPanel({ open, onClose, filters, onFiltersChange, 
           <Section label="Type">
             <div className="flex flex-wrap gap-1.5">
               {TYPES.map(t => (
-                <Chip key={t} label={t} color="#6366F1"
+                <Chip key={t} label={t} color={TYPE_COLORS[t] || "#6366F1"}
                   active={local.type === t}
                   onClick={() => upd("type", local.type === t ? "" : t)} />
               ))}

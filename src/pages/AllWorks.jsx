@@ -8,18 +8,11 @@ import { StatusButton, TypeButton } from "../components/works/FilterButtons";
 import { X, ChevronDown, ChevronUp, CheckSquare, Square } from "lucide-react";
 import BulkActionBar from "../components/works/BulkActionBar";
 import { useToast } from "@/components/ui/use-toast";
+import { STATUS_CONFIG, TYPE_COLORS, effectiveStatus } from "@/lib/statusActions";
 
-const STATUS_COLORS = {
-  "À voir":        "#94A3B8",
-  "En cours":      "#D4AF37",
-  "Visionné":      "#2AA6A0",
-  "Pas sorti":     "#6366F1",
-  "Envie de lire": "#8B5CF6",
-};
-const TYPE_COLORS = {
-  film: "#0B2545", série: "#D4AF37", livre: "#6366F1",
-  documentaire: "#2AA6A0", podcast: "#475569", vidéo: "#475569", article: "#475569",
-};
+const STATUS_COLORS = Object.fromEntries(
+  Object.entries(STATUS_CONFIG).map(([k, v]) => [k, v.color])
+);
 const ALL_STATUSES = ["À voir", "En cours", "Visionné", "Pas sorti", "Envie de lire"];
 const ALL_TYPES = ["film", "série", "livre", "documentaire", "podcast", "vidéo", "article"];
 const QUICK_PLATFORMS = ["Netflix", "Prime Video", "Disney+", "Canal+", "HBO", "Apple TV+", "Arte"];
@@ -89,13 +82,17 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
     const urlPlatform = params.get("platform");
     const urlType     = params.get("type");
     const urlTag      = params.get("tag");
-    if ((urlStatus || urlGenre || urlPlatform || urlType || urlTag) && onFiltersChange) {
-      const base = { type: "", status: [], genre: [], platform: [], tags: [], year_min: "", year_max: "", favorite: false, min_rating: "", sort: "-created_date" };
-      if (urlStatus)   base.status   = [urlStatus];
+    const urlPriority = params.get("priority");
+    if ((urlStatus || urlGenre || urlPlatform || urlType || urlTag || urlPriority) && onFiltersChange) {
+      const base = { type: "", status: [], genre: [], platform: [], tags: [], year_min: "", year_max: "", favorite: false, min_rating: "", priority: "", sort: "-created_date" };
+      // Normalise les statuts legacy (ex. "En veille" → "À voir") pour éviter les listes vides.
+      const STATUS_ALIASES = { "En veille": "À voir", "terminé": "Visionné", "à découvrir": "À voir", "abandonné": "À voir" };
+      if (urlStatus)   base.status   = [STATUS_ALIASES[urlStatus] || urlStatus];
       if (urlGenre)    base.genre    = [urlGenre];
       if (urlPlatform) base.platform = [urlPlatform];
       if (urlType)     base.type     = urlType;
       if (urlTag)      base.tags     = [urlTag];
+      if (urlPriority) base.priority = urlPriority;
       onFiltersChange(base);
       window.history.replaceState({}, "", window.location.pathname);
     }
@@ -125,10 +122,11 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
     else if (key === "favorite") onFiltersChange({ ...filters, favorite: false });
     else if (key === "min_rating") onFiltersChange({ ...filters, min_rating: "" });
     else if (key === "year")     onFiltersChange({ ...filters, year_min: "", year_max: "" });
+    else if (key === "priority") onFiltersChange({ ...filters, priority: "" });
   };
   const clearAll = () => {
     if (!onFiltersChange) return;
-    onFiltersChange({ type: "", status: [], genre: [], platform: [], tags: [], year_min: "", year_max: "", favorite: false, min_rating: "", sort: "-created_date" });
+    onFiltersChange({ type: "", status: [], genre: [], platform: [], tags: [], year_min: "", year_max: "", favorite: false, min_rating: "", priority: "", sort: "-created_date" });
   };
 
   // Build active filter badges
@@ -142,6 +140,10 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
     if (filters.favorite) list.push({ key: "favorite", val: true, label: "Favoris", color: "#EC4899" });
     if (filters.min_rating) list.push({ key: "min_rating", val: filters.min_rating, label: `≥ ${filters.min_rating}★`, color: "#D4AF37" });
     if (filters.year_min || filters.year_max) list.push({ key: "year", val: "year", label: `${filters.year_min || "…"} → ${filters.year_max || "…"}`, color: "#94A3B8" });
+    if (filters.priority) {
+      const pl = { urgent: "🔥 Urgent", normal: "Normal", "plus tard": "🕐 Plus tard" }[filters.priority] || filters.priority;
+      list.push({ key: "priority", val: filters.priority, label: pl, color: "#EF4444" });
+    }
     return list;
   }, [filters]);
 
@@ -154,15 +156,6 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
   }), [works]);
 
   // Apply tab filter on top of existing filters
-  const filtersWithTab = useMemo(() => {
-    if (!activeTab) return filters;
-    if (activeTab === "film-série") {
-      // override type to show both film & série — we handle it in filteredWorks
-      return { ...filters, _tabTypes: ["film", "série"] };
-    }
-    return { ...filters, _tabTypes: [activeTab] };
-  }, [filters, activeTab]);
-
   const filteredWorks = useMemo(() => {
     let result = [...works];
 
@@ -185,9 +178,27 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
       );
     }
 
-    // Status: support array (new) or string (legacy)
+    // Status: support array (new) or string (legacy).
+    // Livres : un "À voir" legacy compte comme "Envie de lire", et "Visionné" comme "Lu".
     if (filters.status?.length > 0) {
-      result = result.filter(w => filters.status.includes(w.status));
+      result = result.filter(w => {
+        let s = w.status;
+        if (w.type === "livre") {
+          if (s === "À voir") s = "Envie de lire";
+          if (s === "Visionné") s = "Lu";
+        }
+        return filters.status.includes(s);
+      });
+    }
+
+    // Priorité (urgent / normal / plus tard) — on exclut les œuvres déjà
+    // terminées : une priorité de visionnage ne concerne que ce qui reste à consommer.
+    if (filters.priority) {
+      result = result.filter(w => {
+        if ((w.priority || "normal") !== filters.priority) return false;
+        const s = effectiveStatus(w);
+        return s !== "Visionné" && s !== "Lu";
+      });
     }
 
     // Genre: multi-select (OR logic within genre, AND between sections)
@@ -380,16 +391,19 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
         {/* Statuts — scroll horizontal sur mobile */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 no-scrollbar" style={{ scrollbarWidth: "none" }}>
           {(activeTab === "livre"
-            ? ["Envie de lire", "En cours", "Visionné"]
+            ? ["Envie de lire", "En cours", "Lu"]
             : activeTab === "film-série"
             ? ["À voir", "En cours", "Visionné", "Pas sorti"]
             : ALL_STATUSES
           ).map(s => {
             const active = (filters.status || []).includes(s);
+            // Côté livres, "Envie de lire" s'affiche "À lire".
+            const label = s === "Envie de lire" ? "À lire" : s;
             return (
               <StatusButton
                 key={`status-${s}`}
                 status={s}
+                label={label}
                 active={active}
                 onClick={() => toggleStatus(s)}
               />

@@ -37,7 +37,7 @@ export default function Layout({ children, currentPageName }) {
   const isChildScreen = CHILD_SCREENS.includes(currentPageName);
   const [filters, setFilters] = useState({
     type: "", status: [], genre: [], platform: [], tags: [], year_min: "", year_max: "",
-    favorite: false, min_rating: "", sort: "-created_date",
+    favorite: false, min_rating: "", priority: "", sort: "-created_date",
   });
 
 
@@ -48,11 +48,11 @@ export default function Layout({ children, currentPageName }) {
     const handler = (e) => {
       const { status, clear } = e.detail || {};
       if (clear) {
-        setFilters({ type: "", status: [], genre: [], platform: [], tags: [], year_min: "", year_max: "", favorite: false, min_rating: "", sort: "-created_date" });
+        setFilters({ type: "", status: [], genre: [], platform: [], tags: [], year_min: "", year_max: "", favorite: false, min_rating: "", priority: "", sort: "-created_date" });
       } else if (status) {
         // Normalise "En veille" legacy → "À voir"
         const normalizedStatus = status === "En veille" ? "À voir" : status;
-        setFilters({ type: "", status: [normalizedStatus], genre: [], platform: [], tags: [], year_min: "", year_max: "", favorite: false, min_rating: "", sort: "-created_date" });
+        setFilters({ type: "", status: [normalizedStatus], genre: [], platform: [], tags: [], year_min: "", year_max: "", favorite: false, min_rating: "", priority: "", sort: "-created_date" });
       }
     };
     window.addEventListener("sidebar-filter", handler);

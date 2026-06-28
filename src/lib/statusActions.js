@@ -6,13 +6,26 @@
 // Les statuts officiels
 export const STATUSES = ["À voir", "En cours", "Visionné", "Pas sorti", "Envie de lire"];
 
+// Couleurs canoniques par type — source unique (carte, filtres, badges).
+export const TYPE_COLORS = {
+  film:         "#0B2545",
+  série:        "#D4AF37",
+  livre:        "#6366F1",
+  documentaire: "#2AA6A0",
+  podcast:      "#475569",
+  vidéo:        "#475569",
+  article:      "#475569",
+};
+
 // Config visuelle par statut
 export const STATUS_CONFIG = {
   "À voir":         { color: "#94A3B8", bg: "rgba(148,163,184,0.1)", dot: "#94A3B8", label: "À voir" },
   "En cours":       { color: "#D4AF37", bg: "rgba(212,175,55,0.1)",  dot: "#D4AF37", label: "En cours" },
   "Visionné":       { color: "#2AA6A0", bg: "rgba(42,166,160,0.1)",  dot: "#2AA6A0", label: "Visionné" },
   "Pas sorti":      { color: "#6366F1", bg: "rgba(99,102,241,0.1)",  dot: "#6366F1", label: "Pas sorti" },
-  "Envie de lire":  { color: "#8B5CF6", bg: "rgba(139,92,246,0.1)", dot: "#8B5CF6", label: "Envie de lire" },
+  "Envie de lire":  { color: "#8B5CF6", bg: "rgba(139,92,246,0.1)", dot: "#8B5CF6", label: "À lire" },
+  // Statut spécifique aux livres terminés (le formulaire stocke "Lu" et non "Visionné").
+  "Lu":             { color: "#2AA6A0", bg: "rgba(42,166,160,0.1)",  dot: "#2AA6A0", label: "Lu" },
 };
 
 // Actions contextuelles par statut
@@ -46,4 +59,13 @@ export function normalizeStatus(status) {
     "Pas sorti":   "Pas sorti",
   };
   return map[status] || "À voir";
+}
+// Statut "effectif" pour l'affichage : applique le vocabulaire livres
+// (À voir → Envie de lire, Visionné → Lu). Utilisé par WorkCard / WorksGrid.
+export function effectiveStatus(work) {
+  if (work?.type === "livre") {
+    if (work.status === "À voir") return "Envie de lire";
+    if (work.status === "Visionné") return "Lu";
+  }
+  return work?.status;
 }

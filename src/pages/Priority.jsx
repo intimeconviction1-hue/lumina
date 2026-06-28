@@ -1,11 +1,11 @@
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-// Redirect vers AllWorks filtré — migration douce
+// Redirect vers AllWorks filtré sur les œuvres marquées "urgent".
 export default function Priority() {
   const navigate = useNavigate();
   useEffect(() => {
-    navigate("/AllWorks?status=En+veille", { replace: true });
+    navigate("/AllWorks?priority=urgent", { replace: true });
   }, []);
   return null;
 }

@@ -1,15 +1,15 @@
 import React, { useState } from "react";
 import WorkCard from "./WorkCard";
-import { LayoutGrid, List, Star, Calendar, Type, SortDesc } from "lucide-react";
+import { LayoutGrid, List, Star } from "lucide-react";
 import { Link } from "react-router-dom";
-import { createPageUrl } from "@/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import { typeIcons, typeColors, statusConfig } from "./WorkCard";
+import { effectiveStatus } from "@/lib/statusActions";
 
 function WorkRow({ work, onEdit, onDelete, onStatusChange, onToggleFavorite, index }) {
   const TypeIcon = typeIcons[work.type] || (() => null);
   const tColor   = typeColors[work.type] || "#C9A84C";
-  const sConfig  = statusConfig[work.status] || statusConfig["À voir"];
+  const sConfig  = statusConfig[effectiveStatus(work)] || statusConfig["À voir"];
   const displayYear = work.year || work.released_year;
 
   return (
@@ -97,7 +97,7 @@ function WorkRow({ work, onEdit, onDelete, onStatusChange, onToggleFavorite, ind
       <span className="flex items-center gap-1 px-2 py-1 rounded-full text-[12px] font-semibold flex-shrink-0"
         style={{ backgroundColor: sConfig.bg, color: sConfig.color }}>
         <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: sConfig.dot }} />
-        <span className="hidden sm:inline">{work.status}</span>
+        <span className="hidden sm:inline">{sConfig.label}</span>
       </span>
 
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
@@ -127,23 +127,12 @@ function WorkRow({ work, onEdit, onDelete, onStatusChange, onToggleFavorite, ind
   );
 }
 
-const SORT_OPTIONS = [
-  { key: "-created_date", label: "Récents",     icon: Calendar },
-  { key: "-rating",       label: "Mieux notés", icon: Star },
-  { key: "title",         label: "A → Z",       icon: Type },
-  { key: "-year",         label: "Année ↓",     icon: SortDesc },
-];
-
 export default function WorksGrid({ works, onEdit, onDelete, onStatusChange, onToggleFavorite, onFilter, emptyMessage, emptySubtext, activeTab, selectMode = false, selectedIds = new Set(), onToggleSelect }) {
   const [viewMode, setViewMode] = useState("grid");
-  const [sortKey, setSortKey]   = useState("-created_date");
 
-  const sorted = [...works].sort((a, b) => {
-    if (sortKey === "-rating")  return (b.rating || 0) - (a.rating || 0);
-    if (sortKey === "title")    return (a.title || "").localeCompare(b.title || "", "fr");
-    if (sortKey === "-year")    return (b.year || b.released_year || 0) - (a.year || a.released_year || 0);
-    return 0;
-  });
+  // Le tri est piloté par le panneau de filtres (filters.sort) en amont dans AllWorks.
+  // WorksGrid respecte l'ordre reçu — pas de second tri concurrent ici.
+  const sorted = works;
 
   if (works.length === 0) {
     return (
@@ -164,25 +153,7 @@ export default function WorksGrid({ works, onEdit, onDelete, onStatusChange, onT
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {SORT_OPTIONS.map(({ key, label, icon: Icon }) => (
-            <button
-              key={key}
-              onClick={() => setSortKey(key)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11.5px] font-medium transition-all"
-              style={{
-                backgroundColor: sortKey === key ? "rgba(229,107,58,0.1)" : "var(--card-bg)",
-                color: sortKey === key ? "#E56B3A" : "var(--text-secondary)",
-                border: `1px solid ${sortKey === key ? "rgba(229,107,58,0.4)" : "var(--border)"}`,
-              }}
-            >
-              <Icon className="w-3 h-3" />
-              {label}
-            </button>
-          ))}
-        </div>
-
+      <div className="flex items-center justify-end mb-5 gap-3 flex-wrap">
         <div className="flex items-center rounded-[10px] overflow-hidden"
           style={{ border: "1px solid var(--border)", backgroundColor: "var(--card-bg)" }}>
           {[

@@ -1,24 +1,11 @@
 import React from "react";
+import { STATUS_CONFIG, TYPE_COLORS } from "@/lib/statusActions";
 
-const STATUS_COLORS = {
-  "À voir":        "#94A3B8",
-  "En cours":      "#D4AF37",
-  "Visionné":      "#2AA6A0",
-  "Pas sorti":     "#6366F1",
-  "Envie de lire": "#8B5CF6",
-};
+const STATUS_COLORS = Object.fromEntries(
+  Object.entries(STATUS_CONFIG).map(([k, v]) => [k, v.color])
+);
 
-const TYPE_COLORS = {
-  film:         "#2F6690",
-  série:        "#7E9A73",
-  livre:        "#9B6A6C",
-  documentaire: "#6D6875",
-  podcast:      "#B5838D",
-  vidéo:        "#9FA3AD",
-  article:      "#9FA3AD",
-};
-
-export function StatusButton({ status, active, onClick }) {
+export function StatusButton({ status, active, onClick, label }) {
   const color = STATUS_COLORS[status] || "#94A3B8";
   return (
     <button
@@ -32,7 +19,7 @@ export function StatusButton({ status, active, onClick }) {
         boxShadow: active ? `0 2px 8px ${color}25` : "none",
       }}>
       <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
-      {status}
+      {label || status}
     </button>
   );
 }

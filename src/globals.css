@@ -254,3 +254,15 @@ button, a, [role="button"] {
 
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
+/* ============================================
+   Compat shadcn — résout la collision de `--border`.
+   index.css définit --border en HSL (pour `hsl(var(--border))`),
+   globals.css le redéfinit en hex (pour `1px solid var(--border)`).
+   On redonne aux surfaces Radix/shadcn une bordure nette et cohérente.
+   ============================================ */
+[role="menu"],
+[role="dialog"],
+[role="listbox"],
+[data-radix-popper-content-wrapper] > * {
+  border-color: var(--border) !important;
+}

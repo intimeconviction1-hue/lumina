@@ -4,23 +4,19 @@ import {
   MoreVertical, Pencil, Trash2, ArrowRightLeft,
   BookOpen, Film, Tv, Mic, Video, FileText, Radio, Heart
 } from "lucide-react";
-import StarRating from "./StarRating";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger, DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 import { motion } from "framer-motion";
-import { STATUS_CONFIG, STATUSES } from "@/lib/statusActions";
+import { STATUS_CONFIG, STATUSES, TYPE_COLORS, effectiveStatus } from "@/lib/statusActions";
 
 export const typeIcons = {
   livre: BookOpen, film: Film, série: Tv, documentaire: Radio,
   podcast: Mic, vidéo: Video, article: FileText,
 };
 
-export const typeColors = {
-  livre: "#6366F1", film: "#0B2545", série: "#D4AF37",
-  documentaire: "#2AA6A0", podcast: "#475569", vidéo: "#475569", article: "#475569",
-};
+export const typeColors = TYPE_COLORS;
 
 export const statusConfig = STATUS_CONFIG;
 const ALL_STATUSES = STATUSES;
@@ -36,7 +32,7 @@ export default function WorkCard({ work, onEdit, onDelete, onStatusChange, onTog
   const navigate = useNavigate();
   const TypeIcon = typeIcons[work.type] || Film;
   const tColor = typeColors[work.type] || "#C9A84C";
-  const sConfig = statusConfig[work.status] || statusConfig["À voir"];
+  const sConfig = statusConfig[effectiveStatus(work)] || statusConfig["À voir"];
   const displayYear = work.year || work.released_year;
   const mainPlatform = Array.isArray(work.platform) ? work.platform[0] : work.platform;
 
@@ -74,7 +70,7 @@ export default function WorkCard({ work, onEdit, onDelete, onStatusChange, onTog
         {/* Cover zone */}
         <div
           className="relative overflow-hidden"
-          style={{ aspectRatio: work.type === "livre" ? "3/5" : "2/3", borderRadius: "var(--radius-card) var(--radius-card) 0 0" }}
+          style={{ aspectRatio: "2/3", borderRadius: "var(--radius-card) var(--radius-card) 0 0" }}
         >
           {/* Image / placeholder — cliquable pour naviguer */}
           {work.cover_image ? (
@@ -217,7 +213,7 @@ export default function WorkCard({ work, onEdit, onDelete, onStatusChange, onTog
                 className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${work.status === "En cours" ? "animate-pulse" : ""}`}
                 style={{ backgroundColor: sConfig.dot }}
               />
-              {work.status}
+              {sConfig.label}
             </span>
           </div>
 
