@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { X, Upload, Heart, Link2, Search, ChevronDown, ChevronUp } from "lucide-react";
 import { STATUSES, STATUS_CONFIG } from "@/lib/statusActions";
+import { useWorks } from "@/hooks/useWorks";
 import StarRating from "./StarRating";
 
 const TYPES = ["film", "série", "livre", "documentaire", "podcast", "vidéo", "article"];
@@ -56,13 +57,22 @@ function Chips({ items, selected = [], onChange, color = "#D4AF37" }) {
   );
 }
 
-function TagInput({ tags = [], onChange }) {
+function TagInput({ tags = [], onChange, suggestions = [] }) {
   const [input, setInput] = useState("");
-  const add = () => {
-    const v = input.trim().toLowerCase();
+  const add = (val) => {
+    const v = (val ?? input).trim().toLowerCase();
     if (v && !tags.includes(v)) onChange([...tags, v]);
     setInput("");
   };
+  // Suggestions : tags existants qui correspondent à la saisie et pas déjà ajoutés.
+  const matches = React.useMemo(() => {
+    const q = input.trim().toLowerCase();
+    return suggestions
+      .filter(t => !tags.includes(t) && (q === "" ? true : t.includes(q)))
+      .slice(0, 10);
+  }, [input, suggestions, tags]);
+  const exactExists = suggestions.includes(input.trim().toLowerCase());
+
   return (
     <div>
       <div className="flex items-center gap-2">
@@ -73,11 +83,29 @@ function TagInput({ tags = [], onChange }) {
           placeholder="Ajouter un tag…"
           className="bg-gray-50 border-gray-200 text-[13px]"
         />
-        <button type="button" onClick={add}
+        <button type="button" onClick={() => add()}
           className="px-3 py-2 rounded-[10px] text-[12px] font-semibold border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors flex-shrink-0">
           +
         </button>
       </div>
+
+      {/* Suggestions (tags déjà utilisés ailleurs) — évite les doublons */}
+      {matches.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mt-2">
+          {input.trim() && !exactExists && (
+            <span className="text-[11px] text-gray-400 self-center mr-1">Nouveau : #{input.trim().toLowerCase()} — ou réutiliser :</span>
+          )}
+          {matches.map(t => (
+            <button key={t} type="button" onClick={() => add(t)}
+              className="px-2.5 py-1 rounded-full text-[11.5px] font-medium border border-dashed transition-all"
+              style={{ borderColor: "rgba(139,92,246,0.35)", color: "#7C3AED", backgroundColor: "rgba(139,92,246,0.04)" }}>
+              #{t}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Tags sélectionnés */}
       {tags.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mt-2">
           {tags.map(t => (
@@ -100,6 +128,14 @@ export default function WorkFormModal({ open, onClose, work, onSave }) {
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [showExtra, setShowExtra] = useState(false);
+
+  // Tags déjà utilisés dans la bibliothèque (pour l'autocomplétion)
+  const { data: allWorks = [] } = useWorks();
+  const allTags = React.useMemo(() => {
+    const s = new Set();
+    allWorks.forEach(w => (w.tags || []).forEach(t => s.add(t)));
+    return [...s].sort((a, b) => a.localeCompare(b, "fr"));
+  }, [allWorks]);
 
   useEffect(() => {
     if (work) {
@@ -391,7 +427,7 @@ export default function WorkFormModal({ open, onClose, work, onSave }) {
           {/* — TAGS — */}
           <div>
             <label className="text-[11.5px] font-semibold uppercase tracking-[0.1em] text-gray-400 mb-2 block">Tags</label>
-            <TagInput tags={form.tags} onChange={v => set("tags", v)} />
+            <TagInput tags={form.tags} onChange={v => set("tags", v)} suggestions={allTags} />
           </div>
 
           {/* — NOTE (visible uniquement si Visionné) — */}

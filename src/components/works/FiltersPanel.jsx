@@ -59,11 +59,19 @@ function countFilters(f) {
     f.type ? [f.type] : [],
     ...(f.genre || []),
     ...(f.platform || []),
+    ...(f.tags || []),
+    f.priority ? ["priority"] : [],
     f.favorite ? ["fav"] : [],
     f.min_rating ? ["rating"] : [],
     (f.year_min || f.year_max) ? ["year"] : [],
   ].flat().length;
 }
+
+const PRIORITIES = [
+  { value: "urgent",    label: "🔥 Urgent",    color: "#EF4444" },
+  { value: "normal",    label: "⭐ Normal",    color: "#D4AF37" },
+  { value: "plus tard", label: "🕐 Plus tard", color: "#6366F1" },
+];
 
 export default function FiltersPanel({ open, onClose, filters, onFiltersChange, works = [] }) {
   // Local staging state — changes here don't propagate until "Appliquer"
@@ -101,6 +109,14 @@ export default function FiltersPanel({ open, onClose, filters, onFiltersChange, 
   }, [works]);
 
   const genreCount = (g) => works.filter(w => (w.genre || []).includes(g)).length;
+
+  // Tags dynamiques (triés par fréquence), comme les genres
+  const allTags = useMemo(() => {
+    const counts = {};
+    works.forEach(w => (w.tags || []).forEach(t => { counts[t] = (counts[t] || 0) + 1; }));
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([t]) => t);
+  }, [works]);
+  const tagCount = (t) => works.filter(w => (w.tags || []).includes(t)).length;
   const platformCount = (p) => works.filter(w => {
     const pl = Array.isArray(w.platform) ? w.platform : (w.platform ? [w.platform] : []);
     return pl.includes(p);
@@ -169,6 +185,17 @@ export default function FiltersPanel({ open, onClose, filters, onFiltersChange, 
             </div>
           </Section>
 
+          {/* Priorité */}
+          <Section label="Priorité">
+            <div className="flex flex-wrap gap-1.5">
+              {PRIORITIES.map(p => (
+                <Chip key={p.value} label={p.label} color={p.color}
+                  active={local.priority === p.value}
+                  onClick={() => upd("priority", local.priority === p.value ? "" : p.value)} />
+              ))}
+            </div>
+          </Section>
+
           {/* Type */}
           <Section label="Type">
             <div className="flex flex-wrap gap-1.5">
@@ -188,6 +215,19 @@ export default function FiltersPanel({ open, onClose, filters, onFiltersChange, 
                   <Chip key={g} label={g} count={genreCount(g)}
                     active={(local.genre || []).includes(g)}
                     onClick={() => toggleArr("genre", g)} />
+                ))}
+              </div>
+            </Section>
+          )}
+
+          {/* Tags — dynamique */}
+          {allTags.length > 0 && (
+            <Section label="Tags">
+              <div className="flex flex-wrap gap-1.5">
+                {allTags.map(t => (
+                  <Chip key={t} label={`#${t}`} color="#8B5CF6" count={tagCount(t)}
+                    active={(local.tags || []).includes(t)}
+                    onClick={() => toggleArr("tags", t)} />
                 ))}
               </div>
             </Section>
