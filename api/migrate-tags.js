@@ -189,7 +189,7 @@ export default async function handler(req, res) {
   const action = body.action === 'apply' ? 'apply' : 'preview';
 
   try {
-    const rows = await sql`select id, title, type, status, priority, tags from works`;
+    const rows = await sql`select id, title, type, status, priority, tags, genre, platform from works`;
 
     const changes = [];
     const tagDelta = {};   // tag -> variation nette (pour le récap)
@@ -198,11 +198,15 @@ export default async function handler(req, res) {
     // Diagnostic : réalité des tags en base
     let worksWithTags = 0;
     const existingTagCounts = {};
+    const existingPlatformCounts = {};
+    const existingGenreCounts = {};
     const rawSamples = [];
     for (const w of rows) {
       const arr = asTagArray(w.tags);
       if (arr.length) worksWithTags++;
       arr.forEach(t => { const k = String(t).trim().toLowerCase(); if (k) existingTagCounts[k] = (existingTagCounts[k] || 0) + 1; });
+      asTagArray(w.platform).forEach(t => { const k = String(t).trim().toLowerCase(); if (k) existingPlatformCounts[k] = (existingPlatformCounts[k] || 0) + 1; });
+      asTagArray(w.genre).forEach(t => { const k = String(t).trim().toLowerCase(); if (k) existingGenreCounts[k] = (existingGenreCounts[k] || 0) + 1; });
       if (rawSamples.length < 5) rawSamples.push({ title: w.title, type: typeof w.tags, raw: w.tags });
     }
 
@@ -235,6 +239,8 @@ export default async function handler(req, res) {
         worksWithTags,
         distinctTags: Object.keys(existingTagCounts).length,
         topExistingTags: Object.entries(existingTagCounts).sort((a, b) => b[1] - a[1]).slice(0, 40),
+        topPlatforms: Object.entries(existingPlatformCounts).sort((a, b) => b[1] - a[1]).slice(0, 40),
+        topGenres: Object.entries(existingGenreCounts).sort((a, b) => b[1] - a[1]).slice(0, 40),
         rawSamples,
         changedWorks: changes.length,
         fieldStats,
@@ -311,6 +317,12 @@ async function run(action){
       +'</div>';
     h+='<div class="card"><b>Top tags réellement présents en base</b><br>'
       +(d.topExistingTags.length? d.topExistingTags.map(x=>'<span class="badge">'+esc(x[0])+' '+x[1]+'</span>').join('') : '<span class="muted">aucun</span>')
+      +'</div>';
+    h+='<div class="card"><b>Top PLATEFORMES en base</b> <span class="muted">(là où sont peut-être lenny, gad…)</span><br>'
+      +(d.topPlatforms&&d.topPlatforms.length? d.topPlatforms.map(x=>'<span class="badge">'+esc(x[0])+' '+x[1]+'</span>').join('') : '<span class="muted">aucune</span>')
+      +'</div>';
+    h+='<div class="card"><b>Top GENRES en base</b> <span class="muted">(là où sont peut-être juifs, polar…)</span><br>'
+      +(d.topGenres&&d.topGenres.length? d.topGenres.map(x=>'<span class="badge">'+esc(x[0])+' '+x[1]+'</span>').join('') : '<span class="muted">aucun</span>')
       +'</div>';
     h+='<div class="card"><b>'+d.changedWorks+'</b> œuvres modifiées sur '+d.totalWorks
       +'. Champs renseignés : priorité <b>'+d.fieldStats.priority+'</b>, statut <b>'+d.fieldStats.status+'</b>.</div>';
