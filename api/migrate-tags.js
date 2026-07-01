@@ -84,8 +84,35 @@ const UMBRELLA = [
 /* ------------------------------------------------------------------ */
 /* TRANSFORMATION (pure, testable)                                     */
 /* ------------------------------------------------------------------ */
+
+// Les tags peuvent arriver en tableau JS, ou en chaîne Postgres '{a,"b c"}',
+// ou en JSON. On normalise toujours vers un tableau.
+export function asTagArray(v) {
+  if (Array.isArray(v)) return v;
+  if (v == null) return [];
+  if (typeof v === 'string') {
+    const s = v.trim();
+    if (s === '' || s === '{}') return [];
+    if (s.startsWith('{') && s.endsWith('}')) {
+      const inner = s.slice(1, -1);
+      const out = []; let cur = ''; let q = false;
+      for (let i = 0; i < inner.length; i++) {
+        const c = inner[i];
+        if (c === '"') { q = !q; continue; }
+        if (c === ',' && !q) { out.push(cur); cur = ''; continue; }
+        cur += c;
+      }
+      if (cur !== '' || out.length) out.push(cur);
+      return out.map(x => x.replace(/\\"/g, '"').replace(/\\\\/g, '\\')).filter(x => x !== '');
+    }
+    try { const j = JSON.parse(s); if (Array.isArray(j)) return j; } catch { /* */ }
+    return [s];
+  }
+  return [];
+}
+
 export function transformWork(rawTags, work = {}) {
-  const src = Array.isArray(rawTags) ? rawTags : [];
+  const src = asTagArray(rawTags);
   const patch = {};            // champs à modifier
   const out = new Set();
 
@@ -168,8 +195,19 @@ export default async function handler(req, res) {
     const tagDelta = {};   // tag -> variation nette (pour le récap)
     const fieldStats = { priority: 0, status: 0 };
 
+    // Diagnostic : réalité des tags en base
+    let worksWithTags = 0;
+    const existingTagCounts = {};
+    const rawSamples = [];
     for (const w of rows) {
-      const old = Array.isArray(w.tags) ? w.tags : [];
+      const arr = asTagArray(w.tags);
+      if (arr.length) worksWithTags++;
+      arr.forEach(t => { const k = String(t).trim().toLowerCase(); if (k) existingTagCounts[k] = (existingTagCounts[k] || 0) + 1; });
+      if (rawSamples.length < 5) rawSamples.push({ title: w.title, type: typeof w.tags, raw: w.tags });
+    }
+
+    for (const w of rows) {
+      const old = asTagArray(w.tags);
       const { newTags, patch } = transformWork(old, w);
       const tagsChanged = !sameTags(old, newTags);
       const fieldsChanged = Object.keys(patch).length > 0;
@@ -194,6 +232,10 @@ export default async function handler(req, res) {
       return res.status(200).json({
         ok: true, mode: 'preview',
         totalWorks: rows.length,
+        worksWithTags,
+        distinctTags: Object.keys(existingTagCounts).length,
+        topExistingTags: Object.entries(existingTagCounts).sort((a, b) => b[1] - a[1]).slice(0, 40),
+        rawSamples,
         changedWorks: changes.length,
         fieldStats,
         tagsCreatedTop: created.slice(0, 40),
@@ -262,7 +304,15 @@ async function run(action){
   if(!d.ok){ out.innerHTML='<div class="warn">Erreur : '+d.error+'</div>'; return; }
   if(d.mode==='preview'){
     previewed=true; document.getElementById('applyBtn').disabled=false;
-    let h='<div class="card"><b>'+d.changedWorks+'</b> œuvres modifiées sur '+d.totalWorks
+    let h='<div class="card"><b>Diagnostic base</b><br>'
+      +'Œuvres avec au moins un tag : <b>'+d.worksWithTags+'</b> / '+d.totalWorks
+      +' — tags distincts en base : <b>'+d.distinctTags+'</b>.'
+      +(d.worksWithTags===0 ? '<div class="warn">Aucune œuvre n’a de tag en base : les tags (Babelio/AlloCiné) ne sont pas encore importés dans Lumina. Rien à migrer tant qu’ils n’y sont pas.</div>' : '')
+      +'</div>';
+    h+='<div class="card"><b>Top tags réellement présents en base</b><br>'
+      +(d.topExistingTags.length? d.topExistingTags.map(x=>'<span class="badge">'+esc(x[0])+' '+x[1]+'</span>').join('') : '<span class="muted">aucun</span>')
+      +'</div>';
+    h+='<div class="card"><b>'+d.changedWorks+'</b> œuvres modifiées sur '+d.totalWorks
       +'. Champs renseignés : priorité <b>'+d.fieldStats.priority+'</b>, statut <b>'+d.fieldStats.status+'</b>.</div>';
     h+='<div class="card"><b>Tags créés (top)</b><br>'+d.tagsCreatedTop.map(x=>'<span class="badge">'+x[0]+' +'+x[1]+'</span>').join('')+'</div>';
     h+='<div class="card"><b>Tags retirés / fusionnés</b><br>'+d.tagsRemovedTop.map(x=>'<span class="badge">'+x[0]+' '+x[1]+'</span>').join('')+'</div>';
