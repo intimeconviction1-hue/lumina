@@ -109,7 +109,7 @@ export default function FiltersPanel({ open, onClose, filters, onFiltersChange, 
   return (
     <Sheet open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
       <SheetContent
-        className="w-[320px] flex flex-col p-0 overflow-hidden"
+        className="lumina-filter-sheet w-[320px] flex flex-col p-0 overflow-hidden"
         style={{ backgroundColor: "#0B2040", borderLeft: "1px solid rgba(255,255,255,0.08)", color: "#EEF2F8" }}
       >
         {/* Header */}

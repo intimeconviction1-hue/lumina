@@ -266,3 +266,16 @@ button, a, [role="button"] {
 [data-radix-popper-content-wrapper] > * {
   border-color: var(--border) !important;
 }
+
+/* ============================================
+   Panneau de filtres (colonne droite) : fond bleu marine forcé.
+   Il gère son propre thème sombre en interne (texte/chips clairs),
+   donc on annule la règle générale [role="dialog"]{background:#fff}
+   pour CE panneau uniquement — sinon fond blanc = texte blanc invisible.
+   ============================================ */
+.lumina-filter-sheet[role="dialog"],
+[data-theme="dark"] .lumina-filter-sheet[role="dialog"] {
+  background-color: #0B2040 !important;
+  color: #EEF2F8 !important;
+  border-left: 1px solid rgba(255,255,255,0.08) !important;
+}
