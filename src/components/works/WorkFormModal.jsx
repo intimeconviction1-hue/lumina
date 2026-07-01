@@ -189,7 +189,7 @@ export default function WorkFormModal({ open, onClose, work, onSave }) {
     }
   };
 
-  const isWatched = form.status === "Visionné";
+  const isWatched = form.status === "Visionné" || form.status === "Lu";
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -266,12 +266,13 @@ export default function WorkFormModal({ open, onClose, work, onSave }) {
                   ? (s === "Visionné" ? "Lu" : s === "Envie de lire" ? "À lire" : s)
                   : s;
                 const conf = STATUS_CONFIG[s];
-                // Valeur réellement stockée (livre terminé = "Lu").
-                const storeVal = isBook && s === "Visionné" ? "Lu" : s;
+                // Statut canonique en base : on stocke toujours "Visionné" (jamais "Lu").
+                // L'affichage "Lu" est géré par le libellé ci-dessus.
+                const storeVal = s;
                 let isActive = form.status === storeVal;
-                // Récupère les livres legacy (stockés "À voir"/"Visionné").
+                // Récupère les livres legacy (stockés "À voir" ou "Lu").
                 if (isBook && s === "Envie de lire" && form.status === "À voir") isActive = true;
-                if (isBook && s === "Visionné" && form.status === "Visionné") isActive = true;
+                if (isBook && s === "Visionné" && form.status === "Lu") isActive = true;
                 return (
                   <button key={s} type="button" onClick={() => set("status", storeVal)}
                     className="px-4 py-2 rounded-full text-[12.5px] font-semibold border transition-all"

@@ -41,8 +41,9 @@ function SkeletonGrid() {
 
 const TYPE_TABS = [
   { key: "", label: "Tout", emoji: "✦" },
-  { key: "film-série", label: "Films & Séries", emoji: "🎬", color: "#0B2545", types: ["film", "série"] },
-  { key: "livre", label: "Livres", emoji: "📚", color: "#6366F1", types: ["livre"] },
+  { key: "film", label: "Films", emoji: "🎬", color: "#0B2545" },
+  { key: "série", label: "Séries", emoji: "📺", color: "#2AA6A0" },
+  { key: "livre", label: "Livres", emoji: "📚", color: "#6366F1" },
 ];
 
 export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChange, onEditWork }) {
@@ -151,20 +152,19 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
 
   // Counts for tabs
   const tabCounts = useMemo(() => ({
-    "film-série": works.filter(w => w.type === "film" || w.type === "série").length,
-    "livre": works.filter(w => w.type === "livre").length,
+    film: works.filter(w => w.type === "film").length,
+    "série": works.filter(w => w.type === "série").length,
+    livre: works.filter(w => w.type === "livre").length,
   }), [works]);
 
   // Apply tab filter on top of existing filters
   const filteredWorks = useMemo(() => {
     let result = [...works];
 
-    // Tab filter (type override from onglets)
+    // Onglet actif = un seul type (Films / Séries / Livres). Sinon, type du panneau.
     if (activeTab) {
-      const tabTypes = activeTab === "film-série" ? ["film", "série"] : [activeTab];
-      result = result.filter(w => tabTypes.includes(w.type));
+      result = result.filter(w => w.type === activeTab);
     } else if (filters.type) {
-      // No active tab → use type from filters panel
       result = result.filter(w => w.type === filters.type);
     }
 
@@ -178,15 +178,13 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
       );
     }
 
-    // Status: support array (new) or string (legacy).
-    // Livres : un "À voir" legacy compte comme "Envie de lire", et "Visionné" comme "Lu".
+    // Status: statut canonique unique. Livres : "À voir" legacy = "Envie de lire",
+    // et "Lu" (ancien stockage) = "Visionné". L'affichage montre "Lu"/"À lire" via effectiveStatus.
     if (filters.status?.length > 0) {
       result = result.filter(w => {
         let s = w.status;
-        if (w.type === "livre") {
-          if (s === "À voir") s = "Envie de lire";
-          if (s === "Visionné") s = "Lu";
-        }
+        if (s === "Lu") s = "Visionné";
+        if (w.type === "livre" && s === "À voir") s = "Envie de lire";
         return filters.status.includes(s);
       });
     }
@@ -355,7 +353,10 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
           return (
             <button
               key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
+              onClick={() => {
+                setActiveTab(tab.key);
+                if (tab.key && onFiltersChange && filters.type) onFiltersChange({ ...filters, type: "" });
+              }}
               className="flex items-center gap-2 px-4 py-2.5 rounded-[12px] text-[13.5px] font-semibold transition-all"
               style={{
                 backgroundColor: isActive ? (tab.key === "" ? "rgba(201,168,76,0.12)" : `${color}15`) : "var(--card-bg)",
@@ -391,14 +392,16 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
         {/* Statuts — scroll horizontal sur mobile */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 no-scrollbar" style={{ scrollbarWidth: "none" }}>
           {(activeTab === "livre"
-            ? ["Envie de lire", "En cours", "Lu"]
-            : activeTab === "film-série"
+            ? ["Envie de lire", "En cours", "Visionné"]
+            : (activeTab === "film" || activeTab === "série")
             ? ["À voir", "En cours", "Visionné", "Pas sorti"]
             : ALL_STATUSES
           ).map(s => {
             const active = (filters.status || []).includes(s);
-            // Côté livres, "Envie de lire" s'affiche "À lire".
-            const label = s === "Envie de lire" ? "À lire" : s;
+            // Côté livres : "Envie de lire" → "À lire", "Visionné" → "Lu".
+            const label = activeTab === "livre"
+              ? (s === "Envie de lire" ? "À lire" : s === "Visionné" ? "Lu" : s)
+              : s;
             return (
               <StatusButton
                 key={`status-${s}`}
@@ -413,7 +416,7 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
 
         {/* Types — scroll horizontal sur mobile */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 no-scrollbar" style={{ scrollbarWidth: "none" }}>
-          {ALL_TYPES.map(t => {
+          {(activeTab === "" ? ALL_TYPES : []).map(t => {
             const active = filters.type === t;
             return (
               <TypeButton
