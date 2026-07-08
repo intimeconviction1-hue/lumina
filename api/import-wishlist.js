@@ -40,7 +40,12 @@ function parseYear(dateStr) {
 }
 
 export function parseWishlistCsv(text) {
-  const lines = String(text || '').split(/\r?\n/).filter(l => l.trim() !== '');
+  const allLines = String(text || '').split(/\r?\n/);
+  const headerIdx = allLines.findIndex(l => /isbn/i.test(l) && /titre/i.test(l));
+  let lines = (headerIdx >= 0 ? allLines.slice(headerIdx) : allLines);
+  const stopIdx = lines.findIndex((l, i) => i > 0 && (/[①②③]/.test(l) || /aperçu/i.test(l)));
+  if (stopIdx >= 0) lines = lines.slice(0, stopIdx);
+  lines = lines.filter(l => l.trim() !== '');
   if (!lines.length) return [];
   const delim = detectDelim(lines[0]);
   const header = parseCsvLine(lines[0], delim).map(h => h.trim().toLowerCase());
