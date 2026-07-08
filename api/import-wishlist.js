@@ -82,7 +82,7 @@ export default async function handler(req, res) {
   if (!books.length) return res.status(200).json({ ok:true, mode:action, parsed:0, totalWorks:0, matchedCount:0, unmatchedCount:0, sampleMatched:[], sampleUnmatched:[], created:0, note:"Aucun livre détecté — vérifie que le collage contient bien l'en-tête ISBN;Titre;Auteur;... et les lignes du CSV." });
 
   try {
-    const rows = await sql`select id, title from works`;
+    const rows = await sql`select id, title from works where type = 'livre'`;
     const existing = new Set(rows.map(w => norm(w.title)));
 
     const matched = [], unmatched = [];
