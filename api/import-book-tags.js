@@ -132,7 +132,7 @@ export default async function handler(req, res) {
   let body; try { body = await readBody(req); } catch { return res.status(400).json({ ok:false, error:'Corps invalide.' }); }
   const action = ['update','create'].includes(body.action) ? body.action : 'preview';
   const books = parseBabelio(body.text || '');
-  if (!books.length) return res.status(200).json({ ok:true, mode:action, parsed:0, note:"Aucun livre détecté dans le collage." });
+  if (!books.length) return res.status(200).json({ ok:true, mode:action, parsed:0, totalWorks:0, matchedCount:0, unmatchedCount:0, sampleMatched:[], sampleUnmatched:[], created:0, updated:0, note:"Aucun livre détecté — vérifie que le collage contient bien les lignes brutes de Babelio (avec « ajouter des informations », années, auteurs)." });
 
   try {
     const rows = await sql`select id, title, creator, creator_name, type, tags, status, priority from works`;
@@ -218,10 +218,10 @@ async function run(action){
   document.getElementById('updBtn').disabled=false; document.getElementById('creaBtn').disabled=false;
   let h='<div class="card"><b>'+d.parsed+'</b> livres lus dans le collage. Retrouvés dans Lumina : <b>'+d.matchedCount+'</b> — absents : <b>'+d.unmatchedCount+'</b> (sur '+d.totalWorks+' œuvres).</div>';
   h+='<div class="card"><b>Retrouvés → seront mis à jour</b> (échantillon)<table><tr><th>Livre</th><th>Tags → Lumina</th><th>Statut/Prio</th></tr>';
-  for(const m of d.sampleMatched){h+='<tr><td>'+esc(m.title)+'</td><td class="new">'+m.tags.join(', ')+'</td><td>'+(m.status||'')+(m.priority?' · '+m.priority:'')+'</td></tr>';}
+  for(const m of (d.sampleMatched||[])){h+='<tr><td>'+esc(m.title)+'</td><td class="new">'+m.tags.join(', ')+'</td><td>'+(m.status||'')+(m.priority?' · '+m.priority:'')+'</td></tr>';}
   h+='</table></div>';
   h+='<div class="card"><b>Absents de Lumina → à créer si tu cliques ③</b> (échantillon)<table><tr><th>Livre</th><th>Auteur</th><th>Tags</th></tr>';
-  for(const u of d.sampleUnmatched){h+='<tr><td>'+esc(u.title)+'</td><td class="muted">'+esc(u.author||'')+'</td><td class="new">'+u.tags.join(', ')+'</td></tr>';}
+  for(const u of (d.sampleUnmatched||[])){h+='<tr><td>'+esc(u.title)+'</td><td class="muted">'+esc(u.author||'')+'</td><td class="new">'+u.tags.join(', ')+'</td></tr>';}
   h+='</table></div>'; out.innerHTML=h;
  } else if(d.mode==='update'){ out.innerHTML='<div class="card">✅ '+d.updated+' livres mis à jour.</div>'; }
  else { out.innerHTML='<div class="card">✅ '+d.created+' livres créés.</div>'; }
