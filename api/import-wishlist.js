@@ -8,8 +8,13 @@
 import { neon } from '@neondatabase/serverless';
 import { randomBytes } from 'crypto';
 
-/* ---------- Parsing CSV (point-virgule, champs entre guillemets) ---------- */
-function parseCsvLine(line) {
+/* ---------- Parsing CSV (point-virgule OU tabulation, champs entre guillemets) ---------- */
+function detectDelim(headerLine) {
+  if (headerLine.includes(';')) return ';';
+  if (headerLine.includes('\t')) return '\t';
+  return ',';
+}
+function parseCsvLine(line, delim) {
   const out = []; let cur = ''; let inQ = false;
   for (let i = 0; i < line.length; i++) {
     const c = line[i];
@@ -18,31 +23,38 @@ function parseCsvLine(line) {
       else cur += c;
     } else {
       if (c === '"') inQ = true;
-      else if (c === ';') { out.push(cur); cur = ''; }
+      else if (c === delim) { out.push(cur); cur = ''; }
       else cur += c;
     }
   }
   out.push(cur);
   return out;
 }
+function parseYear(dateStr) {
+  dateStr = (dateStr || '').trim();
+  let m = dateStr.match(/^(\d{4})-\d{2}-\d{2}$/); // ISO
+  if (m) return m[1] === '0000' ? null : Number(m[1]);
+  m = dateStr.match(/^\d{2}\/\d{2}\/(\d{4})$/); // JJ/MM/AAAA
+  if (m) return m[1] === '0000' ? null : Number(m[1]);
+  return null;
+}
 
 export function parseWishlistCsv(text) {
   const lines = String(text || '').split(/\r?\n/).filter(l => l.trim() !== '');
   if (!lines.length) return [];
-  const header = parseCsvLine(lines[0]).map(h => h.trim().toLowerCase());
-  const idxTitre = header.findIndex(h => h.includes('titre'));
-  const idxAuteur = header.findIndex(h => h.includes('auteur'));
+  const delim = detectDelim(lines[0]);
+  const header = parseCsvLine(lines[0], delim).map(h => h.trim().toLowerCase());
+  const idxTitre = header.findIndex(h => h === 'titre' || h.startsWith('titre'));
+  const idxAuteur = header.findIndex(h => h === 'auteur' || h.startsWith('auteur'));
   const idxDate = header.findIndex(h => h.includes('date de publication'));
   const books = [];
   for (let i = 1; i < lines.length; i++) {
-    const cols = parseCsvLine(lines[i]);
+    const cols = parseCsvLine(lines[i], delim);
     const title = (cols[idxTitre] || '').trim();
     if (!title) continue;
     const author = (cols[idxAuteur] || '').trim();
     const dateStr = (cols[idxDate] || '').trim();
-    let year = null;
-    const m = dateStr.match(/^(\d{4})-\d{2}-\d{2}$/);
-    if (m && m[1] !== '0000') year = Number(m[1]);
+    const year = parseYear(dateStr);
     books.push({ title, author, year });
   }
   return books;
