@@ -44,14 +44,15 @@ const DEFAULT_DURATION = {
 const WATCHABLE = new Set(["film", "série", "documentaire", "vidéo"]);
 
 const MOOD_GENRES = {
-  "légère et divertissante": ["comédie", "comedy", "feel", "aventure", "famille", "animation", "romance", "musical", "jeunesse", "humour"],
-  "intense et prenante": ["thriller", "drame", "policier", "polar", "horreur", "guerre", "crime", "suspense", "noir", "procès", "enquête", "espionnage"],
+  "légère et divertissante": ["comédie", "comedy", "feel", "aventure", "famille", "familial", "animation", "romance", "musical", "jeunesse", "humour"],
+  "intense et prenante": ["thriller", "drame", "policier", "polar", "horreur", "guerre", "crime", "suspense", "noir", "procès", "enquête", "espionnage", "mystère", "action"],
 };
 
 const GENRE_LABEL = {
   polar: "Polar", thriller: "Thriller", drame: "Drame", comédie: "Comédie",
   guerre: "Film de guerre", procès: "Drame judiciaire", "enquête": "Enquête",
-  famille: "Film familial", religion: "Récit", classique: "Classique",
+  famille: "Film familial", familial: "Film familial", religion: "Récit", classique: "Classique",
+  mystère: "Mystère", action: "Action",
 };
 
 function effectiveDuration(w) {
