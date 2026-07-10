@@ -1,4 +1,5 @@
 import { neon } from '@neondatabase/serverless';
+import { randomBytes } from 'crypto';
 
 // Colonnes triables autorisées (anti-injection : on n'interpole jamais une valeur libre)
 const SORT_COLUMNS = new Set([
@@ -60,9 +61,9 @@ export default async function handler(req, res) {
       const body = req.body || {};
       const cols = ['id'];
       const ph = ['$1'];
-      const id = globalThis.crypto?.randomUUID
-        ? globalThis.crypto.randomUUID()
-        : Date.now().toString(36) + Math.random().toString(36).slice(2);
+      // Convention Lumina : IDs 24 caractères hex (comme les imports Neon existants),
+      // pas des UUID — sinon les nouvelles lignes créées ici détonnent avec le reste de la table.
+      const id = randomBytes(12).toString('hex');
       const vals = [id];
       for (const k of WRITABLE) {
         if (k in body) {
