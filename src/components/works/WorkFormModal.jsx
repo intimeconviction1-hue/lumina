@@ -33,6 +33,17 @@ const emptyForm = {
   personal_note: "", recommended_by: "",
 };
 
+// Styles communs pour les champs — s'appuient sur les variables de thème
+// (--bg, --border, --text-primary…) au lieu de classes Tailwind fixes,
+// pour que le formulaire s'adapte au mode sombre comme le reste de l'app.
+const fieldStyle = {
+  backgroundColor: "var(--bg)",
+  borderColor: "var(--border)",
+  color: "var(--text-primary)",
+};
+const labelClass = "text-[11.5px] font-semibold uppercase tracking-[0.1em] mb-1.5 block";
+const labelStyle = { color: "var(--text-muted)" };
+
 function Chips({ items, selected = [], onChange, color = "#D4AF37" }) {
   const toggle = (item) => {
     onChange(selected.includes(item) ? selected.filter(x => x !== item) : [...selected, item]);
@@ -45,9 +56,9 @@ function Chips({ items, selected = [], onChange, color = "#D4AF37" }) {
           <button key={item} type="button" onClick={() => toggle(item)}
             className="px-2.5 py-1 rounded-full text-[11.5px] font-medium border transition-all capitalize"
             style={{
-              borderColor: active ? color : "#E2E8F0",
-              backgroundColor: active ? `${color}15` : "#F8F9FB",
-              color: active ? color : "#64748B",
+              borderColor: active ? color : "var(--border)",
+              backgroundColor: active ? `${color}15` : "var(--bg)",
+              color: active ? color : "var(--text-secondary)",
             }}>
             {item}
           </button>
@@ -81,10 +92,12 @@ function TagInput({ tags = [], onChange, suggestions = [] }) {
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); add(); } }}
           placeholder="Ajouter un tag…"
-          className="bg-gray-50 border-gray-200 text-[13px]"
+          className="text-[13px]"
+          style={fieldStyle}
         />
         <button type="button" onClick={() => add()}
-          className="px-3 py-2 rounded-[10px] text-[12px] font-semibold border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors flex-shrink-0">
+          className="px-3 py-2 rounded-[10px] text-[12px] font-semibold border transition-colors flex-shrink-0"
+          style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}>
           +
         </button>
       </div>
@@ -93,12 +106,12 @@ function TagInput({ tags = [], onChange, suggestions = [] }) {
       {matches.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mt-2">
           {input.trim() && !exactExists && (
-            <span className="text-[11px] text-gray-400 self-center mr-1">Nouveau : #{input.trim().toLowerCase()} — ou réutiliser :</span>
+            <span className="text-[11px] self-center mr-1" style={{ color: "var(--text-muted)" }}>Nouveau : #{input.trim().toLowerCase()} — ou réutiliser :</span>
           )}
           {matches.map(t => (
             <button key={t} type="button" onClick={() => add(t)}
               className="px-2.5 py-1 rounded-full text-[11.5px] font-medium border border-dashed transition-all"
-              style={{ borderColor: "rgba(139,92,246,0.35)", color: "#7C3AED", backgroundColor: "rgba(139,92,246,0.04)" }}>
+              style={{ borderColor: "rgba(139,92,246,0.35)", color: "#A78BFA", backgroundColor: "rgba(139,92,246,0.08)" }}>
               #{t}
             </button>
           ))}
@@ -110,7 +123,7 @@ function TagInput({ tags = [], onChange, suggestions = [] }) {
         <div className="flex flex-wrap gap-1.5 mt-2">
           {tags.map(t => (
             <span key={t} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11.5px] font-medium"
-              style={{ backgroundColor: "rgba(139,92,246,0.08)", color: "#7C3AED", border: "1px solid rgba(139,92,246,0.2)" }}>
+              style={{ backgroundColor: "rgba(139,92,246,0.12)", color: "#A78BFA", border: "1px solid rgba(139,92,246,0.25)" }}>
               #{t}
               <button type="button" onClick={() => onChange(tags.filter(x => x !== t))} className="hover:opacity-70 transition-opacity">
                 <X className="w-2.5 h-2.5" />
@@ -231,14 +244,14 @@ export default function WorkFormModal({ open, onClose, work, onSave }) {
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent
         className="max-w-2xl max-h-[92vh] overflow-hidden flex flex-col p-0"
-        style={{ borderRadius: "20px", backgroundColor: "#ffffff", border: "1px solid #E2E8F0", color: "#0F1724" }}
+        style={{ borderRadius: "20px", backgroundColor: "var(--card-bg)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
       >
         {/* Header */}
-        <div className="px-8 pt-7 pb-4 flex-shrink-0 border-b border-gray-100">
-          <h2 className="text-[18px] font-bold text-gray-900">
+        <div className="px-8 pt-7 pb-4 flex-shrink-0 border-b" style={{ borderColor: "var(--border-subtle)" }}>
+          <h2 className="text-[18px] font-bold" style={{ color: "var(--text-primary)" }}>
             {work ? "Modifier l'œuvre" : "Nouvelle œuvre"}
           </h2>
-          <p className="text-[13px] mt-0.5 text-gray-400">
+          <p className="text-[13px] mt-0.5" style={{ color: "var(--text-muted)" }}>
             {work ? "Mettez à jour les informations" : "Ajoutez une œuvre à votre bibliothèque"}
           </p>
         </div>
@@ -247,40 +260,42 @@ export default function WorkFormModal({ open, onClose, work, onSave }) {
 
           {/* — RECHERCHE — préparation auto-import */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "var(--text-muted)" }} />
             <input
               type="text"
               placeholder="Rechercher pour pré-remplir… (bientôt disponible)"
               disabled
-              className="w-full pl-9 pr-4 py-2.5 rounded-[12px] text-[13px] border border-dashed border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed"
+              className="w-full pl-9 pr-4 py-2.5 rounded-[12px] text-[13px] border border-dashed cursor-not-allowed"
+              style={{ borderColor: "var(--border)", backgroundColor: "var(--bg)", color: "var(--text-muted)" }}
             />
           </div>
 
           {/* — TITRE + CRÉATEUR — */}
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
-              <label className="text-[11.5px] font-semibold uppercase tracking-[0.1em] text-gray-400 mb-1.5 block">Titre *</label>
+              <label className={labelClass} style={labelStyle}>Titre *</label>
               <Input
                 value={form.title}
                 onChange={e => set("title", e.target.value)}
                 placeholder="Titre de l'œuvre"
-                className="bg-gray-50 border-gray-200 text-[14px] font-medium"
+                className="text-[14px] font-medium"
+                style={fieldStyle}
               />
             </div>
             <div>
-              <label className="text-[11.5px] font-semibold uppercase tracking-[0.1em] text-gray-400 mb-1.5 block">Créateur</label>
-              <Input value={form.creator} onChange={e => set("creator", e.target.value)} placeholder="Réalisateur, auteur…" className="bg-gray-50 border-gray-200" />
+              <label className={labelClass} style={labelStyle}>Créateur</label>
+              <Input value={form.creator} onChange={e => set("creator", e.target.value)} placeholder="Réalisateur, auteur…" style={fieldStyle} />
             </div>
             <div>
-              <label className="text-[11.5px] font-semibold uppercase tracking-[0.1em] text-gray-400 mb-1.5 block">Type</label>
+              <label className={labelClass} style={labelStyle}>Type</label>
               <div className="flex flex-wrap gap-1.5">
                 {TYPES.map(t => (
                   <button key={t} type="button" onClick={() => set("type", t)}
                     className="px-2.5 py-1 rounded-full text-[11.5px] font-medium border transition-all capitalize"
                     style={{
-                      borderColor: form.type === t ? "#0B2545" : "#E2E8F0",
-                      backgroundColor: form.type === t ? "#0B254510" : "#F8F9FB",
-                      color: form.type === t ? "#0B2545" : "#64748B",
+                      borderColor: form.type === t ? "var(--accent)" : "var(--border)",
+                      backgroundColor: form.type === t ? "var(--accent-soft)" : "var(--bg)",
+                      color: form.type === t ? "var(--accent)" : "var(--text-secondary)",
                     }}>
                     {t}
                   </button>
@@ -291,7 +306,7 @@ export default function WorkFormModal({ open, onClose, work, onSave }) {
 
           {/* — STATUT — */}
           <div>
-            <label className="text-[11.5px] font-semibold uppercase tracking-[0.1em] text-gray-400 mb-2 block">Statut</label>
+            <label className={labelClass} style={{ ...labelStyle, marginBottom: "0.5rem" }}>Statut</label>
             <div className="flex gap-2 flex-wrap">
               {STATUSES.map(s => {
                 const isBook = form.type === "livre";
@@ -313,9 +328,9 @@ export default function WorkFormModal({ open, onClose, work, onSave }) {
                   <button key={s} type="button" onClick={() => set("status", storeVal)}
                     className="px-4 py-2 rounded-full text-[12.5px] font-semibold border transition-all"
                     style={{
-                      borderColor: isActive ? conf.color : "#E2E8F0",
+                      borderColor: isActive ? conf.color : "var(--border)",
                       backgroundColor: isActive ? conf.bg : "transparent",
-                      color: isActive ? conf.color : "#64748B",
+                      color: isActive ? conf.color : "var(--text-secondary)",
                     }}>
                     {isActive && <span className="w-1.5 h-1.5 rounded-full inline-block mr-1.5 -mb-0.5" style={{ backgroundColor: conf.dot }} />}
                     {displayLabel}
@@ -328,15 +343,15 @@ export default function WorkFormModal({ open, onClose, work, onSave }) {
           {/* — PRIORITÉ (visible si à consommer : "À voir" ou "Envie de lire") — */}
           {(form.status === "À voir" || form.status === "Envie de lire") && (
             <div>
-              <label className="text-[11.5px] font-semibold uppercase tracking-[0.1em] text-gray-400 mb-2 block">Priorité</label>
+              <label className={labelClass} style={{ ...labelStyle, marginBottom: "0.5rem" }}>Priorité</label>
               <div className="flex gap-2">
                 {PRIORITIES.map(p => (
                   <button key={p.value} type="button" onClick={() => set("priority", p.value)}
                     className="flex-1 py-2 rounded-[12px] text-[12.5px] font-semibold border transition-all"
                     style={{
-                      borderColor: form.priority === p.value ? p.color : "#E2E8F0",
+                      borderColor: form.priority === p.value ? p.color : "var(--border)",
                       backgroundColor: form.priority === p.value ? `${p.color}12` : "transparent",
-                      color: form.priority === p.value ? p.color : "#64748B",
+                      color: form.priority === p.value ? p.color : "var(--text-secondary)",
                     }}>
                     {p.label}
                   </button>
@@ -347,39 +362,40 @@ export default function WorkFormModal({ open, onClose, work, onSave }) {
 
           {/* — GENRES + PLATEFORMES — */}
           <div>
-            <label className="text-[11.5px] font-semibold uppercase tracking-[0.1em] text-gray-400 mb-2 block">Genres</label>
+            <label className={labelClass} style={{ ...labelStyle, marginBottom: "0.5rem" }}>Genres</label>
             <Chips items={GENRES} selected={form.genre} onChange={v => set("genre", v)} color="#D4AF37" />
           </div>
 
           <div>
-            <label className="text-[11.5px] font-semibold uppercase tracking-[0.1em] text-gray-400 mb-2 block">Plateformes</label>
+            <label className={labelClass} style={{ ...labelStyle, marginBottom: "0.5rem" }}>Plateformes</label>
             <Chips items={PLATFORMS} selected={form.platform} onChange={v => set("platform", v)} color="#2AA6A0" />
           </div>
 
           {/* — RÉSUMÉ — */}
           <div>
-            <label className="text-[11.5px] font-semibold uppercase tracking-[0.1em] text-gray-400 mb-1.5 block">Résumé</label>
-            <Textarea value={form.description} onChange={e => set("description", e.target.value)} placeholder="Synopsis, contexte…" className="h-24 resize-none bg-gray-50 border-gray-200 text-[13px]" />
+            <label className={labelClass} style={labelStyle}>Résumé</label>
+            <Textarea value={form.description} onChange={e => set("description", e.target.value)} placeholder="Synopsis, contexte…" className="h-24 resize-none text-[13px]" style={fieldStyle} />
           </div>
 
           {/* — ANNÉE + DURÉE — */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-[11.5px] font-semibold uppercase tracking-[0.1em] text-gray-400 mb-1.5 block">Année</label>
-              <Input type="number" value={form.year} onChange={e => set("year", e.target.value)} placeholder="2024" className="bg-gray-50 border-gray-200" />
+              <label className={labelClass} style={labelStyle}>Année</label>
+              <Input type="number" value={form.year} onChange={e => set("year", e.target.value)} placeholder="2024" style={fieldStyle} />
             </div>
             <div>
-              <label className="text-[11.5px] font-semibold uppercase tracking-[0.1em] text-gray-400 mb-1.5 block">Durée (min)</label>
-              <Input type="number" value={form.duration_minutes} onChange={e => set("duration_minutes", e.target.value)} placeholder="120" className="bg-gray-50 border-gray-200" />
+              <label className={labelClass} style={labelStyle}>Durée (min)</label>
+              <Input type="number" value={form.duration_minutes} onChange={e => set("duration_minutes", e.target.value)} placeholder="120" style={fieldStyle} />
             </div>
           </div>
 
           {/* — IMAGE — */}
           <div>
-            <label className="text-[11.5px] font-semibold uppercase tracking-[0.1em] text-gray-400 mb-2 block">Image de couverture</label>
+            <label className={labelClass} style={{ ...labelStyle, marginBottom: "0.5rem" }}>Image de couverture</label>
             <div className="flex items-start gap-3">
               {/* Preview */}
-              <div className="relative flex-shrink-0 w-16 h-[88px] rounded-[10px] overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center">
+              <div className="relative flex-shrink-0 w-16 h-[88px] rounded-[10px] overflow-hidden border flex items-center justify-center"
+                style={{ borderColor: "var(--border)", backgroundColor: "var(--bg)" }}>
                 {form.cover_image ? (
                   <>
                     <img src={form.cover_image} alt="" className="w-full h-full object-cover" />
@@ -389,12 +405,13 @@ export default function WorkFormModal({ open, onClose, work, onSave }) {
                     </button>
                   </>
                 ) : (
-                  <Upload className="w-5 h-5 text-gray-300" />
+                  <Upload className="w-5 h-5" style={{ color: "var(--text-muted)" }} />
                 )}
               </div>
               {/* Controls */}
               <div className="flex-1 space-y-2">
-                <label className="flex items-center gap-2 px-3 py-2 rounded-[10px] border border-gray-200 text-[12.5px] cursor-pointer hover:bg-gray-50 bg-white text-gray-500 transition-colors">
+                <label className="flex items-center gap-2 px-3 py-2 rounded-[10px] border text-[12.5px] cursor-pointer transition-colors"
+                  style={{ borderColor: "var(--border)", backgroundColor: "var(--card-bg)", color: "var(--text-secondary)" }}>
                   <Upload className="w-3.5 h-3.5" />
                   {uploading ? "Upload en cours…" : "Choisir un fichier"}
                   <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
@@ -403,7 +420,8 @@ export default function WorkFormModal({ open, onClose, work, onSave }) {
                   value={form.cover_image}
                   onChange={e => set("cover_image", e.target.value)}
                   placeholder="Ou coller une URL…"
-                  className="bg-gray-50 border-gray-200 text-[12.5px]"
+                  className="text-[12.5px]"
+                  style={fieldStyle}
                 />
               </div>
             </div>
@@ -411,30 +429,31 @@ export default function WorkFormModal({ open, onClose, work, onSave }) {
 
           {/* — URL SOURCE — */}
           <div>
-            <label className="text-[11.5px] font-semibold uppercase tracking-[0.1em] text-gray-400 mb-1.5 block">URL source</label>
+            <label className={labelClass} style={labelStyle}>URL source</label>
             <div className="relative">
-              <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+              <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5" style={{ color: "var(--text-muted)" }} />
               <Input
                 type="text"
                 value={form.source_url}
                 onChange={e => set("source_url", e.target.value)}
                 placeholder="https://..."
-                className="pl-8 bg-gray-50 border-gray-200 text-[13px]"
+                className="pl-8 text-[13px]"
+                style={fieldStyle}
               />
             </div>
           </div>
 
           {/* — TAGS — */}
           <div>
-            <label className="text-[11.5px] font-semibold uppercase tracking-[0.1em] text-gray-400 mb-2 block">Tags</label>
+            <label className={labelClass} style={{ ...labelStyle, marginBottom: "0.5rem" }}>Tags</label>
             <TagInput tags={form.tags} onChange={v => set("tags", v)} suggestions={allTags} />
           </div>
 
           {/* — NOTE (visible uniquement si Visionné) — */}
           {isWatched && (
             <div>
-              <label className="text-[11.5px] font-semibold uppercase tracking-[0.1em] text-gray-400 mb-2 block">
-                Votre note <span className="normal-case font-normal text-gray-300">(clic gauche = demi-étoile, droit = étoile pleine)</span>
+              <label className={labelClass} style={{ ...labelStyle, marginBottom: "0.5rem" }}>
+                Votre note <span className="normal-case font-normal" style={{ color: "var(--text-muted)" }}>(clic gauche = demi-étoile, droit = étoile pleine)</span>
               </label>
               <StarRating value={form.rating || 0} onChange={v => set("rating", v)} size="lg" />
             </div>
@@ -444,9 +463,9 @@ export default function WorkFormModal({ open, onClose, work, onSave }) {
           <button type="button" onClick={() => set("favorite", !form.favorite)}
             className="flex items-center gap-2 px-4 py-2 rounded-full border text-[13px] font-medium transition-all"
             style={{
-              borderColor: form.favorite ? "#EC4899" : "#E2E8F0",
-              color: form.favorite ? "#EC4899" : "#94A3B8",
-              backgroundColor: form.favorite ? "rgba(236,72,153,0.06)" : "transparent",
+              borderColor: form.favorite ? "#EC4899" : "var(--border)",
+              color: form.favorite ? "#EC4899" : "var(--text-muted)",
+              backgroundColor: form.favorite ? "rgba(236,72,153,0.08)" : "transparent",
             }}>
             <Heart className={`w-4 h-4 ${form.favorite ? "fill-[#EC4899]" : ""}`} />
             {form.favorite ? "Dans les favoris" : "Ajouter aux favoris"}
@@ -455,25 +474,26 @@ export default function WorkFormModal({ open, onClose, work, onSave }) {
           {/* — INFORMATIONS COMPLÉMENTAIRES (repliable) — */}
           <div>
             <button type="button" onClick={() => setShowExtra(v => !v)}
-              className="flex items-center gap-2 text-[12px] font-semibold text-gray-400 hover:text-gray-600 transition-colors w-full py-1">
+              className="flex items-center gap-2 text-[12px] font-semibold transition-colors w-full py-1"
+              style={{ color: "var(--text-muted)" }}>
               {showExtra ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
               Informations complémentaires
-              <span className="flex-1 h-px bg-gray-100 ml-1" />
+              <span className="flex-1 h-px ml-1" style={{ backgroundColor: "var(--border-subtle)" }} />
             </button>
 
             {showExtra && (
               <div className="mt-4 space-y-4 pl-1">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-[11.5px] font-semibold uppercase tracking-[0.1em] text-gray-400 mb-1.5 block">Langue</label>
+                    <label className={labelClass} style={labelStyle}>Langue</label>
                     <div className="flex gap-2">
                       {["VO", "VF"].map(l => (
                         <button key={l} type="button" onClick={() => set("language", form.language === l ? "" : l)}
                           className="flex-1 py-2 rounded-[10px] text-[12.5px] font-semibold border transition-all"
                           style={{
-                            borderColor: form.language === l ? "#0B2545" : "#E2E8F0",
-                            backgroundColor: form.language === l ? "#0B254510" : "transparent",
-                            color: form.language === l ? "#0B2545" : "#64748B",
+                            borderColor: form.language === l ? "var(--accent)" : "var(--border)",
+                            backgroundColor: form.language === l ? "var(--accent-soft)" : "transparent",
+                            color: form.language === l ? "var(--accent)" : "var(--text-secondary)",
                           }}>
                           {l}
                         </button>
@@ -481,17 +501,17 @@ export default function WorkFormModal({ open, onClose, work, onSave }) {
                     </div>
                   </div>
                   <div>
-                    <label className="text-[11.5px] font-semibold uppercase tracking-[0.1em] text-gray-400 mb-1.5 block">Pays</label>
-                    <Input value={form.country} onChange={e => set("country", e.target.value)} placeholder="France" className="bg-gray-50 border-gray-200" />
+                    <label className={labelClass} style={labelStyle}>Pays</label>
+                    <Input value={form.country} onChange={e => set("country", e.target.value)} placeholder="France" style={fieldStyle} />
                   </div>
                 </div>
                 <div>
-                  <label className="text-[11.5px] font-semibold uppercase tracking-[0.1em] text-gray-400 mb-1.5 block">Note personnelle</label>
-                  <Textarea value={form.personal_note} onChange={e => set("personal_note", e.target.value)} placeholder="Réflexions, apprentissages…" className="h-24 resize-none bg-gray-50 border-gray-200 text-[13px]" />
+                  <label className={labelClass} style={labelStyle}>Note personnelle</label>
+                  <Textarea value={form.personal_note} onChange={e => set("personal_note", e.target.value)} placeholder="Réflexions, apprentissages…" className="h-24 resize-none text-[13px]" style={fieldStyle} />
                 </div>
                 <div>
-                  <label className="text-[11.5px] font-semibold uppercase tracking-[0.1em] text-gray-400 mb-1.5 block">Recommandé par</label>
-                  <Input value={form.recommended_by} onChange={e => set("recommended_by", e.target.value)} placeholder="Nom d'une personne ou source…" className="bg-gray-50 border-gray-200" />
+                  <label className={labelClass} style={labelStyle}>Recommandé par</label>
+                  <Input value={form.recommended_by} onChange={e => set("recommended_by", e.target.value)} placeholder="Nom d'une personne ou source…" style={fieldStyle} />
                 </div>
               </div>
             )}
@@ -500,14 +520,15 @@ export default function WorkFormModal({ open, onClose, work, onSave }) {
         </div>
 
         {/* Footer */}
-        <div className="flex gap-3 px-8 py-5 border-t border-gray-100 flex-shrink-0 bg-white">
+        <div className="flex gap-3 px-8 py-5 border-t flex-shrink-0" style={{ borderColor: "var(--border-subtle)", backgroundColor: "var(--card-bg)" }}>
           <button type="button" onClick={onClose}
-            className="px-6 py-3 rounded-[12px] text-[13.5px] font-medium border border-gray-200 text-gray-500 hover:bg-gray-50 transition-colors">
+            className="px-6 py-3 rounded-[12px] text-[13.5px] font-medium border transition-colors"
+            style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}>
             Annuler
           </button>
           <button type="button" onClick={handleSubmit} disabled={saving || !form.title.trim()}
-            className="flex-1 py-3 rounded-[12px] text-[13.5px] font-semibold text-white transition-all disabled:opacity-50"
-            style={{ background: "linear-gradient(135deg, #0B2545, #163a6b)", boxShadow: "0 4px 14px rgba(11,37,69,0.2)" }}>
+            className="flex-1 py-3 rounded-[12px] text-[13.5px] font-semibold transition-all disabled:opacity-50"
+            style={{ backgroundColor: "#D4AF37", color: "#0B2545", boxShadow: "0 4px 14px rgba(212,175,55,0.3)" }}>
             {saving ? "Enregistrement…" : work ? "Enregistrer les modifications" : "Ajouter à la bibliothèque"}
           </button>
         </div>
