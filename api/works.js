@@ -1,43 +1,5 @@
-import { neon } from '@neondatabase/serverless';
 import { randomBytes } from 'crypto';
-
-// Colonnes triables autorisées (anti-injection : on n'interpole jamais une valeur libre)
-const SORT_COLUMNS = new Set([
-  'created_date', 'updated_date', 'title', 'year', 'rating',
-  'started_at', 'finished_at', 'status', 'type',
-]);
-
-// Colonnes que le front a le droit d'écrire (id/dates/created_by sont gérés serveur)
-const WRITABLE = [
-  'title', 'type', 'creator', 'creator_name', 'status', 'priority',
-  'difficulty_level', 'language', 'mood', 'country', 'year', 'released_year',
-  'rating', 'page_count', 'duration_minutes', 'favorite', 'source_url',
-  'cover_image', 'recommended_by', 'description', 'personal_note',
-  'short_review', 'genre', 'platform', 'tags', 'started_at', 'finished_at',
-];
-
-const ARRAY_COLS = new Set(['genre', 'platform', 'tags']);
-
-function getSql() {
-  const url = process.env.DATABASE_URL;
-  if (!url) {
-    throw new Error(
-      "DATABASE_URL manquant : Vercel → Settings → Environment Variables → ajoute DATABASE_URL (chaîne Neon), puis redéploie."
-    );
-  }
-  return neon(url);
-}
-
-// text[] -> littéral Postgres '{"a","b"}' (robuste, indépendant du driver)
-function toPgArray(v) {
-  const arr = Array.isArray(v) ? v : v == null || v === '' ? [] : [v];
-  return '{' + arr.map((x) => '"' + String(x).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"').join(',') + '}';
-}
-
-function norm(k, v) {
-  if (ARRAY_COLS.has(k)) return toPgArray(v);
-  return v === '' ? null : v;
-}
+import { getSql, WRITABLE, ARRAY_COLS, SORT_COLUMNS, norm } from './_lib.js';
 
 export default async function handler(req, res) {
   try {

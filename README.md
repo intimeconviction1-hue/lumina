@@ -1,40 +1,59 @@
-**Welcome to your Base44 project** 
+# Lumina
 
-**About**
+Bibliothèque personnelle de suivi d'œuvres — films, séries, livres, documentaires,
+podcasts, etc. On y range ce qu'on veut voir/lire, ce qu'on a en cours et ce qu'on
+a terminé, avec notes, tags, favoris, filtres et priorités.
 
-View and Edit  your app on [Base44.com](http://Base44.com) 
+Projet migré de Base44 vers un backend maison : **Neon (Postgres)** exposé par des
+**fonctions serverless Vercel**, front **React + Vite + Tailwind**.
 
-This project contains everything you need to run your app locally.
+## Stack
 
-**Edit the code in your local development environment**
+- **Front** : React 18, Vite, React Router, TanStack Query, Tailwind + shadcn/ui, Framer Motion.
+- **Données** : `/api/works` (fonctions serverless Vercel) → base Neon via `@neondatabase/serverless`.
+- **Stockage images** : Vercel Blob (`/api/upload`).
 
-Any change pushed to the repo will also be reflected in the Base44 Builder.
+## Prérequis
 
-**Prerequisites:** 
-
-1. Clone the repository using the project's Git URL 
-2. Navigate to the project directory
-3. Install dependencies: `npm install`
-4. Create an `.env.local` file and set the right environment variables
+1. Cloner le dépôt puis se placer dans le dossier.
+2. Installer les dépendances : `npm install`.
+3. Créer un fichier `.env.local` (dev local) et/ou configurer les variables sur Vercel :
 
 ```
-VITE_BASE44_APP_ID=your_app_id
-VITE_BASE44_APP_BASE_URL=your_backend_url
+# Chaîne de connexion Neon (Postgres) — utilisée par les fonctions /api
+DATABASE_URL=postgres://user:password@host/db?sslmode=require
 
-e.g.
-VITE_BASE44_APP_ID=cbef744a8545c389ef439ea6
-VITE_BASE44_APP_BASE_URL=https://my-to-do-list-81bfaad7.base44.app
+# Jeton Vercel Blob — nécessaire pour l'upload de couvertures (/api/upload)
+BLOB_READ_WRITE_TOKEN=vercel_blob_rw_xxx
 ```
 
-Run the app: `npm run dev`
+## Lancer en local
 
-**Publish your changes**
+```
+npm run dev        # serveur de dev Vite
+npm run build      # build de production
+npm run preview    # prévisualiser le build
+npm run lint       # ESLint
+```
 
-Open [Base44.com](http://Base44.com) and click on Publish.
+> Les routes `/api/*` sont des fonctions serverless Vercel : en dev local, utilise
+> `vercel dev` (ou déploie sur Vercel) pour qu'elles répondent, car `vite` seul ne
+> sert que le front.
 
-**Docs & Support**
+## Structure
 
-Documentation: [https://docs.base44.com/Integrations/Using-GitHub](https://docs.base44.com/Integrations/Using-GitHub)
+- `src/pages/` : une page = une route. Les pages sont déclarées dans `src/pages.config.js`
+  (clé = chemin d'URL), et `src/App.jsx` génère une `<Route>` par entrée.
+- `src/components/` : UI (`ui/` = primitives shadcn, `layout/`, `home/`, `works/`).
+- `src/hooks/` : `useWorks` (lecture) et `useWorkMutations` (create/update/delete
+  avec mise à jour optimiste, rollback et toast d'erreur).
+- `src/lib/statusActions.js` : source unique de la logique de statuts (config, alias
+  legacy, mapping livres).
+- `src/api/works.js` : façade `fetch` vers `/api/works`.
+- `api/` : fonctions serverless (`_lib.js` mutualise SQL/colonnes ; `works.js` et
+  `works/[id].js` = CRUD).
 
-Support: [https://app.base44.com/support](https://app.base44.com/support)
-ajoute une ligne quelconque)
+## Note
+
+L'authentification est volontairement neutralisée (`src/lib/AuthContext.jsx` : utilisateur
+unique, toujours connecté) — Lumina est une bibliothèque perso.

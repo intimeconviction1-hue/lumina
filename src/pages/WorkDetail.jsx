@@ -1,8 +1,8 @@
 import React, { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
-  ArrowLeft, Pencil, Trash2, Heart, Film, Tv, Mic, Video, FileText, Radio,
+  ArrowLeft, Pencil, Trash2, Heart, FileText,
   Calendar, MapPin, Globe, Clock, Monitor, BookMarked, Zap, Play, Pause, CheckCircle2, RotateCcw, Flag, PlayCircle, BookOpen
 } from "lucide-react";
 import StarRating from "../components/works/StarRating";
@@ -10,8 +10,9 @@ import { motion } from "framer-motion";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { typeIcons, typeColors } from "../components/works/WorkCard";
 import { STATUS_CONFIG, STATUS_ACTIONS } from "@/lib/statusActions";
-import { useWorks, WORKS_KEY } from "@/hooks/useWorks";
+import { useWorks } from "@/hooks/useWorks";
 import { worksApi } from "@/api/works";
+import { useWorkMutations } from "@/hooks/useWorkMutations";
 
 const ACTION_ICONS = { Play, Pause, CheckCircle2, RotateCcw };
 
@@ -30,7 +31,7 @@ function MetaItem({ icon: IconComp, label, value }) {
 }
 
 export default function WorkDetail({ onEditWork }) {
-  const queryClient = useQueryClient();
+  const { updateWork, removeWork } = useWorkMutations();
   const navigate = useNavigate();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
@@ -58,39 +59,13 @@ export default function WorkDetail({ onEditWork }) {
     enabled: !!workId,
   });
 
-  const optimisticUpdate = (patch) => {
-    queryClient.setQueryData(["work", workId], (old) => old ? { ...old, ...patch } : old);
-    queryClient.setQueryData(WORKS_KEY, (old = []) =>
-      old.map(w => w.id === workId ? { ...w, ...patch } : w)
-    );
-  };
-
-  const invalidateAll = () => {
-    queryClient.invalidateQueries({ queryKey: ["work", workId] });
-    queryClient.invalidateQueries({ queryKey: WORKS_KEY });
-  };
-
-  const handleStatusChange = async (_, newStatus) => {
-    optimisticUpdate({ status: newStatus });
-    await worksApi.update(workId, { status: newStatus });
-    invalidateAll();
-  };
-  const handleRatingChange = async (r) => {
-    const newRating = r === work.rating ? 0 : r;
-    optimisticUpdate({ rating: newRating });
-    await worksApi.update(workId, { rating: newRating });
-    invalidateAll();
-  };
-
-  const handleToggleFavorite = async () => {
-    const newFav = !work.favorite;
-    optimisticUpdate({ favorite: newFav });
-    await worksApi.update(workId, { favorite: newFav });
-    invalidateAll();
-  };
+  // Optimistic + rollback + toast + invalidation gérés par useWorkMutations
+  // (le hook patche à la fois la liste WORKS_KEY et le détail ["work", id]).
+  const handleStatusChange = (_, newStatus) => updateWork(workId, { status: newStatus });
+  const handleRatingChange = (r) => updateWork(workId, { rating: r === work.rating ? 0 : r });
+  const handleToggleFavorite = () => updateWork(workId, { favorite: !work.favorite });
   const handleDelete = async () => {
-    await worksApi.remove(workId);
-    queryClient.invalidateQueries({ queryKey: WORKS_KEY });
+    await removeWork(workId);
     navigate("/AllWorks");
   };
 

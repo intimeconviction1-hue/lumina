@@ -1,14 +1,14 @@
-import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Sidebar from "./components/layout/Sidebar";
 import Header from "./components/layout/Header";
 import BottomNav from "./components/layout/BottomNav";
 import WorkFormModal from "./components/works/WorkFormModal";
 import FiltersPanel from "./components/works/FiltersPanel";
-import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-import { useWorks, WORKS_KEY } from "@/hooks/useWorks";
-import { worksApi } from "@/api/works";
+import { useWorks } from "@/hooks/useWorks";
+import { useWorkMutations } from "@/hooks/useWorkMutations";
+import { canonicalStatus } from "@/lib/statusActions";
 
 const CHILD_SCREENS = ["WorkDetail"]; // pages that get a back button on mobile
 
@@ -41,7 +41,7 @@ export default function Layout({ children, currentPageName }) {
   });
 
 
-  const queryClient = useQueryClient();
+  const { updateWork, createWork } = useWorkMutations();
 
   // Écoute navigation sidebar avec filtre
   useEffect(() => {
@@ -50,8 +50,8 @@ export default function Layout({ children, currentPageName }) {
       if (clear) {
         setFilters({ type: "", status: [], genre: [], platform: [], tags: [], year_min: "", year_max: "", favorite: false, min_rating: "", priority: "", sort: "-created_date" });
       } else if (status) {
-        // Normalise "En veille" legacy → "À voir"
-        const normalizedStatus = status === "En veille" ? "À voir" : status;
+        // Normalise les statuts legacy (ex. "En veille" → "À voir") via la source unique.
+        const normalizedStatus = canonicalStatus(status);
         setFilters({ type: "", status: [normalizedStatus], genre: [], platform: [], tags: [], year_min: "", year_max: "", favorite: false, min_rating: "", priority: "", sort: "-created_date" });
       }
     };
@@ -98,9 +98,9 @@ export default function Layout({ children, currentPageName }) {
   }, [darkMode]);
 
   const handleSaveWork = async (data) => {
-    if (editingWork) await worksApi.update(editingWork.id, data);
-    else await worksApi.create(data);
-    queryClient.invalidateQueries({ queryKey: WORKS_KEY });
+    // useWorkMutations gère l'invalidation + le toast d'erreur.
+    if (editingWork) await updateWork(editingWork.id, data);
+    else await createWork(data);
     setShowAddWork(false);
     setEditingWork(null);
   };

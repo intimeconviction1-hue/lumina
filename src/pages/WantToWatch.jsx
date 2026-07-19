@@ -1,10 +1,8 @@
 import React, { useState, useMemo } from "react";
-import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { createPageUrl } from "@/utils";
-import { useWorks, WORKS_KEY } from "@/hooks/useWorks";
-import { worksApi } from "@/api/works";
-import { Flame, Clock, AlarmClock, BookOpen, Film, Tv, Mic, Video, FileText, Radio, Play, Heart, MoreVertical, Pencil, Trash2 } from "lucide-react";
+import { useWorks } from "@/hooks/useWorks";
+import { useWorkMutations } from "@/hooks/useWorkMutations";
+import { Flame, Clock, AlarmClock, BookOpen, Film, Tv, Mic, Video, FileText, Radio, Play, Heart, Pencil, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const PRIORITY_CONFIG = {
@@ -114,7 +112,7 @@ function WantCard({ work, onEdit, onDelete, onPriorityChange, onToggleFavorite }
 }
 
 export default function WantToWatch({ onEditWork, onAddWork }) {
-  const queryClient = useQueryClient();
+  const { updateWork, removeWork } = useWorkMutations();
   const [selectedPriority, setSelectedPriority] = useState("all");
   const [selectedType, setSelectedType] = useState("");
 
@@ -143,18 +141,10 @@ export default function WantToWatch({ onEditWork, onAddWork }) {
     return groups;
   }, [filtered]);
 
-  const handlePriorityChange = async (work, newPriority) => {
-    await worksApi.update(work.id, { priority: newPriority });
-    queryClient.invalidateQueries({ queryKey: WORKS_KEY });
-  };
-  const handleDelete = async (work) => {
-    await worksApi.remove(work.id);
-    queryClient.invalidateQueries({ queryKey: WORKS_KEY });
-  };
-  const handleToggleFavorite = async (work) => {
-    await worksApi.update(work.id, { favorite: !work.favorite });
-    queryClient.invalidateQueries({ queryKey: WORKS_KEY });
-  };
+  // Optimistic + rollback + toast + invalidation gérés par useWorkMutations.
+  const handlePriorityChange = (work, newPriority) => updateWork(work.id, { priority: newPriority });
+  const handleDelete = (work) => removeWork(work.id);
+  const handleToggleFavorite = (work) => updateWork(work.id, { favorite: !work.favorite });
 
   const urgentCount = wantToWatch.filter(w => (w.priority || "normal") === "urgent").length;
 

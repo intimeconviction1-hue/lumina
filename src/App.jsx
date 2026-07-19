@@ -6,10 +6,6 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
-import WantToWatch from './pages/WantToWatch';
-import WorkDetail from './pages/WorkDetail';
-import Audit from './pages/Audit';
-import Enrichissement from './pages/Enrichissement';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -42,7 +38,7 @@ const AuthenticatedApp = () => {
     }
   }
 
-  // Render the main app
+  // Render the main app — une <Route> par page déclarée dans pages.config.js.
   return (
     <Routes>
       <Route path="/" element={
@@ -50,7 +46,7 @@ const AuthenticatedApp = () => {
           <MainPage />
         </LayoutWrapper>
       } />
-      {Object.entries(Pages).filter(([path]) => path !== "WorkDetail").map(([path, Page]) => (
+      {Object.entries(Pages).map(([path, Page]) => (
         <Route
           key={path}
           path={`/${path}`}
@@ -61,26 +57,6 @@ const AuthenticatedApp = () => {
           }
         />
       ))}
-      <Route path="/WantToWatch" element={
-        <LayoutWrapper currentPageName="WantToWatch">
-          <WantToWatch />
-        </LayoutWrapper>
-      } />
-      <Route path="/WorkDetail" element={
-        <LayoutWrapper currentPageName="WorkDetail">
-          <WorkDetail />
-        </LayoutWrapper>
-      } />
-      <Route path="/Audit" element={
-        <LayoutWrapper currentPageName="Audit">
-          <Audit />
-        </LayoutWrapper>
-      } />
-      <Route path="/Enrichissement" element={
-        <LayoutWrapper currentPageName="Enrichissement">
-          <Enrichissement />
-        </LayoutWrapper>
-      } />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );

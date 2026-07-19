@@ -1,7 +1,7 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { ArrowRight, BookOpen, Film, Tv, Mic, Video, FileText, Radio, Star, Heart } from "lucide-react";
+import { ArrowRight, FileText, Star, Heart } from "lucide-react";
 import { motion } from "framer-motion";
 import { typeColors, typeIcons, statusConfig } from "../works/WorkCard";
 

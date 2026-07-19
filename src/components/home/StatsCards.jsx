@@ -1,5 +1,5 @@
 import React from "react";
-import { LayoutGrid, Clock, Eye, BookOpen, Star } from "lucide-react";
+import { LayoutGrid, Clock, Eye, BookOpen } from "lucide-react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 

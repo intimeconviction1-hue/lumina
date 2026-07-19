@@ -1,14 +1,15 @@
-import React, { useMemo, useState, useEffect, useCallback } from "react";
+import React, { useMemo, useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "react-router-dom";
 import WorksGrid from "../components/works/WorksGrid";
 import { useWorks, WORKS_KEY } from "@/hooks/useWorks";
 import { worksApi } from "@/api/works";
+import { useWorkMutations } from "@/hooks/useWorkMutations";
 import { StatusButton, TypeButton } from "../components/works/FilterButtons";
-import { X, ChevronDown, ChevronUp, CheckSquare, Square } from "lucide-react";
+import { X, CheckSquare, Square } from "lucide-react";
 import BulkActionBar from "../components/works/BulkActionBar";
 import { useToast } from "@/components/ui/use-toast";
-import { STATUS_CONFIG, TYPE_COLORS, effectiveStatus } from "@/lib/statusActions";
+import { STATUS_CONFIG, TYPE_COLORS, effectiveStatus, matchesStatusFilter, STATUS_ALIASES } from "@/lib/statusActions";
 
 const STATUS_COLORS = Object.fromEntries(
   Object.entries(STATUS_CONFIG).map(([k, v]) => [k, v.color])
@@ -49,9 +50,9 @@ const TYPE_TABS = [
 export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChange, onEditWork }) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { updateWork, removeWork } = useWorkMutations();
   const [showMoreFilters, setShowMoreFilters] = useState(false);
   const [activeTab, setActiveTab] = useState("");
-  const [renderKey] = useState(() => Math.random());
 
   // Sélection multiple
   const [selectMode, setSelectMode] = useState(false);
@@ -86,8 +87,7 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
     const urlPriority = params.get("priority");
     if ((urlStatus || urlGenre || urlPlatform || urlType || urlTag || urlPriority) && onFiltersChange) {
       const base = { type: "", status: [], genre: [], platform: [], tags: [], year_min: "", year_max: "", favorite: false, min_rating: "", priority: "", sort: "-created_date" };
-      // Normalise les statuts legacy (ex. "En veille" → "À voir") pour éviter les listes vides.
-      const STATUS_ALIASES = { "En veille": "À voir", "terminé": "Visionné", "à découvrir": "À voir", "abandonné": "À voir" };
+      // Normalise les statuts legacy (ex. "En veille" → "À voir") via la source unique.
       if (urlStatus)   base.status   = [STATUS_ALIASES[urlStatus] || urlStatus];
       if (urlGenre)    base.genre    = [urlGenre];
       if (urlPlatform) base.platform = [urlPlatform];
@@ -178,15 +178,10 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
       );
     }
 
-    // Status: statut canonique unique. Livres : "À voir" legacy = "Envie de lire",
-    // et "Lu" (ancien stockage) = "Visionné". L'affichage montre "Lu"/"À lire" via effectiveStatus.
+    // Status: statut canonique unique (alias legacy + vocabulaire livre),
+    // centralisé dans matchesStatusFilter (statusActions.js).
     if (filters.status?.length > 0) {
-      result = result.filter(w => {
-        let s = w.status;
-        if (s === "Lu") s = "Visionné";
-        if (w.type === "livre" && s === "À voir") s = "Envie de lire";
-        return filters.status.includes(s);
-      });
+      result = result.filter(w => matchesStatusFilter(w, filters.status));
     }
 
     // Priorité (urgent / normal / plus tard) — on exclut les œuvres déjà
@@ -233,56 +228,57 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
     return result;
   }, [works, searchQuery, filters, activeTab]);
 
-  const handleDelete = async (work) => {
-    queryClient.setQueryData(WORKS_KEY, (old = []) => old.filter(w => w.id !== work.id));
-    await worksApi.remove(work.id);
-    queryClient.invalidateQueries({ queryKey: WORKS_KEY });
-  };
-
-  const handleStatusChange = async (work, newStatus) => {
-    queryClient.setQueryData(WORKS_KEY, (old = []) =>
-      old.map(w => w.id === work.id ? { ...w, status: newStatus } : w)
-    );
-    await worksApi.update(work.id, { status: newStatus });
-    queryClient.invalidateQueries({ queryKey: WORKS_KEY });
-  };
-
-  const handleToggleFavorite = async (work) => {
-    const newFav = !work.favorite;
-    queryClient.setQueryData(WORKS_KEY, (old = []) =>
-      old.map(w => w.id === work.id ? { ...w, favorite: newFav } : w)
-    );
-    await worksApi.update(work.id, { favorite: newFav });
-    queryClient.invalidateQueries({ queryKey: WORKS_KEY });
-  };
+  // Optimistic + rollback + toast d'erreur sont gérés par le hook useWorkMutations.
+  const handleDelete = (work) => removeWork(work.id);
+  const handleStatusChange = (work, newStatus) => updateWork(work.id, { status: newStatus });
+  const handleToggleFavorite = (work) => updateWork(work.id, { favorite: !work.favorite });
 
   const handleBulkApply = async ({ tags, genres, type, status }) => {
     const ids = [...selectedIds];
     const allWorksData = queryClient.getQueryData(WORKS_KEY) || [];
 
-    // Traiter par lots de 25
-    for (let i = 0; i < ids.length; i += 25) {
-      const batch = ids.slice(i, i + 25);
-      await Promise.all(batch.map(id => {
+    // Construit les patchs et applique une mise à jour optimiste de tout le lot.
+    const patches = ids
+      .map(id => {
         const work = allWorksData.find(w => w.id === id);
-        if (!work) return Promise.resolve();
+        if (!work) return null;
         const patch = {};
         if (tags.length > 0) patch.tags = [...new Set([...(work.tags || []), ...tags])];
         if (genres.length > 0) patch.genre = [...new Set([...(work.genre || []), ...genres])];
         if (type) patch.type = type;
         if (status) patch.status = status;
-        return Object.keys(patch).length > 0 ? worksApi.update(id, patch) : Promise.resolve();
-      }));
+        return Object.keys(patch).length > 0 ? { id, patch } : null;
+      })
+      .filter(Boolean);
+
+    const prevList = queryClient.getQueryData(WORKS_KEY);
+    const byId = new Map(patches.map(p => [p.id, p.patch]));
+    queryClient.setQueryData(WORKS_KEY, (old = []) =>
+      old.map(w => (byId.has(w.id) ? { ...w, ...byId.get(w.id) } : w))
+    );
+
+    try {
+      // Traiter par lots de 25 pour ne pas saturer le backend serverless.
+      for (let i = 0; i < patches.length; i += 25) {
+        const batch = patches.slice(i, i + 25);
+        await Promise.all(batch.map(({ id, patch }) => worksApi.update(id, patch)));
+      }
+    } catch (e) {
+      // Rollback global si un lot échoue.
+      if (prevList !== undefined) queryClient.setQueryData(WORKS_KEY, prevList);
+      toast({ title: "Échec de la mise à jour groupée", description: String(e?.message || e) });
+      return;
+    } finally {
+      queryClient.invalidateQueries({ queryKey: WORKS_KEY });
     }
 
-    queryClient.invalidateQueries({ queryKey: WORKS_KEY });
     toast({ title: `${ids.length} œuvre${ids.length > 1 ? "s" : ""} mise${ids.length > 1 ? "s" : ""} à jour` });
     setSelectMode(false);
     setSelectedIds(new Set());
   };
 
   return (
-    <div key={renderKey} className="max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto">
       {/* Bandeau genre actif */}
       {(filters.genre || []).length > 0 && (
         <div className="mb-4 flex items-center gap-2 flex-wrap">

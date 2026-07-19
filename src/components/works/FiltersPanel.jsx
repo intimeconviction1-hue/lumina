@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from "react";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { RotateCcw, Heart, Check, SlidersHorizontal } from "lucide-react";
 import { TYPE_COLORS } from "@/lib/statusActions";
 

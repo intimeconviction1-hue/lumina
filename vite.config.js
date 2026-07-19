@@ -4,7 +4,8 @@ import { defineConfig } from 'vite'
 
 // https://vite.dev/config/
 export default defineConfig({
-  logLevel: 'error', // Suppress warnings, only show errors
+  // logLevel par défaut ('info') : on garde les warnings visibles (imports
+  // manquants, chunks trop gros, etc.) plutôt que de les masquer.
   plugins: [
     react(),
   ],

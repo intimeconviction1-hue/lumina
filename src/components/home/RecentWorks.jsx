@@ -1,8 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { createPageUrl } from "@/utils";
 import { Film, Tv, BookOpen, Mic, Video, FileText, Radio } from "lucide-react";
-import { format, formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
 
 const TYPE_ICONS = {

@@ -1,12 +1,12 @@
 /**
- * pages.config.js - Page routing configuration
- * 
- * This file is AUTO-GENERATED. Do not add imports or modify PAGES manually.
- * Pages are auto-registered when you create files in the ./pages/ folder.
- * 
- * THE ONLY EDITABLE VALUE: mainPage
- * This controls which page is the landing page (shown when users visit the app).
- * 
+ * pages.config.js - Configuration du routing.
+ *
+ * Source unique des routes : App.jsx génère une <Route> pour chaque entrée de
+ * PAGES ci-dessous. Pour ajouter une page : crée le fichier dans ./pages/,
+ * importe-le ici et ajoute-le à l'objet PAGES (la clé = le chemin de l'URL).
+ *
+ * mainPage : la page affichée à la racine "/".
+ *
  * Example file structure:
  * 
  *   import HomePage from './pages/HomePage';
@@ -54,6 +54,9 @@ import Priority from './pages/Priority';
 import Watched from './pages/Watched';
 import WorkDetail from './pages/WorkDetail';
 import NotReleased from './pages/NotReleased';
+import WantToWatch from './pages/WantToWatch';
+import Audit from './pages/Audit';
+import Enrichissement from './pages/Enrichissement';
 import __Layout from './Layout.jsx';
 
 
@@ -65,6 +68,9 @@ export const PAGES = {
     "Watched": Watched,
     "WorkDetail": WorkDetail,
     "NotReleased": NotReleased,
+    "WantToWatch": WantToWatch,
+    "Audit": Audit,
+    "Enrichissement": Enrichissement,
 }
 
 export const pagesConfig = {

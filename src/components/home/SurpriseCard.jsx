@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
-import { createPageUrl } from "@/utils";
-import { Shuffle, ArrowRight, BookOpen, Film, Tv, Mic, Video, FileText, Radio, Star } from "lucide-react";
+import { Shuffle, ArrowRight, FileText, Star } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { typeColors, typeIcons } from "../works/WorkCard";
 

@@ -2,9 +2,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Film, Tv, BookOpen, FileText, Mic, Video, Radio, Play, ArrowRight } from "lucide-react";
-import { formatDistanceToNow, parseISO, isValid } from "date-fns";
-import { fr } from "date-fns/locale";
-import { createPageUrl } from "@/utils";
+import { parseISO, isValid } from "date-fns";
 
 const TYPE_ICONS = {
   film: Film, série: Tv, livre: BookOpen,

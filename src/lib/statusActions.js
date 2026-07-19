@@ -69,3 +69,34 @@ export function effectiveStatus(work) {
   }
   return work?.status;
 }
+
+// Alias des statuts legacy → statut canonique officiel.
+// Source unique, réutilisée par Layout (nav sidebar) et AllWorks (params URL).
+export const STATUS_ALIASES = {
+  "En veille":   "À voir",
+  "terminé":     "Visionné",
+  "à découvrir": "À voir",
+  "abandonné":   "À voir",
+  "done":        "Visionné",
+  "Lu":          "Visionné",
+};
+
+// Statut canonique d'une chaîne brute (applique les alias legacy).
+export function canonicalStatus(status) {
+  if (!status) return "À voir";
+  return STATUS_ALIASES[status] || status;
+}
+
+// Statut d'une œuvre tel qu'il doit être comparé aux filtres :
+// alias legacy + vocabulaire livre (À voir → Envie de lire).
+export function filterStatus(work) {
+  let s = canonicalStatus(work?.status);
+  if (work?.type === "livre" && s === "À voir") s = "Envie de lire";
+  return s;
+}
+
+// L'œuvre correspond-elle à la sélection de statuts du panneau de filtres ?
+export function matchesStatusFilter(work, selected) {
+  if (!selected || selected.length === 0) return true;
+  return selected.includes(filterStatus(work));
+}
