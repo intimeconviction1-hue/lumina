@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { useWorks } from "@/hooks/useWorks";
+import { effectiveStatus } from "@/lib/statusActions";
 import StatsCards from "../components/home/StatsCards";
 import SurpriseCard from "../components/home/SurpriseCard";
 import HorizontalScroll from "../components/home/HorizontalScroll";
@@ -62,12 +63,21 @@ export default function Home({ onAddWork }) {
     return works.filter(w => activeTags.every(t => (w.tags || []).includes(t)));
   }, [works, activeTags]);
 
-  const inProgress  = filteredWorks.filter(w => w.status === "En cours");
-  const enVeille    = filteredWorks.filter(w => w.status === "À voir");
-  const visionne    = filteredWorks.filter(w => w.status === "Visionné");
-  const pasSorti    = filteredWorks.filter(w => w.status === "Pas sorti");
-  const favorites   = filteredWorks.filter(w => w.favorite);
-  const filmsSeries = filteredWorks.filter(w => w.type === "film" || w.type === "série");
+  // Découpage par statut logique (type-aware), calculé une fois par liste filtrée.
+  const { inProgress, aVoir, finished, pasSorti, favorites, filmsSeries, toConsume } = useMemo(() => {
+    const g = { inProgress: [], aVoir: [], finished: [], pasSorti: [], favorites: [], filmsSeries: [], toConsume: [] };
+    for (const w of filteredWorks) {
+      const s = effectiveStatus(w);
+      if (s === "En cours") g.inProgress.push(w);
+      else if (s === "À voir") { g.aVoir.push(w); g.toConsume.push(w); }
+      else if (s === "Envie de lire") g.toConsume.push(w);
+      else if (s === "Pas sorti") g.pasSorti.push(w);
+      if (s === "Visionné" || s === "Lu") g.finished.push(w);
+      if (w.favorite) g.favorites.push(w);
+      if (w.type === "film" || w.type === "série") g.filmsSeries.push(w);
+    }
+    return g;
+  }, [filteredWorks]);
 
   return (
     <div className="max-w-6xl mx-auto space-y-5 sm:space-y-6">
@@ -124,25 +134,25 @@ export default function Home({ onAddWork }) {
         <ResumeSection works={inProgress} onAddWork={onAddWork} />
       )}
 
-      {/* ── MODULE 2 : Terminé récemment ── */}
-      {!isLoading && <RecentlyFinished works={visionne} />}
+      {/* ── MODULE 2 : Terminé récemment (vus + lus) ── */}
+      {!isLoading && <RecentlyFinished works={finished} />}
 
-      {/* ── MODULE 3 : Selon ton humeur ── */}
+      {/* ── MODULE 3 : Selon ton humeur (à voir + à lire) ── */}
       {isLoading ? (
         <SkelBlock h={200} />
       ) : (
-        <MoodSuggestions works={works} enVeille={enVeille} onAddWork={onAddWork} />
+        <MoodSuggestions works={works} enVeille={toConsume} onAddWork={onAddWork} />
       )}
 
       {/* ── MODULE 4 : Ce soir je regarde quoi ? ── */}
       {!isLoading && (
-        <TonightPick enVeille={enVeille} onAddWork={onAddWork} />
+        <TonightPick enVeille={aVoir} onAddWork={onAddWork} />
       )}
 
-      {/* En veille */}
-      {!isLoading && enVeille.length > 0 && (
+      {/* À voir */}
+      {!isLoading && aVoir.length > 0 && (
         <Section>
-          <HorizontalScroll title="À voir" works={enVeille} seeAllStatus="À voir" accentColor="#94A3B8" />
+          <HorizontalScroll title="À voir" works={aVoir} seeAllStatus="À voir" accentColor="#94A3B8" />
         </Section>
       )}
 

@@ -3,12 +3,11 @@ import { Link, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { ArrowRight, FileText, Star, Heart } from "lucide-react";
 import { motion } from "framer-motion";
-import { typeColors, typeIcons, statusConfig } from "../works/WorkCard";
+import { typeColors, typeIcons } from "../works/WorkCard";
 
 function MiniCard({ work, index }) {
   const TypeIcon = typeIcons[work.type] || FileText;
   const tColor = typeColors[work.type] || "#667085";
-  const sConf = statusConfig[work.status] || statusConfig["En veille"];
 
   return (
     <motion.div

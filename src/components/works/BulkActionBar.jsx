@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { X, Check, ChevronDown } from "lucide-react";
 
 const ALL_TYPES = ["film", "série", "livre", "documentaire", "podcast", "vidéo", "article"];
-const ALL_STATUSES = ["À voir", "En cours", "Visionné", "Pas sorti"];
+const ALL_STATUSES = ["À voir", "Envie de lire", "En cours", "Visionné", "Lu", "Pas sorti"];
 
 export default function BulkActionBar({ count, onApply, onCancel }) {
   const [tags, setTags] = useState("");

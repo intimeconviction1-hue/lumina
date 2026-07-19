@@ -14,7 +14,7 @@ import { STATUS_CONFIG, TYPE_COLORS, effectiveStatus, matchesStatusFilter, STATU
 const STATUS_COLORS = Object.fromEntries(
   Object.entries(STATUS_CONFIG).map(([k, v]) => [k, v.color])
 );
-const ALL_STATUSES = ["À voir", "En cours", "Visionné", "Pas sorti", "Envie de lire"];
+const ALL_STATUSES = ["À voir", "En cours", "Visionné", "Pas sorti", "Envie de lire", "Lu"];
 const ALL_TYPES = ["film", "série", "livre", "documentaire", "podcast", "vidéo", "article"];
 const QUICK_PLATFORMS = ["Netflix", "Prime Video", "Disney+", "Canal+", "HBO", "Apple TV+", "Arte"];
 
@@ -388,15 +388,15 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
         {/* Statuts — scroll horizontal sur mobile */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 no-scrollbar" style={{ scrollbarWidth: "none" }}>
           {(activeTab === "livre"
-            ? ["Envie de lire", "En cours", "Visionné"]
+            ? ["Envie de lire", "En cours", "Lu"]
             : (activeTab === "film" || activeTab === "série")
             ? ["À voir", "En cours", "Visionné", "Pas sorti"]
             : ALL_STATUSES
           ).map(s => {
             const active = (filters.status || []).includes(s);
-            // Côté livres : "Envie de lire" → "À lire", "Visionné" → "Lu".
+            // Côté livres : "Envie de lire" → "À lire" (le reste garde son libellé).
             const label = activeTab === "livre"
-              ? (s === "Envie de lire" ? "À lire" : s === "Visionné" ? "Lu" : s)
+              ? (s === "Envie de lire" ? "À lire" : s)
               : s;
             return (
               <StatusButton

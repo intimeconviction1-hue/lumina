@@ -9,7 +9,7 @@ import {
   DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger, DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 import { motion } from "framer-motion";
-import { STATUS_CONFIG, STATUSES, TYPE_COLORS, effectiveStatus } from "@/lib/statusActions";
+import { STATUS_CONFIG, STATUSES, TYPE_COLORS, effectiveStatus, isFinished } from "@/lib/statusActions";
 
 export const typeIcons = {
   livre: BookOpen, film: Film, série: Tv, documentaire: Radio,
@@ -32,7 +32,8 @@ export default function WorkCard({ work, onEdit, onDelete, onStatusChange, onTog
   const navigate = useNavigate();
   const TypeIcon = typeIcons[work.type] || Film;
   const tColor = typeColors[work.type] || "#C9A84C";
-  const sConfig = statusConfig[effectiveStatus(work)] || statusConfig["À voir"];
+  const logicalStatus = effectiveStatus(work);
+  const sConfig = statusConfig[logicalStatus] || statusConfig["À voir"];
   const displayYear = work.year || work.released_year;
   const mainPlatform = Array.isArray(work.platform) ? work.platform[0] : work.platform;
 
@@ -210,7 +211,7 @@ export default function WorkCard({ work, onEdit, onDelete, onStatusChange, onTog
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold"
               style={{ backgroundColor: sConfig.bg, color: sConfig.color }}>
               <span
-                className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${work.status === "En cours" ? "animate-pulse" : ""}`}
+                className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${logicalStatus === "En cours" ? "animate-pulse" : ""}`}
                 style={{ backgroundColor: sConfig.dot }}
               />
               {sConfig.label}
@@ -286,12 +287,12 @@ export default function WorkCard({ work, onEdit, onDelete, onStatusChange, onTog
           </div>
 
           {/* Date contextuelle */}
-          {(work.status === "En cours" && work.started_at) && (
+          {(logicalStatus === "En cours" && work.started_at) && (
             <p className="text-[10px] mt-2 font-medium" style={{ color: "var(--text-muted)" }}>
               ▶ Commencé le {new Date(work.started_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
             </p>
           )}
-          {(work.status === "Visionné" && work.finished_at) && (
+          {(isFinished(work) && work.finished_at) && (
             <p className="text-[10px] mt-2 font-medium" style={{ color: "#7E9A73" }}>
               ✓ Terminé le {new Date(work.finished_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
             </p>

@@ -8,7 +8,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { useWorks } from "@/hooks/useWorks";
 import { useWorkMutations } from "@/hooks/useWorkMutations";
-import { canonicalStatus } from "@/lib/statusActions";
+import { normalizeNavStatus } from "@/lib/statusActions";
 
 const CHILD_SCREENS = ["WorkDetail"]; // pages that get a back button on mobile
 
@@ -50,8 +50,8 @@ export default function Layout({ children, currentPageName }) {
       if (clear) {
         setFilters({ type: "", status: [], genre: [], platform: [], tags: [], year_min: "", year_max: "", favorite: false, min_rating: "", priority: "", sort: "-created_date" });
       } else if (status) {
-        // Normalise les statuts legacy (ex. "En veille" → "À voir") via la source unique.
-        const normalizedStatus = canonicalStatus(status);
+        // Normalise les statuts legacy (ex. "En veille" → "À voir"), en préservant "Lu".
+        const normalizedStatus = normalizeNavStatus(status);
         setFilters({ type: "", status: [normalizedStatus], genre: [], platform: [], tags: [], year_min: "", year_max: "", favorite: false, min_rating: "", priority: "", sort: "-created_date" });
       }
     };

@@ -2,6 +2,7 @@ import React, { useMemo } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Film, Tv, BookOpen, FileText, Mic, Video, Radio, Plus, ArrowRight } from "lucide-react";
+import { effectiveStatus, isFinished } from "@/lib/statusActions";
 
 const TYPE_ICONS = {
   film: Film, série: Tv, livre: BookOpen,
@@ -120,7 +121,7 @@ export default function MoodSuggestions({ works, enVeille, onAddWork }) {
   // 3 dernières œuvres Visionné pour anti-répétition
   const recentlyWatched = useMemo(() =>
     works
-      .filter(w => w.status === "Visionné")
+      .filter(isFinished)
       .sort((a, b) => new Date(b.finished_at || b.updated_date || 0) - new Date(a.finished_at || a.updated_date || 0))
       .slice(0, 3),
     [works]
@@ -140,7 +141,7 @@ export default function MoodSuggestions({ works, enVeille, onAddWork }) {
 
   // Pool = En veille uniquement, exclure ce qui est En cours
   const inProgressIds = useMemo(() =>
-    new Set(works.filter(w => w.status === "En cours").map(w => w.id)),
+    new Set(works.filter(w => effectiveStatus(w) === "En cours").map(w => w.id)),
     [works]
   );
 

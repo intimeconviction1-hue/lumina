@@ -3,7 +3,7 @@ import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { RotateCcw, Heart, Check, SlidersHorizontal } from "lucide-react";
 import { TYPE_COLORS } from "@/lib/statusActions";
 
-const STATUSES = ["À voir", "En cours", "Visionné", "Pas sorti", "Envie de lire"];
+const STATUSES = ["À voir", "En cours", "Visionné", "Pas sorti", "Envie de lire", "Lu"];
 const PLATFORMS = ["Netflix", "Prime Video", "Disney+", "Canal+", "HBO", "Apple TV+", "Arte", "FranceTV", "Ciné", "OneDrive", "Yggtorrent", "Khan Israël", "IKROMI", "Lenny", "OKRU"];
 const TYPES = ["film", "série", "livre", "documentaire", "podcast", "vidéo", "article"];
 const SORT_OPTIONS = [
@@ -20,6 +20,7 @@ const STATUS_COLORS = {
   "Visionné":      "#2AA6A0",
   "Pas sorti":     "#6366F1",
   "Envie de lire": "#8B5CF6",
+  "Lu":            "#22C55E",
 };
 
 const EMPTY_FILTERS = {

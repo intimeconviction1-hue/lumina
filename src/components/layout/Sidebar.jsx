@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Home, LayoutGrid, Clock, Eye, Sun, Moon, Clapperboard, Calendar, Bookmark, Trash2, PlayCircle, BookOpen, ShieldAlert, BookImage } from "lucide-react";
+import { Home, LayoutGrid, Clock, Eye, Sun, Moon, Clapperboard, Calendar, Bookmark, Trash2, PlayCircle, BookOpen, BookCheck, ShieldAlert, BookImage } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useWorks } from "@/hooks/useWorks";
 import { worksApi } from "@/api/works";
@@ -12,7 +12,8 @@ const navItems = [
   { label: "Envie de voir",  icon: Bookmark,  path: "/WantToWatch",                        color: "#EC4899" },
   { label: "Envie de lire", icon: BookOpen,  path: "/AllWorks?status=Envie+de+lire",       color: "#8B5CF6" },
   { label: "En cours",   icon: Clock,    path: "/AllWorks?status=En+cours",        color: "#D4AF37" },
-  { label: "Visionné",   icon: Eye,       path: "/AllWorks?status=Visionn%C3%A9",   color: "#2AA6A0" },
+  { label: "Vus",        icon: Eye,       path: "/AllWorks?status=Visionn%C3%A9",   color: "#2AA6A0" },
+  { label: "Lus",        icon: BookCheck, path: "/AllWorks?status=Lu",              color: "#22C55E" },
   { label: "Pas sorti",  icon: Calendar,  path: "/AllWorks?status=Pas+sorti",       color: "#6366F1" },
   { label: "Audit",      icon: ShieldAlert, path: "/Audit",                            color: "#E56B3A" },
   { label: "Enrichissement", icon: BookImage, path: "/Enrichissement",                  color: "#6366F1" },
@@ -27,18 +28,21 @@ export default function Sidebar({ currentPage, darkMode, onToggleDark }) {
 
   const { data: works = [] } = useWorks();
 
-  // Compute top genres dynamically, with priority order
-  const genreCounts = {};
-  works.forEach(w => (w.genre || []).forEach(g => { genreCounts[g] = (genreCounts[g] || 0) + 1; }));
-  const topGenres = TOP_GENRES
-    .filter(g => genreCounts[g] > 0)
-    .concat(
-      Object.entries(genreCounts)
-        .sort((a, b) => b[1] - a[1])
-        .map(([g]) => g)
-        .filter(g => !TOP_GENRES.includes(g))
-    )
-    .slice(0, 6);
+  // Top genres calculés dynamiquement (ordre de priorité), mémoïsés sur la liste.
+  const { genreCounts, topGenres } = useMemo(() => {
+    const counts = {};
+    works.forEach(w => (w.genre || []).forEach(g => { counts[g] = (counts[g] || 0) + 1; }));
+    const top = TOP_GENRES
+      .filter(g => counts[g] > 0)
+      .concat(
+        Object.entries(counts)
+          .sort((a, b) => b[1] - a[1])
+          .map(([g]) => g)
+          .filter(g => !TOP_GENRES.includes(g))
+      )
+      .slice(0, 6);
+    return { genreCounts: counts, topGenres: top };
+  }, [works]);
 
   const queryClient = useQueryClient();
   const handleDeleteAccount = async () => {

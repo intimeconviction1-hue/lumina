@@ -9,7 +9,7 @@ import StarRating from "../components/works/StarRating";
 import { motion } from "framer-motion";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { typeIcons, typeColors } from "../components/works/WorkCard";
-import { STATUS_CONFIG, STATUS_ACTIONS } from "@/lib/statusActions";
+import { STATUS_CONFIG, STATUS_ACTIONS, effectiveStatus, isFinished } from "@/lib/statusActions";
 import { useWorks } from "@/hooks/useWorks";
 import { worksApi } from "@/api/works";
 import { useWorkMutations } from "@/hooks/useWorkMutations";
@@ -109,8 +109,9 @@ export default function WorkDetail({ onEditWork }) {
   const tColor = typeColors[work.type] || "#667085";
 
   const goGenre = (g) => navigate(`/AllWorks?genre=${encodeURIComponent(g)}`);
-  const sConf = STATUS_CONFIG[work.status] || STATUS_CONFIG["À voir"];
-  const actions = STATUS_ACTIONS[work.status] || [];
+  const logicalStatus = effectiveStatus(work);
+  const sConf = STATUS_CONFIG[logicalStatus] || STATUS_CONFIG["À voir"];
+  const actions = STATUS_ACTIONS[logicalStatus] || STATUS_ACTIONS[work.status] || [];
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -177,7 +178,7 @@ export default function WorkDetail({ onEditWork }) {
               <div className="flex flex-wrap items-center gap-3 mt-5">
                 <span className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full text-[13px] font-semibold"
                   style={{ backgroundColor: sConf.bg, color: sConf.color }}>
-                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${work.status === "En cours" ? "animate-pulse" : ""}`}
+                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${logicalStatus === "En cours" ? "animate-pulse" : ""}`}
                     style={{ backgroundColor: sConf.dot }} />
                   {sConf.label}
                 </span>
@@ -201,7 +202,7 @@ export default function WorkDetail({ onEditWork }) {
 
               {/* Note — demi-étoiles */}
               <div className="mt-4">
-                {work.status === "Visionné" ? (
+                {isFinished(work) ? (
                   <div>
                     <p className="text-[11px] font-semibold uppercase tracking-[0.1em] mb-2" style={{ color: "var(--text-muted)" }}>Ma note</p>
                     <StarRating value={work.rating || 0} onChange={handleRatingChange} size="md" />

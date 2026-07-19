@@ -2,6 +2,7 @@ import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useWorks } from "@/hooks/useWorks";
 import { useWorkMutations } from "@/hooks/useWorkMutations";
+import { effectiveStatus } from "@/lib/statusActions";
 import { Flame, Clock, AlarmClock, BookOpen, Film, Tv, Mic, Video, FileText, Radio, Play, Heart, Pencil, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -119,7 +120,7 @@ export default function WantToWatch({ onEditWork, onAddWork }) {
   const { data: works = [], isLoading } = useWorks();
 
   const wantToWatch = useMemo(() =>
-    works.filter(w => w.status === "À voir"),
+    works.filter(w => effectiveStatus(w) === "À voir"),
     [works]
   );
 

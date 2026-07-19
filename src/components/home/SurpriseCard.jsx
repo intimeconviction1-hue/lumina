@@ -3,14 +3,15 @@ import { Link } from "react-router-dom";
 import { Shuffle, ArrowRight, FileText, Star } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { typeColors, typeIcons } from "../works/WorkCard";
+import { effectiveStatus } from "@/lib/statusActions";
 
 export default function SurpriseCard({ works }) {
   const [key, setKey] = useState(0);
 
-  // Exclure les livres "Envie de lire", proposer films/séries en priorité
+  // Proposer films/séries en priorité ; sinon exclure les livres à lire.
   const pool = useMemo(() => {
     const filmsSeries = works.filter(w => w.type === "film" || w.type === "série");
-    return filmsSeries.length > 0 ? filmsSeries : works.filter(w => w.status !== "Envie de lire");
+    return filmsSeries.length > 0 ? filmsSeries : works.filter(w => effectiveStatus(w) !== "Envie de lire");
   }, [works]);
 
   const randomWork = useMemo(() => {
