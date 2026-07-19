@@ -47,17 +47,22 @@
  *
  * The mainPage value must match a key in the PAGES object exactly.
  */
-import AllWorks from './pages/AllWorks';
-import Home from './pages/Home';
-import InProgress from './pages/InProgress';
-import Priority from './pages/Priority';
-import Watched from './pages/Watched';
-import WorkDetail from './pages/WorkDetail';
-import NotReleased from './pages/NotReleased';
-import WantToWatch from './pages/WantToWatch';
-import Audit from './pages/Audit';
-import Enrichissement from './pages/Enrichissement';
+import { lazy } from 'react';
 import __Layout from './Layout.jsx';
+
+// Chargement à la demande (code-splitting) : chaque page est téléchargée
+// seulement quand on y navigue → démarrage de l'app plus léger et rapide.
+// La bascule est gérée par un <Suspense> dans Layout.jsx.
+const AllWorks       = lazy(() => import('./pages/AllWorks'));
+const Home           = lazy(() => import('./pages/Home'));
+const InProgress     = lazy(() => import('./pages/InProgress'));
+const Priority       = lazy(() => import('./pages/Priority'));
+const Watched        = lazy(() => import('./pages/Watched'));
+const WorkDetail     = lazy(() => import('./pages/WorkDetail'));
+const NotReleased    = lazy(() => import('./pages/NotReleased'));
+const WantToWatch    = lazy(() => import('./pages/WantToWatch'));
+const Audit          = lazy(() => import('./pages/Audit'));
+const Enrichissement = lazy(() => import('./pages/Enrichissement'));
 
 
 export const PAGES = {

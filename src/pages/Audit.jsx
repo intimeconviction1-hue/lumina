@@ -5,7 +5,9 @@ import { AlertTriangle, CheckCircle } from "lucide-react";
 import { STATUSES } from "@/lib/statusActions";
 
 const VALID_TYPES = ["film", "série", "livre", "documentaire", "podcast", "vidéo", "article"];
-const VALID_STATUSES = STATUSES;
+// "Lu" est un statut stocké légitime (livres terminés) même s'il n'est pas dans STATUSES
+// (liste du formulaire) — on l'accepte ici pour ne pas signaler les livres à tort.
+const VALID_STATUSES = [...STATUSES, "Lu"];
 
 function Section({ title, works, emptyMsg, badStatusSummary }) {
   if (works.length === 0) {

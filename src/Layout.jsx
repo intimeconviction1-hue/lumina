@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, Suspense } from "react";
 import Sidebar from "./components/layout/Sidebar";
 import Header from "./components/layout/Header";
 import BottomNav from "./components/layout/BottomNav";
@@ -156,7 +156,14 @@ export default function Layout({ children, currentPageName }) {
         />
 
         <main className="flex-1 px-3 py-4 lg:px-8 lg:py-8 pb-24 lg:pb-8">
-          {React.isValidElement(children) ? React.cloneElement(children, childProps) : children}
+          <Suspense fallback={
+            <div className="flex items-center justify-center py-24">
+              <div className="w-6 h-6 border-2 rounded-full animate-spin"
+                style={{ borderColor: "var(--border)", borderTopColor: "var(--text-secondary)" }} />
+            </div>
+          }>
+            {React.isValidElement(children) ? React.cloneElement(children, childProps) : children}
+          </Suspense>
         </main>
       </div>
 

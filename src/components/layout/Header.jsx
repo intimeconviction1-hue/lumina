@@ -7,8 +7,8 @@ export default function Header({ searchQuery, onSearchChange, onOpenFilters, onA
     <header
       className="sticky top-0 z-50 flex items-center gap-2 px-4 py-2.5 lg:px-6 lg:py-3.5"
       style={{
-        backgroundColor: "#FFFFFF",
-        borderBottom: "1px solid #E8E4DF",
+        backgroundColor: "var(--surface)",
+        borderBottom: "1px solid var(--border)",
         boxShadow: "0 1px 6px rgba(0,0,0,0.08)",
       }}
     >
@@ -17,7 +17,7 @@ export default function Header({ searchQuery, onSearchChange, onOpenFilters, onA
         <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: "#E56B3A" }}>
           <BookMarked className="w-3.5 h-3.5 text-white" />
         </div>
-        <span className="text-[13px] font-bold hidden sm:inline" style={{ color: "#1E1E24" }}>Ma Culture</span>
+        <span className="text-[13px] font-bold hidden sm:inline" style={{ color: "var(--text-primary)" }}>Ma Culture</span>
       </div>
 
       {/* Search with autocomplete */}
@@ -40,7 +40,7 @@ export default function Header({ searchQuery, onSearchChange, onOpenFilters, onA
             backgroundColor: "var(--surface)",
           }}
           onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(229,107,58,0.4)"; e.currentTarget.style.color = "#E56B3A"; e.currentTarget.style.backgroundColor = "rgba(229,107,58,0.06)"; }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = "#E8E4DF"; e.currentTarget.style.color = "var(--text-secondary)"; e.currentTarget.style.backgroundColor = "#FFFFFF"; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text-secondary)"; e.currentTarget.style.backgroundColor = "var(--surface)"; }}
         >
           <SlidersHorizontal className="w-3.5 h-3.5" />
           <span className="hidden sm:inline">Filtrer</span>
