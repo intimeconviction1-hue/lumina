@@ -63,6 +63,7 @@ const NotReleased    = lazy(() => import('./pages/NotReleased'));
 const WantToWatch    = lazy(() => import('./pages/WantToWatch'));
 const Audit          = lazy(() => import('./pages/Audit'));
 const Enrichissement = lazy(() => import('./pages/Enrichissement'));
+const TagsManager    = lazy(() => import('./pages/TagsManager'));
 
 
 export const PAGES = {
@@ -76,6 +77,7 @@ export const PAGES = {
     "WantToWatch": WantToWatch,
     "Audit": Audit,
     "Enrichissement": Enrichissement,
+    "TagsManager": TagsManager,
 }
 
 export const pagesConfig = {
