@@ -48,6 +48,11 @@ function scoreWork(work, recentGenres, recentTypes, preferredTypes) {
     reasons.push(`Genre que tu n'as pas vu récemment`);
   }
 
+  // Malus type déjà consommé récemment (anti-répétition)
+  if (recentTypes.has(work.type)) {
+    score -= 1;
+  }
+
   // Bonus plateforme renseignée (= accessible concrètement)
   const platforms = Array.isArray(work.platform) ? work.platform : (work.platform ? [work.platform] : []);
   if (platforms.length > 0) {

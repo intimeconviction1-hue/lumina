@@ -170,11 +170,13 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
 
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
+      const qTag = q.replace(/^#/, "");
       result = result.filter(w =>
         w.title?.toLowerCase().includes(q) ||
         w.creator?.toLowerCase().includes(q) ||
         w.creator_name?.toLowerCase().includes(q) ||
-        w.genre?.some(g => g.toLowerCase().includes(q))
+        w.genre?.some(g => g.toLowerCase().includes(q)) ||
+        w.tags?.some(t => t.toLowerCase().includes(qTag))
       );
     }
 

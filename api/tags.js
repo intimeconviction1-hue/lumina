@@ -79,7 +79,7 @@ export default async function handler(req, res) {
   const action = body.action;
   const sources = (Array.isArray(body.from) ? body.from : [body.from])
     .map(x => String(x || '').trim()).filter(Boolean);
-  let target = (action === 'delete' || body.to == null) ? null : String(body.to).trim();
+  let target = (action === 'delete' || body.to == null) ? null : String(body.to).trim().toLowerCase();
 
   if (!['rename', 'merge', 'delete'].includes(action)) return res.status(400).json({ ok: false, error: 'Action inconnue.' });
   if (!sources.length) return res.status(400).json({ ok: false, error: 'Aucun tag source fourni.' });

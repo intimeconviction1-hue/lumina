@@ -33,11 +33,13 @@ export default function SearchBar({ value, onChange, works = [], searchRef }) {
 
   const suggestions = React.useMemo(() => {
     if (!value || value.length < 2) return [];
+    const tagQuery = value.replace(/^#/, "");
     const matched = works.filter(w =>
       fuzzyMatch(value, w.title) ||
       fuzzyMatch(value, w.creator) ||
       fuzzyMatch(value, w.creator_name) ||
-      (w.genre || []).some(g => fuzzyMatch(value, g))
+      (w.genre || []).some(g => fuzzyMatch(value, g)) ||
+      (w.tags || []).some(t => fuzzyMatch(tagQuery, t))
     );
     return matched.slice(0, 7);
   }, [value, works]);

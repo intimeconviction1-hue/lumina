@@ -14,8 +14,8 @@ export default function BulkActionBar({ count, onApply, onCancel }) {
   const handleApply = async () => {
     setLoading(true);
     await onApply({
-      tags: tags.split(",").map(t => t.trim()).filter(Boolean),
-      genres: genres.split(",").map(g => g.trim()).filter(Boolean),
+      tags: tags.split(",").map(t => t.trim().toLowerCase()).filter(Boolean),
+      genres: genres.split(",").map(g => g.trim().toLowerCase()).filter(Boolean),
       type: type || null,
       status: status || null,
     });
