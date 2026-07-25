@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { useWorks } from "@/hooks/useWorks";
+import { useWorkMutations } from "@/hooks/useWorkMutations";
 import { effectiveStatus } from "@/lib/statusActions";
 import StatsCards from "../components/home/StatsCards";
 import SurpriseCard from "../components/home/SurpriseCard";
@@ -12,6 +13,7 @@ import TonightPick from "../components/home/TonightPick";
 import TypeShortcuts from "../components/home/TypeShortcuts";
 import RecentWorks from "../components/home/RecentWorks";
 import TagCloud from "../components/home/TagCloud";
+import WorksGrid from "../components/works/WorksGrid";
 import { motion } from "framer-motion";
 import { Clapperboard } from "lucide-react";
 
@@ -48,14 +50,20 @@ const SkelBlock = ({ h = 160 }) => (
   <div className="skeleton" style={{ height: h, borderRadius: "var(--radius-card)" }} />
 );
 
-export default function Home({ onAddWork }) {
+export default function Home({ onAddWork, onEditWork }) {
   const [activeTags, setActiveTags] = useState([]);
 
   const { data: works = [], isLoading } = useWorks();
+  const { updateWork, removeWork } = useWorkMutations();
 
   const toggleTag = (tag) => {
     setActiveTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
   };
+
+  // Optimistic + rollback + toast + invalidation gérés par useWorkMutations.
+  const handleDelete = (work) => removeWork(work.id);
+  const handleStatusChange = (work, newStatus) => updateWork(work.id, { status: newStatus });
+  const handleToggleFavorite = (work) => updateWork(work.id, { favorite: !work.favorite });
 
   // Filtre cumulatif par tags (AND)
   const filteredWorks = useMemo(() => {
@@ -122,8 +130,30 @@ export default function Home({ onAddWork }) {
         />
       )}
 
-      {/* Derniers ajouts sous forme de cartes miniatures */}
-      {!isLoading && works.length > 0 && (
+      {/* Résultats du filtre par tags — liste complète, pour qu'on voie vraiment les œuvres correspondantes */}
+      {!isLoading && activeTags.length > 0 && (
+        <Section>
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-[12px] font-bold uppercase tracking-[0.12em]" style={{ color: "var(--text-muted)" }}>
+              Résultats filtrés
+            </span>
+            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "rgba(139,92,246,0.12)", color: "#8B5CF6" }}>
+              {filteredWorks.length}
+            </span>
+          </div>
+          <WorksGrid
+            works={filteredWorks}
+            onEdit={onEditWork}
+            onDelete={handleDelete}
+            onStatusChange={handleStatusChange}
+            onToggleFavorite={handleToggleFavorite}
+            emptyMessage="Aucune œuvre avec ce(s) tag(s)"
+          />
+        </Section>
+      )}
+
+      {/* Derniers ajouts sous forme de cartes miniatures — masqué pendant un filtre par tags (non pertinent) */}
+      {!isLoading && works.length > 0 && activeTags.length === 0 && (
         <RecentWorks works={works} />
       )}
 
