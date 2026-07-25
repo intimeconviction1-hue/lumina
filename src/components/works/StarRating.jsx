@@ -48,6 +48,9 @@ export default function StarRating({ value = 0, onChange, size = "md", showLabel
   const px = SIZES[size] || SIZES.md;
   const readonly = !onChange;
   const [hover, setHover] = useState(null);
+  // Les colonnes numeric Postgres reviennent en string côté API (ex. "3.5") — on force le type ici,
+  // au point d'entrée unique, plutôt que de compter sur chaque appelant.
+  value = Number(value) || 0;
   const displayed = hover !== null ? hover : value;
 
   const getFill = (i) => {

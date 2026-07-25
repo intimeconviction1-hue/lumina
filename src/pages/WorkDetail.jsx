@@ -62,8 +62,9 @@ export default function WorkDetail({ onEditWork }) {
   // Optimistic + rollback + toast + invalidation gérés par useWorkMutations
   // (le hook patche à la fois la liste WORKS_KEY et le détail ["work", id]).
   const handleStatusChange = (_, newStatus) => updateWork(workId, { status: newStatus });
-  const handleRatingChange = (r) => updateWork(workId, { rating: r === work.rating ? 0 : r });
-  const handleAnticipationChange = (r) => updateWork(workId, { anticipation_rating: r === work.anticipation_rating ? 0 : r });
+  // work.rating / work.anticipation_rating reviennent en string depuis Postgres (colonnes numeric) : on compare en nombre.
+  const handleRatingChange = (r) => updateWork(workId, { rating: r === Number(work.rating) ? 0 : r });
+  const handleAnticipationChange = (r) => updateWork(workId, { anticipation_rating: r === Number(work.anticipation_rating) ? 0 : r });
   const handleToggleFavorite = () => updateWork(workId, { favorite: !work.favorite });
   const handleDelete = async () => {
     await removeWork(workId);
