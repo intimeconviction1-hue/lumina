@@ -12,7 +12,7 @@ export const SORT_COLUMNS = new Set([
 export const WRITABLE = [
   'title', 'type', 'creator', 'creator_name', 'status', 'priority',
   'difficulty_level', 'language', 'mood', 'country', 'year', 'released_year',
-  'rating', 'page_count', 'duration_minutes', 'favorite', 'source_url',
+  'rating', 'anticipation_rating', 'page_count', 'duration_minutes', 'favorite', 'source_url',
   'cover_image', 'recommended_by', 'description', 'personal_note',
   'short_review', 'genre', 'platform', 'tags', 'started_at', 'finished_at',
 ];

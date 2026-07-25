@@ -63,6 +63,7 @@ export default function WorkDetail({ onEditWork }) {
   // (le hook patche à la fois la liste WORKS_KEY et le détail ["work", id]).
   const handleStatusChange = (_, newStatus) => updateWork(workId, { status: newStatus });
   const handleRatingChange = (r) => updateWork(workId, { rating: r === work.rating ? 0 : r });
+  const handleAnticipationChange = (r) => updateWork(workId, { anticipation_rating: r === work.anticipation_rating ? 0 : r });
   const handleToggleFavorite = () => updateWork(workId, { favorite: !work.favorite });
   const handleDelete = async () => {
     await removeWork(workId);
@@ -200,16 +201,24 @@ export default function WorkDetail({ onEditWork }) {
                 })}
               </div>
 
-              {/* Note — demi-étoiles */}
+              {/* Note — impatience avant, satisfaction après (demi-étoiles) */}
               <div className="mt-4">
                 {isFinished(work) ? (
                   <div>
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.1em] mb-2" style={{ color: "var(--text-muted)" }}>Ma note</p>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.1em] mb-2" style={{ color: "var(--text-muted)" }}>Ma note (satisfaction)</p>
                     <StarRating value={work.rating || 0} onChange={handleRatingChange} size="md" />
+                    {work.anticipation_rating > 0 && (
+                      <p className="text-[12px] mt-2 flex items-center gap-2" style={{ color: "var(--text-muted)" }}>
+                        Impatience avant : <StarRating value={work.anticipation_rating} size="sm" showLabel={false} />
+                      </p>
+                    )}
                   </div>
-                ) : work.rating > 0 ? (
-                  <StarRating value={work.rating} size="sm" />
-                ) : null}
+                ) : (
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.1em] mb-2" style={{ color: "var(--text-muted)" }}>Note d'impatience</p>
+                    <StarRating value={work.anticipation_rating || 0} onChange={handleAnticipationChange} size="md" />
+                  </div>
+                )}
               </div>
 
               {/* Bouton Regarder maintenant */}

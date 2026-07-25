@@ -31,7 +31,7 @@ const INACTIVE_PILL = { borderColor: "var(--border)", backgroundColor: "transpar
 const emptyForm = {
   title: "", type: "film", creator: "",
   status: "À voir", priority: "normal", genre: [], platform: [],
-  year: "", description: "", rating: 0, favorite: false,
+  year: "", description: "", rating: 0, anticipation_rating: 0, favorite: false,
   cover_image: "", source_url: "", tags: [],
   duration_minutes: "", country: "", language: "",
   personal_note: "", recommended_by: "",
@@ -228,6 +228,7 @@ export default function WorkFormModal({ open, onClose, work, onSave }) {
         creator_name: form.creator || null,
         year: form.year ? Number(form.year) : null,
         rating: form.rating || null,
+        anticipation_rating: form.anticipation_rating || null,
         duration_minutes: form.duration_minutes ? Number(form.duration_minutes) : null,
       };
       await onSave(data);
@@ -442,13 +443,26 @@ export default function WorkFormModal({ open, onClose, work, onSave }) {
             <TagInput tags={form.tags} onChange={v => set("tags", v)} suggestions={allTags} />
           </div>
 
-          {/* — NOTE (visible uniquement si Visionné) — */}
-          {isWatched && (
+          {/* — NOTE — impatience avant, satisfaction après (deux notes distinctes) — */}
+          {isWatched ? (
             <div>
               <label className="text-[11.5px] font-semibold uppercase tracking-[0.1em] mb-2 block" style={{ color: "var(--text-muted)" }}>
-                Votre note <span className="normal-case font-normal" style={{ color: "var(--text-muted)" }}>(clic gauche = demi-étoile, droit = étoile pleine)</span>
+                Note de satisfaction <span className="normal-case font-normal" style={{ color: "var(--text-muted)" }}>(clic gauche = demi-étoile, droit = étoile pleine)</span>
               </label>
               <StarRating value={form.rating || 0} onChange={v => set("rating", v)} size="lg" />
+              {form.anticipation_rating > 0 && (
+                <p className="text-[12px] mt-2 flex items-center gap-2" style={{ color: "var(--text-muted)" }}>
+                  Impatience avant :
+                  <StarRating value={form.anticipation_rating} size="sm" showLabel={false} />
+                </p>
+              )}
+            </div>
+          ) : (
+            <div>
+              <label className="text-[11.5px] font-semibold uppercase tracking-[0.1em] mb-2 block" style={{ color: "var(--text-muted)" }}>
+                Note d'impatience <span className="normal-case font-normal" style={{ color: "var(--text-muted)" }}>(à quel point tu as hâte)</span>
+              </label>
+              <StarRating value={form.anticipation_rating || 0} onChange={v => set("anticipation_rating", v)} size="lg" />
             </div>
           )}
 
