@@ -1,8 +1,8 @@
 import React from "react";
-import { SlidersHorizontal, Plus, User, BookMarked, Menu } from "lucide-react";
+import { SlidersHorizontal, Plus, User, BookMarked, Menu, X } from "lucide-react";
 import SearchBar from "./SearchBar";
 
-export default function Header({ searchQuery, onSearchChange, onOpenFilters, onAddWork, onOpenSidebar, searchRef, works = [] }) {
+export default function Header({ searchQuery, onSearchChange, onOpenFilters, onAddWork, onOpenSidebar, sidebarOpen, searchRef, works = [] }) {
   return (
     <header
       className="sticky top-0 z-50 flex items-center gap-2 px-4 py-2.5 lg:px-6 lg:py-3.5"
@@ -17,9 +17,9 @@ export default function Header({ searchQuery, onSearchChange, onOpenFilters, onA
         onClick={onOpenSidebar}
         className="lg:hidden flex-shrink-0 w-8 h-8 rounded-[10px] flex items-center justify-center"
         style={{ color: "var(--text-secondary)", backgroundColor: "var(--bg)", border: "1px solid var(--border)" }}
-        aria-label="Ouvrir le menu"
+        aria-label={sidebarOpen ? "Fermer le menu" : "Ouvrir le menu"}
       >
-        <Menu className="w-4 h-4" />
+        {sidebarOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
       </button>
 
       {/* Logo zone (mobile only) */}

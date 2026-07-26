@@ -151,7 +151,8 @@ export default function Layout({ children, currentPageName }) {
           onSearchChange={handleSearchChange}
           onOpenFilters={() => setShowFilters(true)}
           onAddWork={() => { setEditingWork(null); setShowAddWork(true); }}
-          onOpenSidebar={() => setSidebarOpen(true)}
+          onOpenSidebar={() => setSidebarOpen(v => !v)}
+          sidebarOpen={sidebarOpen}
           searchRef={searchRef}
           works={works}
         />
