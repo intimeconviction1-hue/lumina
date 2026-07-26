@@ -125,10 +125,13 @@ export default function Layout({ children, currentPageName }) {
         <Sidebar currentPage={currentPageName} darkMode={darkMode} onToggleDark={() => setDarkMode(d => !d)} />
       </div>
 
-      {/* Sidebar mobile */}
-      <div className={`lg:hidden fixed inset-y-0 left-0 z-40 transform transition-transform duration-300 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
-        <Sidebar currentPage={currentPageName} darkMode={darkMode} onToggleDark={() => setDarkMode(d => !d)} onNavigate={() => setSidebarOpen(false)} />
-      </div>
+      {/* Sidebar mobile — rendu conditionnel simple (pas de transform/transition) : "fermé" veut dire
+          que le tiroir n'existe pas du tout dans le DOM, aucune ambiguïté de repaint possible. */}
+      {sidebarOpen && (
+        <div className="lg:hidden fixed inset-y-0 left-0 z-40">
+          <Sidebar currentPage={currentPageName} darkMode={darkMode} onToggleDark={() => setDarkMode(d => !d)} onNavigate={() => setSidebarOpen(false)} />
+        </div>
+      )}
 
       {/* Main */}
       <div className="lg:ml-[272px] min-h-screen flex flex-col">
