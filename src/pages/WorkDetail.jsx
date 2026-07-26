@@ -117,7 +117,8 @@ export default function WorkDetail({ onEditWork }) {
 
   return (
     <div className="max-w-5xl mx-auto">
-      <Link to="/AllWorks" className="inline-flex items-center gap-2 text-[13px] font-medium mb-7 transition-opacity hover:opacity-70" style={{ color: "var(--text-secondary)" }}>
+      {/* Doublon du bouton retour flottant du Layout sur mobile (lg:hidden côté Layout) — visible seulement en desktop ici. */}
+      <Link to="/AllWorks" className="hidden lg:inline-flex items-center gap-2 text-[13px] font-medium mb-7 transition-opacity hover:opacity-70" style={{ color: "var(--text-secondary)" }}>
         <ArrowLeft className="w-3.5 h-3.5" /> Retour à la bibliothèque
       </Link>
 

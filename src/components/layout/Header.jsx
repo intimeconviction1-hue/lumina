@@ -1,8 +1,8 @@
 import React from "react";
-import { SlidersHorizontal, Plus, User, BookMarked } from "lucide-react";
+import { SlidersHorizontal, Plus, User, BookMarked, Menu } from "lucide-react";
 import SearchBar from "./SearchBar";
 
-export default function Header({ searchQuery, onSearchChange, onOpenFilters, onAddWork, searchRef, works = [] }) {
+export default function Header({ searchQuery, onSearchChange, onOpenFilters, onAddWork, onOpenSidebar, searchRef, works = [] }) {
   return (
     <header
       className="sticky top-0 z-50 flex items-center gap-2 px-4 py-2.5 lg:px-6 lg:py-3.5"
@@ -12,6 +12,16 @@ export default function Header({ searchQuery, onSearchChange, onOpenFilters, onA
         boxShadow: "0 1px 6px rgba(0,0,0,0.08)",
       }}
     >
+      {/* Menu (mobile only) — seul point d'accès à la Sidebar (Lus, Pas sorti, Audit, Tags, mode sombre…) sur petit écran. */}
+      <button
+        onClick={onOpenSidebar}
+        className="lg:hidden flex-shrink-0 w-8 h-8 rounded-[10px] flex items-center justify-center"
+        style={{ color: "var(--text-secondary)", backgroundColor: "var(--bg)", border: "1px solid var(--border)" }}
+        aria-label="Ouvrir le menu"
+      >
+        <Menu className="w-4 h-4" />
+      </button>
+
       {/* Logo zone (mobile only) */}
       <div className="flex items-center gap-2.5 lg:hidden flex-shrink-0">
         <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: "#E56B3A" }}>

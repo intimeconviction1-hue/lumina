@@ -13,7 +13,7 @@ export default function TypeShortcuts({ works = [] }) {
   const navigate = useNavigate();
 
   return (
-    <div className="grid grid-cols-5 gap-2 sm:gap-3">
+    <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-3">
       {TYPES.map(({ key, label, emoji, color, bg }) => {
         const count = works.filter(w => w.type === key).length;
         return (

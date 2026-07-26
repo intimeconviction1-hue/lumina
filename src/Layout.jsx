@@ -127,7 +127,7 @@ export default function Layout({ children, currentPageName }) {
 
       {/* Sidebar mobile */}
       <div className={`lg:hidden fixed inset-y-0 left-0 z-40 transform transition-transform duration-300 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
-        <Sidebar currentPage={currentPageName} darkMode={darkMode} onToggleDark={() => setDarkMode(d => !d)} />
+        <Sidebar currentPage={currentPageName} darkMode={darkMode} onToggleDark={() => setDarkMode(d => !d)} onNavigate={() => setSidebarOpen(false)} />
       </div>
 
       {/* Main */}
@@ -151,6 +151,7 @@ export default function Layout({ children, currentPageName }) {
           onSearchChange={handleSearchChange}
           onOpenFilters={() => setShowFilters(true)}
           onAddWork={() => { setEditingWork(null); setShowAddWork(true); }}
+          onOpenSidebar={() => setSidebarOpen(true)}
           searchRef={searchRef}
           works={works}
         />
