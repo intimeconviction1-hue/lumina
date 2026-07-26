@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Home, LayoutGrid, Clock, Eye, Sun, Moon, Clapperboard, Calendar, Bookmark, Trash2, PlayCircle, BookOpen, BookCheck, ShieldAlert, BookImage, Tags } from "lucide-react";
+import { Home, LayoutGrid, Clock, Eye, Sun, Moon, Clapperboard, Calendar, Bookmark, Trash2, PlayCircle, BookOpen, BookCheck, ShieldAlert, BookImage, Tags, X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useWorks } from "@/hooks/useWorks";
 import { worksApi } from "@/api/works";
@@ -92,12 +92,23 @@ export default function Sidebar({ currentPage, darkMode, onToggleDark, onNavigat
           >
             <Clapperboard className="w-4 h-4 text-white" />
           </div>
-          <div>
+          <div className="flex-1 min-w-0">
             <p className="text-[14px] font-bold tracking-tight leading-none" style={{ color: "var(--text-primary)" }}>
               Ma Culture
             </p>
             <p className="text-[10px] mt-0.5 font-medium" style={{ color: "var(--text-muted)" }}>Bibliothèque personnelle</p>
           </div>
+          {/* Fermer (mobile only) — toujours visible depuis l'intérieur du tiroir, contrairement au bouton du Header qu'il peut recouvrir. */}
+          {onNavigate && (
+            <button
+              onClick={onNavigate}
+              className="lg:hidden flex-shrink-0 w-8 h-8 rounded-[10px] flex items-center justify-center"
+              style={{ color: "var(--text-secondary)", backgroundColor: "var(--bg)", border: "1px solid var(--border)" }}
+              aria-label="Fermer le menu"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
 
