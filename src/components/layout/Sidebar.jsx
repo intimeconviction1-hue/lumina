@@ -76,7 +76,7 @@ export default function Sidebar({ currentPage, darkMode, onToggleDark, onNavigat
 
   return (
     <aside
-      className="flex fixed left-0 top-0 bottom-0 z-40 flex-col"
+      className="flex flex-col h-full"
       style={{
         width: "var(--sidebar-width)",
         backgroundColor: "var(--surface)",

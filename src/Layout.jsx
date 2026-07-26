@@ -120,8 +120,8 @@ export default function Layout({ children, currentPageName }) {
         <div className="fixed inset-0 bg-black/40 z-30 lg:hidden" onClick={() => setSidebarOpen(false)} />
       )}
 
-      {/* Sidebar desktop */}
-      <div className="hidden lg:block">
+      {/* Sidebar desktop — le wrapper porte tout le positionnement fixe ; Sidebar lui-même n'est plus qu'un flex simple. */}
+      <div className="hidden lg:block fixed left-0 top-0 bottom-0 z-40">
         <Sidebar currentPage={currentPageName} darkMode={darkMode} onToggleDark={() => setDarkMode(d => !d)} />
       </div>
 
