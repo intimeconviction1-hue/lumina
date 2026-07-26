@@ -112,6 +112,10 @@ export default function Sidebar({ currentPage, darkMode, onToggleDark, onNavigat
         </div>
       </div>
 
+      {/* Tout le contenu ci-dessous défile ensemble (une seule zone de scroll) — sinon le bas
+          (mode sombre, supprimer le compte) devient inatteignable quand le contenu dépasse l'écran.
+          min-h-0 est nécessaire : sans ça, un enfant flex refuse de rétrécir sous sa taille naturelle. */}
+      <div className="flex-1 overflow-y-auto min-h-0">
       {/* Nav label */}
       <div className="px-5 mb-1.5">
         <span className="text-[9.5px] font-bold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>
@@ -152,7 +156,7 @@ export default function Sidebar({ currentPage, darkMode, onToggleDark, onNavigat
 
       {/* Genres populaires */}
       {topGenres.length > 0 && (
-        <div className="px-3 pb-3 flex-1 overflow-y-auto">
+        <div className="px-3 pb-3">
           <div className="px-3 mb-1.5">
             <span className="text-[9.5px] font-bold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>
               Genres populaires
@@ -211,18 +215,6 @@ export default function Sidebar({ currentPage, darkMode, onToggleDark, onNavigat
             {label}
           </a>
         ))}
-        <a
-          href="https://www.youtube.com/playlist?list=WL"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-[12.5px] font-medium transition-all mb-0.5"
-          style={{ color: "var(--text-secondary)", userSelect: "none" }}
-          onMouseEnter={e => { e.currentTarget.style.backgroundColor = "rgba(255,0,0,0.07)"; e.currentTarget.style.color = "#CC2200"; }}
-          onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-secondary)"; }}
-        >
-          <span className="text-[15px] w-5 text-center leading-none">▶️</span>
-          YouTube
-        </a>
       </div>
 
       {/* YouTube link */}
@@ -286,6 +278,7 @@ export default function Sidebar({ currentPage, darkMode, onToggleDark, onNavigat
           <Trash2 className="w-3.5 h-3.5" />
           Supprimer mon compte
         </button>
+      </div>
       </div>
 
       <AlertDialog open={showDeleteAccount} onOpenChange={setShowDeleteAccount}>

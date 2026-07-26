@@ -117,7 +117,7 @@ export default function Layout({ children, currentPageName }) {
     <div className="min-h-screen transition-colors duration-300" style={{ backgroundColor: "var(--bg)" }}>
       {/* Mobile overlay */}
       {sidebarOpen && (
-        <div className="fixed inset-0 bg-black/40 z-30 lg:hidden" onClick={() => setSidebarOpen(false)} />
+        <div className="fixed inset-0 bg-black/40 z-30 lg:hidden animate-in fade-in duration-200" onClick={() => setSidebarOpen(false)} />
       )}
 
       {/* Sidebar desktop — le wrapper porte tout le positionnement fixe ; Sidebar lui-même n'est plus qu'un flex simple. */}
@@ -128,7 +128,7 @@ export default function Layout({ children, currentPageName }) {
       {/* Sidebar mobile — rendu conditionnel simple (pas de transform/transition) : "fermé" veut dire
           que le tiroir n'existe pas du tout dans le DOM, aucune ambiguïté de repaint possible. */}
       {sidebarOpen && (
-        <div className="lg:hidden fixed inset-y-0 left-0 z-40">
+        <div className="lg:hidden fixed inset-y-0 left-0 z-40 animate-in fade-in duration-200">
           <Sidebar currentPage={currentPageName} darkMode={darkMode} onToggleDark={() => setDarkMode(d => !d)} onNavigate={() => setSidebarOpen(false)} />
         </div>
       )}
