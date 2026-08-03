@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { useWorks } from "@/hooks/useWorks";
 import { useWorkMutations } from "@/hooks/useWorkMutations";
-import { effectiveStatus } from "@/lib/statusActions";
+import { effectiveStatus, statusPatch } from "@/lib/statusActions";
 import StatsCards from "../components/home/StatsCards";
 import SurpriseCard from "../components/home/SurpriseCard";
 import HorizontalScroll from "../components/home/HorizontalScroll";
@@ -62,7 +62,7 @@ export default function Home({ onAddWork, onEditWork }) {
 
   // Optimistic + rollback + toast + invalidation gérés par useWorkMutations.
   const handleDelete = (work) => removeWork(work.id);
-  const handleStatusChange = (work, newStatus) => updateWork(work.id, { status: newStatus });
+  const handleStatusChange = (work, newStatus) => updateWork(work.id, statusPatch(work, newStatus));
   const handleToggleFavorite = (work) => updateWork(work.id, { favorite: !work.favorite });
 
   // Filtre cumulatif par tags (AND)

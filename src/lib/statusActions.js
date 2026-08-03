@@ -102,6 +102,31 @@ export function effectiveStatus(work) {
 // Alias historique — même logique que effectiveStatus (conservé pour la lisibilité des appels de filtrage).
 export const filterStatus = effectiveStatus;
 
+// PATCH à écrire lors d'un changement de statut — SOURCE UNIQUE.
+// Écrit les horodatages started_at / finished_at en même temps que le statut.
+// Sans ça : badges "Commencé le" / "Terminé le" invisibles, tri de ResumeSection
+// en fallback, et section RecentlyFinished vide en permanence.
+// Utilisée par AllWorks, Home et WorkDetail — ne pas redupliquer la logique.
+export function statusPatch(work, newStatus) {
+  const patch = { status: newStatus };
+  const now = new Date().toISOString();
+  const target = STATUS_ALIASES[newStatus] || newStatus;
+
+  if (target === "En cours") {
+    // Démarrage ou reprise ("Revoir" / "Relire") : on horodate le début
+    // et on efface la fin précédente, sinon l'œuvre resterait "terminée".
+    patch.started_at = now;
+    patch.finished_at = null;
+  } else if (target === "Visionné" || target === "Lu") {
+    patch.finished_at = now;
+    // started_at volontairement non fabriqué : si l'œuvre n'est jamais passée
+    // par "En cours", on n'invente pas une date de début.
+  }
+  // "À voir" / "Envie de lire" (mise en pause) et "Pas sorti" :
+  // on conserve l'historique existant tel quel.
+  return patch;
+}
+
 // L'œuvre est-elle terminée (vue OU lue) ?
 export function isFinished(work) {
   const s = effectiveStatus(work);

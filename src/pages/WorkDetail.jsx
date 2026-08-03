@@ -9,7 +9,7 @@ import StarRating from "../components/works/StarRating";
 import { motion } from "framer-motion";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { typeIcons, typeColors } from "../components/works/WorkCard";
-import { STATUS_CONFIG, STATUS_ACTIONS, effectiveStatus, isFinished } from "@/lib/statusActions";
+import { STATUS_CONFIG, STATUS_ACTIONS, effectiveStatus, isFinished, statusPatch } from "@/lib/statusActions";
 import { useWorks } from "@/hooks/useWorks";
 import { worksApi } from "@/api/works";
 import { useWorkMutations } from "@/hooks/useWorkMutations";
@@ -61,7 +61,7 @@ export default function WorkDetail({ onEditWork }) {
 
   // Optimistic + rollback + toast + invalidation gérés par useWorkMutations
   // (le hook patche à la fois la liste WORKS_KEY et le détail ["work", id]).
-  const handleStatusChange = (_, newStatus) => updateWork(workId, { status: newStatus });
+  const handleStatusChange = (_, newStatus) => updateWork(workId, statusPatch(work, newStatus));
   // work.rating / work.anticipation_rating reviennent en string depuis Postgres (colonnes numeric) : on compare en nombre.
   const handleRatingChange = (r) => updateWork(workId, { rating: r === Number(work.rating) ? 0 : r });
   const handleAnticipationChange = (r) => updateWork(workId, { anticipation_rating: r === Number(work.anticipation_rating) ? 0 : r });

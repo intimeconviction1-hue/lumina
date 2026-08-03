@@ -9,7 +9,7 @@ import { StatusButton, TypeButton } from "../components/works/FilterButtons";
 import { X, CheckSquare, Square } from "lucide-react";
 import BulkActionBar from "../components/works/BulkActionBar";
 import { useToast } from "@/components/ui/use-toast";
-import { STATUS_CONFIG, TYPE_COLORS, effectiveStatus, matchesStatusFilter, STATUS_ALIASES } from "@/lib/statusActions";
+import { STATUS_CONFIG, TYPE_COLORS, effectiveStatus, matchesStatusFilter, STATUS_ALIASES, statusPatch } from "@/lib/statusActions";
 
 const STATUS_COLORS = Object.fromEntries(
   Object.entries(STATUS_CONFIG).map(([k, v]) => [k, v.color])
@@ -232,7 +232,7 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
 
   // Optimistic + rollback + toast d'erreur sont gérés par le hook useWorkMutations.
   const handleDelete = (work) => removeWork(work.id);
-  const handleStatusChange = (work, newStatus) => updateWork(work.id, { status: newStatus });
+  const handleStatusChange = (work, newStatus) => updateWork(work.id, statusPatch(work, newStatus));
   const handleToggleFavorite = (work) => updateWork(work.id, { favorite: !work.favorite });
 
   const handleBulkApply = async ({ tags, genres, type, status }) => {
