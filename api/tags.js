@@ -5,6 +5,15 @@
 // - POST merge     : { from:[t1,t2,...], to }   -> fusionne plusieurs tags en un.
 // - POST delete    : { from:[tag] }             -> retire un tag de toutes les œuvres.
 // Agit directement sur la base Neon (colonne works.tags text[]).
+//
+// APERÇU : toute action accepte { dryRun: true } -> calcule l'impact et le renvoie
+// SANS RIEN ÉCRIRE. Même code de calcul que l'application réelle, donc l'aperçu
+// ne peut pas diverger du résultat. C'est le filet avant une opération de masse.
+//
+// CASSE : le tag cible est normalisé en minuscules (cohérent avec la saisie dans
+// le formulaire d'œuvre et avec tout le corpus Babelio existant). La valeur
+// réellement enregistrée est renvoyée dans `target` pour que l'interface affiche
+// le vrai résultat au lieu de la saisie brute.
 import { neon } from '@neondatabase/serverless';
 
 // text Postgres '{a,"b c"}' | JSON | tableau -> tableau JS (robuste).
@@ -77,6 +86,7 @@ export default async function handler(req, res) {
   try { body = await readBody(req); } catch { return res.status(400).json({ ok: false, error: 'Corps invalide.' }); }
 
   const action = body.action;
+  const dryRun = body.dryRun === true;
   const sources = (Array.isArray(body.from) ? body.from : [body.from])
     .map(x => String(x || '').trim()).filter(Boolean);
   let target = (action === 'delete' || body.to == null) ? null : String(body.to).trim().toLowerCase();
@@ -88,7 +98,23 @@ export default async function handler(req, res) {
   const srcLower = new Set(sources.map(s => s.toLowerCase()));
 
   try {
-    const rows = await sql`select id, tags from works`;
+    const rows = await sql`select id, title, tags from works`;
+
+    // COLLISION : la cible existe-t-elle déjà, en dehors des tags sources ?
+    // Si oui, l'opération n'est pas un simple renommage — c'est une fusion.
+    // On le signale pour que l'interface puisse prévenir avant d'appliquer.
+    let collision = false;
+    let collisionCount = 0;
+    if (target) {
+      for (const w of rows) {
+        const has = asTagArray(w.tags).some(t => {
+          const lo = String(t).trim().toLowerCase();
+          return lo === target && !srcLower.has(lo);
+        });
+        if (has) { collision = true; collisionCount++; }
+      }
+    }
+
     const changes = [];
     for (const w of rows) {
       const old = asTagArray(w.tags).map(t => String(t).trim()).filter(Boolean);
@@ -103,7 +129,18 @@ export default async function handler(req, res) {
         if (seen.has(key)) continue; // dédoublonnage
         seen.add(key); out.push(nk);
       }
-      changes.push({ id: w.id, newTags: out });
+      changes.push({ id: w.id, title: w.title, newTags: out });
+    }
+
+    // APERÇU : on s'arrête ici, aucune écriture. `sample` sert à montrer
+    // concrètement ce qui va changer plutôt qu'un simple compteur.
+    if (dryRun) {
+      return res.status(200).json({
+        ok: true, preview: true, action, sources, target,
+        changedWorks: changes.length,
+        collision, collisionCount,
+        sample: changes.slice(0, 8).map(c => c.title).filter(Boolean),
+      });
     }
 
     let applied = 0;
@@ -114,7 +151,7 @@ export default async function handler(req, res) {
       ));
       applied += batch.length;
     }
-    return res.status(200).json({ ok: true, action, sources, target, changedWorks: applied });
+    return res.status(200).json({ ok: true, action, sources, target, changedWorks: applied, collision });
   } catch (err) {
     return res.status(500).json({ ok: false, error: String(err?.message || err) });
   }

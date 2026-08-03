@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Tags, Search, Pencil, Trash2, Loader2, GitMerge, X } from "lucide-react";
+import { Tags, Search, Pencil, Trash2, Loader2, GitMerge, X, AlertTriangle } from "lucide-react";
 import { tagsApi } from "@/api/tags";
 import { WORKS_KEY } from "@/hooks/useWorks";
 import { toast } from "@/components/ui/use-toast";
@@ -9,12 +9,14 @@ import { Input } from "@/components/ui/input";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 const TAGS_KEY = ["tags"];
+
+// Le serveur enregistre toujours le tag cible en minuscules (cohérent avec la
+// saisie dans le formulaire d'œuvre et avec le corpus Babelio). On applique la
+// même règle ici pour AFFICHER la valeur réelle avant d'appliquer — plus de
+// message qui annonce « Polar France » quand la base reçoit « polar france ».
+const normalizeTag = (s) => String(s || "").trim().toLowerCase();
 
 export default function TagsManager() {
   const queryClient = useQueryClient();
@@ -24,7 +26,7 @@ export default function TagsManager() {
   const [selected, setSelected] = useState(new Set());
   const [mergeTarget, setMergeTarget] = useState("");
   const [renaming, setRenaming] = useState(null);   // { tag, value }
-  const [deleting, setDeleting] = useState(null);    // tag string
+  const [confirm, setConfirm] = useState(null);     // { action, from[], to, preview }
 
   const tags = data?.tags || [];
 
@@ -33,37 +35,39 @@ export default function TagsManager() {
     return q ? tags.filter(t => t.tag.toLowerCase().includes(q)) : tags;
   }, [tags, search]);
 
-  const afterChange = (title, result) => {
-    queryClient.invalidateQueries({ queryKey: TAGS_KEY });
-    queryClient.invalidateQueries({ queryKey: WORKS_KEY });
-    toast({ title, description: `${result?.changedWorks ?? 0} œuvre(s) mise(s) à jour.` });
-  };
   const onError = (err) => toast({ title: "Échec de l'opération", description: String(err?.message || err) });
 
-  const renameMut = useMutation({
-    mutationFn: ({ from, to }) => tagsApi.rename(from, to),
-    onSuccess: (r, v) => afterChange(`Tag renommé en « ${v.to} »`, r),
-    onError,
-    onSettled: () => setRenaming(null),
-  });
-
-  const mergeMut = useMutation({
-    mutationFn: ({ from, to }) => tagsApi.merge(from, to),
-    onSuccess: (r, v) => { afterChange(`Tags fusionnés dans « ${v.to} »`, r); setSelected(new Set()); setMergeTarget(""); },
+  // ÉTAPE 1 — aperçu : calcule l'impact sans rien écrire, puis ouvre la confirmation.
+  const previewMut = useMutation({
+    mutationFn: ({ action, from, to }) => tagsApi.preview(action, from, to),
+    onSuccess: (preview, vars) => setConfirm({ ...vars, preview }),
     onError,
   });
 
-  const deleteMut = useMutation({
-    mutationFn: (tag) => tagsApi.remove(tag),
-    onSuccess: (r, tag) => {
-      afterChange(`Tag « ${tag} » supprimé`, r);
-      setSelected(prev => { const n = new Set(prev); n.delete(tag); return n; });
+  // ÉTAPE 2 — application réelle, seulement après confirmation explicite.
+  const applyMut = useMutation({
+    mutationFn: ({ action, from, to }) => {
+      if (action === "rename") return tagsApi.rename(from[0], to);
+      if (action === "merge") return tagsApi.merge(from, to);
+      return tagsApi.remove(from[0]);
+    },
+    onSuccess: (result, vars) => {
+      queryClient.invalidateQueries({ queryKey: TAGS_KEY });
+      queryClient.invalidateQueries({ queryKey: WORKS_KEY });
+      // On affiche la cible RENVOYÉE PAR LE SERVEUR, pas la saisie brute.
+      const done = vars.action === "delete"
+        ? `Tag « ${vars.from[0]} » supprimé`
+        : `Appliqué : « ${result?.target ?? vars.to} »`;
+      toast({ title: done, description: `${result?.changedWorks ?? 0} œuvre(s) mise(s) à jour.` });
+      setSelected(new Set());
+      setMergeTarget("");
+      setRenaming(null);
+      setConfirm(null);
     },
     onError,
-    onSettled: () => setDeleting(null),
   });
 
-  const busy = renameMut.isPending || mergeMut.isPending || deleteMut.isPending;
+  const busy = previewMut.isPending || applyMut.isPending;
 
   const toggle = (tag) => setSelected(prev => {
     const n = new Set(prev);
@@ -71,14 +75,33 @@ export default function TagsManager() {
     return n;
   });
 
-  const doMerge = () => {
-    const to = mergeTarget.trim();
-    if (!to) { toast({ title: "Indique d'abord le tag cible" }); return; }
-    if (selected.size < 2) { toast({ title: "Sélectionne au moins 2 tags à fusionner" }); return; }
-    mergeMut.mutate({ from: [...selected], to });
+  const askRename = () => {
+    const to = normalizeTag(renaming?.value);
+    if (!to) return;
+    previewMut.mutate({ action: "rename", from: [renaming.tag], to });
   };
 
+  const askMerge = () => {
+    const to = normalizeTag(mergeTarget);
+    if (!to) { toast({ title: "Indique d'abord le tag cible" }); return; }
+    if (selected.size < 2) { toast({ title: "Sélectionne au moins 2 tags à fusionner" }); return; }
+    previewMut.mutate({ action: "merge", from: [...selected], to });
+  };
+
+  const askDelete = (tag) => previewMut.mutate({ action: "delete", from: [tag], to: null });
+
   const label = { fontSize: "9.5px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.14em", color: "var(--text-muted)" };
+
+  // Aperçu de la normalisation, affiché sous le champ quand la saisie diffère.
+  const NormHint = ({ value }) => {
+    const norm = normalizeTag(value);
+    if (!norm || norm === String(value || "").trim()) return null;
+    return (
+      <p className="text-[11.5px] mt-1.5" style={{ color: "var(--text-muted)" }}>
+        Sera enregistré : <span style={{ color: "var(--text-secondary)", fontWeight: 600 }}>{norm}</span>
+      </p>
+    );
+  };
 
   return (
     <div className="max-w-3xl mx-auto">
@@ -90,7 +113,7 @@ export default function TagsManager() {
         <div>
           <h1 className="text-[20px] font-bold leading-none" style={{ color: "var(--text-primary)" }}>Gestion des tags</h1>
           <p className="text-[13px] mt-1" style={{ color: "var(--text-secondary)" }}>
-            Renomme, fusionne ou supprime tes tags sur toute la bibliothèque — sans scripting.
+            Renomme, fusionne ou supprime tes tags sur toute la bibliothèque — avec aperçu avant application.
           </p>
         </div>
       </div>
@@ -106,7 +129,7 @@ export default function TagsManager() {
         />
       </div>
 
-      {/* Barre de fusion (si sélection multiple) */}
+      {/* Barre de fusion (si sélection) */}
       {selected.size >= 1 && (
         <div className="flex flex-wrap items-center gap-2 p-3 mb-3 rounded-[12px]"
              style={{ backgroundColor: "#6366F110", border: "1px solid #6366F130" }}>
@@ -120,14 +143,15 @@ export default function TagsManager() {
             placeholder="fusionner en… (tag cible)"
             className="w-52 h-9"
           />
-          <Button onClick={doMerge} disabled={busy || selected.size < 2}
+          <Button onClick={askMerge} disabled={busy || selected.size < 2}
                   style={{ backgroundColor: "#6366F1", color: "#fff" }}>
-            {mergeMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Fusionner"}
+            {previewMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Aperçu de la fusion"}
           </Button>
           <button onClick={() => { setSelected(new Set()); setMergeTarget(""); }}
                   className="text-[12px] flex items-center gap-1" style={{ color: "var(--text-secondary)" }}>
             <X className="w-3.5 h-3.5" /> annuler
           </button>
+          <div className="w-full"><NormHint value={mergeTarget} /></div>
         </div>
       )}
 
@@ -161,12 +185,12 @@ export default function TagsManager() {
                 <span className="flex-1 text-[13.5px] truncate" style={{ color: "var(--text-primary)" }}>{t.tag}</span>
                 <span className="text-[11px] px-2 py-0.5 rounded-full flex-shrink-0"
                       style={{ backgroundColor: "var(--bg)", color: "var(--text-muted)" }}>{t.count}</span>
-                <button title="Renommer" onClick={() => setRenaming({ tag: t.tag, value: t.tag })}
-                        className="p-1.5 rounded-[8px] hover:opacity-70" style={{ color: "var(--text-secondary)" }}>
+                <button title="Renommer" disabled={busy} onClick={() => setRenaming({ tag: t.tag, value: t.tag })}
+                        className="p-1.5 rounded-[8px] hover:opacity-70 disabled:opacity-40" style={{ color: "var(--text-secondary)" }}>
                   <Pencil className="w-3.5 h-3.5" />
                 </button>
-                <button title="Supprimer" onClick={() => setDeleting(t.tag)}
-                        className="p-1.5 rounded-[8px] hover:opacity-70" style={{ color: "#EF4444" }}>
+                <button title="Supprimer" disabled={busy} onClick={() => askDelete(t.tag)}
+                        className="p-1.5 rounded-[8px] hover:opacity-70 disabled:opacity-40" style={{ color: "#EF4444" }}>
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -175,48 +199,94 @@ export default function TagsManager() {
         </div>
       )}
 
-      {/* Dialog renommer */}
+      {/* Dialog renommer — saisie du nouveau nom */}
       <Dialog open={!!renaming} onOpenChange={(o) => !o && setRenaming(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Renommer le tag</DialogTitle>
             <DialogDescription>Le nouveau nom remplacera « {renaming?.tag} » sur toutes les œuvres concernées.</DialogDescription>
           </DialogHeader>
-          <Input
-            autoFocus
-            value={renaming?.value ?? ""}
-            onChange={e => setRenaming(r => ({ ...r, value: e.target.value }))}
-            onKeyDown={e => { if (e.key === "Enter") { const to = (renaming?.value || "").trim(); if (to) renameMut.mutate({ from: renaming.tag, to }); } }}
-          />
+          <div>
+            <Input
+              autoFocus
+              value={renaming?.value ?? ""}
+              onChange={e => setRenaming(r => ({ ...r, value: e.target.value }))}
+              onKeyDown={e => { if (e.key === "Enter") askRename(); }}
+            />
+            <NormHint value={renaming?.value} />
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setRenaming(null)}>Annuler</Button>
             <Button
-              onClick={() => { const to = (renaming?.value || "").trim(); if (to) renameMut.mutate({ from: renaming.tag, to }); }}
-              disabled={renameMut.isPending || !(renaming?.value || "").trim()}
+              onClick={askRename}
+              disabled={busy || !normalizeTag(renaming?.value)}
               style={{ backgroundColor: "#6366F1", color: "#fff" }}>
-              {renameMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Renommer"}
+              {previewMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Voir l'aperçu"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Confirmation suppression */}
-      <AlertDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Supprimer le tag « {deleting} » ?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Le tag sera retiré de toutes les œuvres qui le portent. Les œuvres, elles, ne sont pas supprimées.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={() => deleteMut.mutate(deleting)} className="bg-red-600 hover:bg-red-700">
-              Supprimer
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Dialog de confirmation — affiche l'impact réel avant d'écrire quoi que ce soit */}
+      <Dialog open={!!confirm} onOpenChange={(o) => !o && setConfirm(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {confirm?.action === "delete" ? "Supprimer ce tag ?"
+                : confirm?.action === "merge" ? "Fusionner ces tags ?"
+                : "Renommer ce tag ?"}
+            </DialogTitle>
+            <DialogDescription>
+              {confirm?.action === "delete"
+                ? <>« {confirm?.from?.[0]} » sera retiré de toutes les œuvres qui le portent. Les œuvres ne sont pas supprimées.</>
+                : <>{confirm?.from?.join(" , ")} → <strong>{confirm?.preview?.target ?? confirm?.to}</strong></>}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            {/* Impact chiffré */}
+            <div className="p-3 rounded-[12px] text-[13px]"
+                 style={{ backgroundColor: "var(--bg)", border: "1px solid var(--border)", color: "var(--text-primary)" }}>
+              <strong>{confirm?.preview?.changedWorks ?? 0}</strong> œuvre(s) seront modifiées.
+              {confirm?.preview?.sample?.length > 0 && (
+                <p className="text-[12px] mt-1.5" style={{ color: "var(--text-muted)" }}>
+                  Par exemple : {confirm.preview.sample.join(" · ")}
+                  {confirm.preview.changedWorks > confirm.preview.sample.length && " …"}
+                </p>
+              )}
+            </div>
+
+            {/* Avertissement de collision : un « renommage » qui est en fait une fusion */}
+            {confirm?.preview?.collision && (
+              <div className="flex gap-2 p-3 rounded-[12px] text-[12.5px]"
+                   style={{ backgroundColor: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.35)", color: "#B45309" }}>
+                <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <span>
+                  Le tag « {confirm?.preview?.target} » existe déjà sur {confirm.preview.collisionCount} œuvre(s).
+                  Cette opération va donc <strong>fusionner</strong> les deux, pas simplement renommer. C'est irréversible.
+                </span>
+              </div>
+            )}
+
+            {confirm?.preview?.changedWorks === 0 && (
+              <p className="text-[12.5px]" style={{ color: "var(--text-muted)" }}>
+                Aucune œuvre concernée — l'opération n'aurait aucun effet.
+              </p>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirm(null)}>Annuler</Button>
+            <Button
+              onClick={() => applyMut.mutate({ action: confirm.action, from: confirm.from, to: confirm.to })}
+              disabled={applyMut.isPending || !confirm?.preview?.changedWorks}
+              className={confirm?.action === "delete" ? "bg-red-600 hover:bg-red-700 text-white" : ""}
+              style={confirm?.action === "delete" ? undefined : { backgroundColor: "#6366F1", color: "#fff" }}>
+              {applyMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : "Appliquer"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
