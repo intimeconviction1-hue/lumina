@@ -1,9 +1,12 @@
-const CACHE_NAME = "ma-cultura-v1";
+const CACHE_NAME = "ma-cultura-v2";
 
 // Ressources à mettre en cache au démarrage
 const STATIC_ASSETS = [
   "/",
-  "/index.html"
+  "/index.html",
+  "/manifest.json",
+  "/icon-192.png",
+  "/icon-512.png"
 ];
 
 // Installation : mise en cache des ressources statiques
