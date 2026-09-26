@@ -16,13 +16,26 @@ export default async function handler(req, res) {
       const response = await fetch(url);
       if (!response.ok) throw new Error(`Google Books ${response.status}`);
       const data = await response.json();
-      return res.status(200).json({ source: 'google-isbn', results: (data.items || []).map(item => {
+      const google = (data.items || []).map(item => {
         const info = item.volumeInfo || {};
         const image = info.imageLinks?.thumbnail || info.imageLinks?.smallThumbnail;
         return { id: item.id, title: info.title, subtitle: info.subtitle,
           authors: info.authors || [], identifiers: info.industryIdentifiers || [],
           image: image?.replace(/^http:/, 'https:').replace(/&edge=curl/g, '') || null };
-      }).filter(item => item.image) });
+      }).filter(item => item.image);
+      if (google.length) return res.status(200).json({ source: 'google-isbn', results: google });
+
+      const ol = new URL('https://openlibrary.org/search.json');
+      ol.searchParams.set('isbn', isbn);
+      ol.searchParams.set('fields', 'key,title,author_name,first_publish_year,cover_i,isbn');
+      ol.searchParams.set('limit', '5');
+      const olResponse = await fetch(ol);
+      if (!olResponse.ok) throw new Error(`Open Library ${olResponse.status}`);
+      const olData = await olResponse.json();
+      return res.status(200).json({ source: 'openlibrary-isbn', results: (olData.docs || [])
+        .filter(item => item.cover_i && (item.isbn || []).includes(isbn))
+        .map(item => ({ id: item.key, title: item.title, authors: item.author_name || [],
+          image: `https://covers.openlibrary.org/b/id/${item.cover_i}-L.jpg`, isbn })) });
     }
     const title = (req.query.title || '').toString().trim();
     const author = (req.query.author || '').toString().trim();
