@@ -112,6 +112,7 @@ export default async function handler(req, res) {
   const action = (req.query.action || '').toString();
 
   if (action === 'posters') return exactPosterHandler(req, res);
+  if (action === 'poster-candidates') return posterCandidatesHandler(req, res);
 
   if (!action) {
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
@@ -376,6 +377,28 @@ async function exactPosterHandler(req, res) {
     return res.status(200).json({ mode: req.method === 'POST' ? 'apply' : 'preview',
       processed: rows.length, updated, cursor: rows.at(-1)?.id || null,
       done: rows.length < limit, details });
+  } catch (error) {
+    return res.status(500).json({ error: String(error.message || error) });
+  }
+}
+
+// Inspection d'une fiche précise, en lecture seule, pour traiter les titres
+// absents ou les années incertaines sans choisir le premier résultat TMDB.
+async function posterCandidatesHandler(req, res) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'GET uniquement' });
+  if (!process.env.DATABASE_URL || !process.env.TMDB_API_KEY) {
+    return res.status(500).json({ error: 'Configuration manquante' });
+  }
+  try {
+    const sql = neon(process.env.DATABASE_URL);
+    const rows = await sql.query(
+      `SELECT id, title, type, year, released_year FROM works
+       WHERE id = $1 AND type IN ('film', 'documentaire')
+         AND (cover_image IS NULL OR cover_image = '')`, [String(req.query.id || '')]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Fiche introuvable' });
+    const work = rows[0];
+    return res.status(200).json({ work, results: await candidates(work.title, work.type, process.env.TMDB_API_KEY) });
   } catch (error) {
     return res.status(500).json({ error: String(error.message || error) });
   }
