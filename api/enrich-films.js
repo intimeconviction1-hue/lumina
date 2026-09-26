@@ -118,6 +118,9 @@ export default async function handler(req, res) {
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     return res.status(200).send(PANEL_HTML);
   }
+  if (action !== 'dry' && action !== 'run') {
+    return res.status(400).json({ error: 'Action inconnue' });
+  }
 
   const key = process.env.TMDB_API_KEY;
   const dbUrl = process.env.DATABASE_URL;
