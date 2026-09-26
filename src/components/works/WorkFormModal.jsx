@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { X, Upload, Heart, Link2, Search, ChevronDown, ChevronUp } from "lucide-react";
+import { X, Upload, Heart, Link2, ChevronDown, ChevronUp } from "lucide-react";
 import { STATUSES, STATUS_CONFIG } from "@/lib/statusActions";
 import { useWorks } from "@/hooks/useWorks";
 import StarRating from "./StarRating";
@@ -140,6 +140,8 @@ export default function WorkFormModal({ open, onClose, work, onSave }) {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [imageError, setImageError] = useState("");
+  const [saveError, setSaveError] = useState("");
   const [showExtra, setShowExtra] = useState(false);
 
   // Tags déjà utilisés dans la bibliothèque (pour l'autocomplétion)
@@ -166,6 +168,8 @@ export default function WorkFormModal({ open, onClose, work, onSave }) {
       setForm(emptyForm);
     }
     setShowExtra(false);
+    setImageError("");
+    setSaveError("");
   }, [work, open]);
 
   const set = (field, value) => setForm(p => ({ ...p, [field]: value }));
@@ -196,30 +200,27 @@ export default function WorkFormModal({ open, onClose, work, onSave }) {
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    setImageError("");
     setUploading(true);
     try {
       const dataUrl = await fileToDataUrl(file);
       const url = await uploadCover(dataUrl, file.name);
       set("cover_image", url);
     } catch (err) {
-      console.error("Image upload failed:", err);
+      setImageError(`Impossible d'envoyer l'image : ${err.message}`);
     }
     setUploading(false);
   };
 
   const handleSubmit = async () => {
-    if (!form.title.trim()) return;
+    if (!form.title.trim() || uploading) return;
+    setSaveError("");
     setSaving(true);
     try {
       let cover_image = form.cover_image;
       // Si la couverture est encore une data-URL base64, on l'envoie au Blob avant de sauver.
       if (cover_image && cover_image.startsWith("data:")) {
-        try {
-          cover_image = await uploadCover(cover_image, "cover");
-        } catch (uploadErr) {
-          console.error("Image upload failed:", uploadErr);
-          cover_image = "";
-        }
+        cover_image = await uploadCover(cover_image, "cover");
       }
       const data = {
         ...form,
@@ -234,7 +235,7 @@ export default function WorkFormModal({ open, onClose, work, onSave }) {
       await onSave(data);
       setSaving(false);
     } catch (err) {
-      console.error("Save failed:", err);
+      setSaveError(`Enregistrement impossible : ${err.message}`);
       setSaving(false);
     }
   };
@@ -248,7 +249,7 @@ export default function WorkFormModal({ open, onClose, work, onSave }) {
         style={{ borderRadius: "20px", backgroundColor: "var(--card-bg)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
       >
         {/* Header */}
-        <div className="px-8 pt-7 pb-4 flex-shrink-0 border-b" style={{ borderColor: "var(--border-subtle)" }}>
+        <div className="px-5 sm:px-8 pt-7 pb-4 flex-shrink-0 border-b" style={{ borderColor: "var(--border-subtle)" }}>
           <h2 className="text-[18px] font-bold" style={{ color: "var(--text-primary)" }}>
             {work ? "Modifier l'œuvre" : "Nouvelle œuvre"}
           </h2>
@@ -257,19 +258,7 @@ export default function WorkFormModal({ open, onClose, work, onSave }) {
           </p>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-8 py-6 space-y-6">
-
-          {/* — RECHERCHE — préparation auto-import */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "var(--text-muted)" }} />
-            <input
-              type="text"
-              placeholder="Rechercher pour pré-remplir… (bientôt disponible)"
-              disabled
-              className="w-full pl-9 pr-4 py-2.5 rounded-[12px] text-[13px] border border-dashed cursor-not-allowed"
-              style={{ ...FIELD_STYLE, color: "var(--text-muted)" }}
-            />
-          </div>
+        <div className="flex-1 overflow-y-auto px-5 sm:px-8 py-6 space-y-6">
 
           {/* — TITRE + CRÉATEUR — */}
           <div className="grid grid-cols-2 gap-4">
@@ -419,6 +408,7 @@ export default function WorkFormModal({ open, onClose, work, onSave }) {
                 />
               </div>
             </div>
+            {imageError && <p role="alert" className="mt-2 text-[12px] text-red-500">{imageError}</p>}
           </div>
 
           {/* — URL SOURCE — */}
@@ -523,17 +513,20 @@ export default function WorkFormModal({ open, onClose, work, onSave }) {
         </div>
 
         {/* Footer */}
-        <div className="flex gap-3 px-8 py-5 border-t flex-shrink-0" style={{ borderColor: "var(--border-subtle)", backgroundColor: "transparent" }}>
+        <div className="flex flex-col px-5 sm:px-8 py-4 border-t flex-shrink-0" style={{ borderColor: "var(--border-subtle)", backgroundColor: "transparent" }}>
+          {saveError && <p role="alert" className="mb-2 text-[12px] text-red-500">{saveError}</p>}
+          <div className="flex gap-3">
           <button type="button" onClick={onClose}
             className="px-6 py-3 rounded-[12px] text-[13.5px] font-medium border transition-colors hover:opacity-80"
             style={{ borderColor: "var(--border)", color: "var(--text-secondary)", backgroundColor: "transparent" }}>
             Annuler
           </button>
-          <button type="button" onClick={handleSubmit} disabled={saving || !form.title.trim()}
+          <button type="button" onClick={handleSubmit} disabled={saving || uploading || !form.title.trim()}
             className="flex-1 py-3 rounded-[12px] text-[13.5px] font-semibold text-white transition-all disabled:opacity-50"
             style={{ background: "linear-gradient(135deg, #0B2545, #163a6b)", boxShadow: "0 4px 14px rgba(11,37,69,0.2)" }}>
-            {saving ? "Enregistrement…" : work ? "Enregistrer les modifications" : "Ajouter à la bibliothèque"}
+            {saving ? "Enregistrement…" : uploading ? "Envoi de l'image…" : work ? "Enregistrer les modifications" : "Ajouter à la bibliothèque"}
           </button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

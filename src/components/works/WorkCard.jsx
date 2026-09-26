@@ -74,25 +74,26 @@ export default function WorkCard({ work, onEdit, onDelete, onStatusChange, onTog
           style={{ aspectRatio: "2/3", borderRadius: "var(--radius-card) var(--radius-card) 0 0" }}
         >
           {/* Image / placeholder — cliquable pour naviguer */}
-          {work.cover_image ? (
+          <div
+            className="absolute inset-0 w-full h-full flex flex-col items-center justify-center gap-2 cursor-pointer"
+            style={{ background: `linear-gradient(160deg, ${tColor}18 0%, ${tColor}30 50%, ${tColor}10 100%)`, backgroundColor: "var(--card-bg)" }}
+            onClick={goDetail}
+          >
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ backgroundColor: `${tColor}22`, border: `1px solid ${tColor}30` }}>
+              <TypeIcon className="w-6 h-6" style={{ color: tColor }} />
+            </div>
+            <span className="text-[10px] font-semibold uppercase tracking-[0.18em]" style={{ color: `${tColor}99` }}>{work.type}</span>
+          </div>
+          {work.cover_image && (
             <img
+              key={work.cover_image}
               src={work.cover_image}
               alt={work.title}
               className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.06] cursor-pointer"
               loading="lazy"
+              onError={e => { e.currentTarget.style.display = "none"; }}
               onClick={goDetail}
             />
-          ) : (
-            <div
-              className="absolute inset-0 w-full h-full flex flex-col items-center justify-center gap-2 cursor-pointer"
-              style={{ background: `linear-gradient(160deg, ${tColor}18 0%, ${tColor}30 50%, ${tColor}10 100%)`, backgroundColor: "var(--card-bg)" }}
-              onClick={goDetail}
-            >
-              <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ backgroundColor: `${tColor}22`, border: `1px solid ${tColor}30` }}>
-                <TypeIcon className="w-6 h-6" style={{ color: tColor }} />
-              </div>
-              <span className="text-[10px] font-semibold uppercase tracking-[0.18em]" style={{ color: `${tColor}99` }}>{work.type}</span>
-            </div>
           )}
 
           {/* Voile haut pour lisibilité des badges sur affiches claires */}
