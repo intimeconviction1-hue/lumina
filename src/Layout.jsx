@@ -41,7 +41,7 @@ export default function Layout({ children, currentPageName }) {
   });
 
 
-  const { updateWork, createWork } = useWorkMutations();
+  const { update, create } = useWorkMutations();
 
   // Écoute navigation sidebar avec filtre
   useEffect(() => {
@@ -99,8 +99,8 @@ export default function Layout({ children, currentPageName }) {
 
   const handleSaveWork = async (data) => {
     // useWorkMutations gère l'invalidation + le toast d'erreur.
-    if (editingWork) await updateWork(editingWork.id, data);
-    else await createWork(data);
+    if (editingWork) await update.mutateAsync({ id: editingWork.id, patch: data });
+    else await create.mutateAsync(data);
     setShowAddWork(false);
     setEditingWork(null);
   };
