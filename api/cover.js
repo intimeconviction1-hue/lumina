@@ -4,34 +4,15 @@
 
 export default async function handler(req, res) {
   try {
-    if (req.query.mode === 'isbn') {
-      const isbn = String(req.query.isbn || '').replace(/[^0-9Xx]/g, '');
-      if (!/^97[89]\d{10}$/.test(isbn) && !/^\d{9}[0-9Xx]$/.test(isbn)) {
-        return res.status(400).json({ error: 'ISBN invalide' });
-      }
-      const url = new URL('https://www.googleapis.com/books/v1/volumes');
-      url.searchParams.set('q', `isbn:${isbn}`);
-      url.searchParams.set('maxResults', '5');
-      if (process.env.GOOGLE_BOOKS_API_KEY) url.searchParams.set('key', process.env.GOOGLE_BOOKS_API_KEY);
-      const response = await fetch(url);
-      if (!response.ok) throw new Error(`Google Books ${response.status}`);
-      const data = await response.json();
-      return res.status(200).json({ source: 'google-isbn', results: (data.items || []).map(item => {
-        const info = item.volumeInfo || {};
-        const image = info.imageLinks?.thumbnail || info.imageLinks?.smallThumbnail;
-        return { id: item.id, title: info.title, subtitle: info.subtitle,
-          authors: info.authors || [], identifiers: info.industryIdentifiers || [],
-          image: image?.replace(/^http:/, 'https:').replace(/&edge=curl/g, '') || null };
-      }).filter(item => item.image) });
-    }
     const title = (req.query.title || '').toString().trim();
     const author = (req.query.author || '').toString().trim();
     if (!title) return res.status(400).json({ image: null, error: 'title requis' });
 
     if (req.query.mode === 'candidates') {
       const source = req.query.source === 'openlibrary' ? 'openlibrary' : 'google';
+      const broad = req.query.broad === '1';
       return res.status(200).json({ source, results: source === 'google'
-        ? await googleCandidates(title, author, process.env.GOOGLE_BOOKS_API_KEY)
+        ? await googleCandidates(title, author, process.env.GOOGLE_BOOKS_API_KEY, broad)
         : await openLibraryCandidates(title, author) });
     }
 
@@ -50,8 +31,9 @@ export default async function handler(req, res) {
   }
 }
 
-async function googleCandidates(title, author, key) {
-  const q = encodeURIComponent(`intitle:${title}${author ? ` inauthor:${author}` : ''}`);
+async function googleCandidates(title, author, key, broad = false) {
+  const q = encodeURIComponent(broad ? `${title} ${author}`.trim() :
+    `intitle:${title}${author ? ` inauthor:${author}` : ''}`);
   let url = `https://www.googleapis.com/books/v1/volumes?q=${q}&maxResults=20&country=FR`;
   if (key) url += `&key=${encodeURIComponent(key)}`;
   const r = await fetch(url);
