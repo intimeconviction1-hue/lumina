@@ -127,16 +127,17 @@ export default function WorkDetail({ onEditWork }) {
           <div className="flex flex-col lg:flex-row">
             {/* Cover */}
             <div className="lg:w-[320px] flex-shrink-0 relative">
-              {work.cover_image ? (
-                <img src={work.cover_image} alt={work.title} className="w-full h-72 lg:h-full object-cover" style={{ minHeight: 400 }} />
-              ) : (
-                <div className="w-full h-72 lg:h-full flex flex-col items-center justify-center gap-4"
-                  style={{ background: `linear-gradient(145deg, ${tColor}18 0%, ${tColor}35 100%)`, minHeight: 400 }}>
-                  <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ backgroundColor: `${tColor}25` }}>
-                    <TypeIcon className="w-10 h-10" style={{ color: tColor }} />
-                  </div>
-                  <span className="text-[12px] font-semibold uppercase tracking-[0.18em]" style={{ color: tColor }}>{work.type}</span>
+              <div className="w-full h-72 lg:h-full flex flex-col items-center justify-center gap-4"
+                style={{ background: `linear-gradient(145deg, ${tColor}18 0%, ${tColor}35 100%)`, minHeight: 400 }}>
+                <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ backgroundColor: `${tColor}25` }}>
+                  <TypeIcon className="w-10 h-10" style={{ color: tColor }} />
                 </div>
+                <span className="text-[12px] font-semibold uppercase tracking-[0.18em]" style={{ color: tColor }}>{work.type}</span>
+              </div>
+              {work.cover_image && (
+                <img key={work.cover_image} src={work.cover_image} alt={work.title}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  onError={e => { e.currentTarget.style.display = "none"; }} />
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
               <button onClick={handleToggleFavorite}
