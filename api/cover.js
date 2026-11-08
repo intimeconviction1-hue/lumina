@@ -2,7 +2,10 @@
 // Appelé par la page Enrichissement, un livre à la fois.
 // Renvoie { image: url|null, limited?: bool, source?: string }.
 
+import importLink from '../server/importLink.js';
+
 export default async function handler(req, res) {
+  if (req.query.mode === 'import-link') return importLink(req, res);
   try {
     if (req.query.mode === 'isbn') {
       const isbn = String(req.query.isbn || '').replace(/[^0-9Xx]/g, '');

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { X, Upload, Heart, Link2, ChevronDown, ChevronUp } from "lucide-react";
 import { STATUSES, STATUS_CONFIG } from "@/lib/statusActions";
 import { useWorks } from "@/hooks/useWorks";
 import StarRating from "./StarRating";
+import WorkLinkImport from "./WorkLinkImport";
 
 const TYPES = ["film", "série", "livre", "documentaire", "podcast", "vidéo", "article"];
 const GENRES = [
@@ -33,7 +34,7 @@ const emptyForm = {
   status: "À voir", priority: "normal", genre: [], platform: [],
   year: "", description: "", rating: 0, anticipation_rating: 0, favorite: false,
   cover_image: "", source_url: "", tags: [],
-  duration_minutes: "", country: "", language: "",
+  duration_minutes: "", page_count: "", country: "", language: "",
   personal_note: "", recommended_by: "",
 };
 
@@ -174,6 +175,26 @@ export default function WorkFormModal({ open, onClose, work, onSave }) {
 
   const set = (field, value) => setForm(p => ({ ...p, [field]: value }));
 
+  const fillFromLink = (metadata) => {
+    setForm(previous => ({
+      ...previous,
+      title: metadata.title,
+      type: metadata.type,
+      status: metadata.type === "livre" ? "Envie de lire" : "À voir",
+      creator: metadata.creator || "",
+      year: metadata.year || "",
+      description: metadata.description || "",
+      cover_image: metadata.cover_image || "",
+      source_url: metadata.source_url || previous.source_url,
+      genre: metadata.genre || [],
+      country: metadata.country || "",
+      duration_minutes: metadata.duration_minutes || "",
+      page_count: metadata.page_count || "",
+    }));
+    setImageError("");
+    setSaveError("");
+  };
+
   const fileToDataUrl = (file) =>
     new Promise((resolve, reject) => {
       const r = new FileReader();
@@ -231,6 +252,7 @@ export default function WorkFormModal({ open, onClose, work, onSave }) {
         rating: form.rating || null,
         anticipation_rating: form.anticipation_rating || null,
         duration_minutes: form.duration_minutes ? Number(form.duration_minutes) : null,
+        page_count: form.page_count ? Number(form.page_count) : null,
       };
       await onSave(data);
       setSaving(false);
@@ -250,15 +272,17 @@ export default function WorkFormModal({ open, onClose, work, onSave }) {
       >
         {/* Header */}
         <div className="px-5 sm:px-8 pt-7 pb-4 flex-shrink-0 border-b" style={{ borderColor: "var(--border-subtle)" }}>
-          <h2 className="text-[18px] font-bold" style={{ color: "var(--text-primary)" }}>
+          <DialogTitle className="text-[18px] font-bold" style={{ color: "var(--text-primary)" }}>
             {work ? "Modifier l'œuvre" : "Nouvelle œuvre"}
-          </h2>
-          <p className="text-[13px] mt-0.5" style={{ color: "var(--text-muted)" }}>
+          </DialogTitle>
+          <DialogDescription className="text-[13px] mt-0.5" style={{ color: "var(--text-muted)" }}>
             {work ? "Mettez à jour les informations" : "Ajoutez une œuvre à votre bibliothèque"}
-          </p>
+          </DialogDescription>
         </div>
 
         <div className="flex-1 overflow-y-auto px-5 sm:px-8 py-6 space-y-6">
+
+          {open && !work && <WorkLinkImport onFill={fillFromLink} onSource={url => set("source_url", url)} />}
 
           {/* — TITRE + CRÉATEUR — */}
           <div className="grid grid-cols-2 gap-4">
@@ -347,7 +371,7 @@ export default function WorkFormModal({ open, onClose, work, onSave }) {
           {/* — GENRES + PLATEFORMES — */}
           <div>
             <Label className="mb-2">Genres</Label>
-            <Chips items={GENRES} selected={form.genre} onChange={v => set("genre", v)} color="#D4AF37" />
+            <Chips items={[...new Set([...form.genre, ...GENRES])]} selected={form.genre} onChange={v => set("genre", v)} color="#D4AF37" />
           </div>
 
           <div>
@@ -368,8 +392,17 @@ export default function WorkFormModal({ open, onClose, work, onSave }) {
               <Input type="number" value={form.year} onChange={e => set("year", e.target.value)} placeholder="2024" style={FIELD_STYLE} />
             </div>
             <div>
-              <Label>Durée (min)</Label>
-              <Input type="number" value={form.duration_minutes} onChange={e => set("duration_minutes", e.target.value)} placeholder="120" style={FIELD_STYLE} />
+              {form.type === "livre" ? (
+                <>
+                  <Label>Nombre de pages</Label>
+                  <Input type="number" min="1" value={form.page_count ?? ""} onChange={e => set("page_count", e.target.value)} placeholder="250" style={FIELD_STYLE} />
+                </>
+              ) : (
+                <>
+                  <Label>Durée (min)</Label>
+                  <Input type="number" min="1" value={form.duration_minutes} onChange={e => set("duration_minutes", e.target.value)} placeholder="120" style={FIELD_STYLE} />
+                </>
+              )}
             </div>
           </div>
 

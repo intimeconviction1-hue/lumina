@@ -1,0 +1,201 @@
+import { IMG, tmdbJSON } from './tmdb.js';
+
+const GOOGLE_BOOKS = 'https://www.googleapis.com/books/v1/volumes';
+const OPEN_LIBRARY = 'https://openlibrary.org';
+const regions = new Intl.DisplayNames(['fr'], { type: 'region' });
+const yearOf = date => Number(String(date || '').slice(0, 4)) || undefined;
+const plainText = value => typeof value === 'string' ? value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim() : undefined;
+
+async function getJSON(url) {
+  const response = await fetch(url, { signal: AbortSignal.timeout(6500) });
+  if (!response.ok) throw new Error('Source indisponible');
+  return response.json();
+}
+
+function publicLink(input) {
+  if (typeof input !== 'string' || input.length > 4096) return null;
+  try {
+    const url = new URL(input.trim());
+    if (['https:', 'http:'].includes(url.protocol) && !url.username && !url.password) return url;
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+function tmdbWork(item, media) {
+  const documentary = item.genre_ids?.includes(99) || item.genres?.some(genre => genre.id === 99);
+  return {
+    title: item.title || item.name,
+    type: documentary ? 'documentaire' : media === 'tv' ? 'série' : 'film',
+    year: yearOf(item.release_date || item.first_air_date),
+    cover_image: item.poster_path ? IMG + item.poster_path : undefined,
+    description: item.overview || undefined,
+    source_url: `https://www.themoviedb.org/${media}/${item.id}`,
+  };
+}
+
+async function screenDetails(media, id) {
+  const data = await tmdbJSON(`/${media}/${id}`, process.env.TMDB_API_KEY, { append_to_response: 'credits' });
+  const creators = media === 'tv'
+    ? data.created_by || []
+    : (data.credits?.crew || []).filter(person => person.job === 'Director');
+  return {
+    ...tmdbWork(data, media),
+    creator: [...new Set(creators.map(person => person.name).filter(Boolean))].join(', '),
+    duration_minutes: data.runtime || data.episode_run_time?.[0],
+    genre: data.genres?.map(genre => genre.name.toLowerCase()),
+    country: data.production_countries?.map(country => regions.of(country.iso_3166_1)).join(', '),
+  };
+}
+
+function bookWork(item) {
+  const info = item.volumeInfo || {};
+  const cover = publicLink(info.imageLinks?.thumbnail || info.imageLinks?.smallThumbnail);
+  if (cover) cover.protocol = 'https:';
+  return {
+    title: info.title,
+    type: 'livre',
+    creator: info.authors?.join(', '),
+    year: yearOf(info.publishedDate),
+    description: plainText(info.description),
+    page_count: info.pageCount,
+    genre: info.categories?.map(category => category.toLowerCase()),
+    cover_image: cover?.href,
+    source_url: `https://books.google.com/books?id=${encodeURIComponent(item.id)}`,
+  };
+}
+
+function booksURL(id) {
+  const url = new URL(id ? `${GOOGLE_BOOKS}/${encodeURIComponent(id)}` : GOOGLE_BOOKS);
+  if (process.env.GOOGLE_BOOKS_API_KEY) url.searchParams.set('key', process.env.GOOGLE_BOOKS_API_KEY);
+  return url;
+}
+
+function openLibraryBook(item) {
+  return {
+    title: item.title,
+    type: 'livre',
+    creator: item.author_name?.join(', '),
+    year: item.first_publish_year,
+    page_count: item.number_of_pages_median,
+    cover_image: item.cover_i ? `https://covers.openlibrary.org/b/id/${item.cover_i}-L.jpg` : undefined,
+    source_url: OPEN_LIBRARY + item.key,
+  };
+}
+
+async function searchBooks(query) {
+  try {
+    const url = booksURL();
+    url.searchParams.set('q', query);
+    url.searchParams.set('maxResults', '5');
+    const data = await getJSON(url);
+    const items = (data.items || []).filter(item => item.volumeInfo?.title);
+    if (items.length) return items.map(item => ({ ...bookWork(item), provider: 'books', id: item.id }));
+  } catch {
+    // Open Library prend le relais si Google Books est indisponible.
+  }
+  const url = new URL('/search.json', OPEN_LIBRARY);
+  url.searchParams.set('q', query);
+  url.searchParams.set('limit', '5');
+  url.searchParams.set('fields', 'key,title,author_name,first_publish_year,number_of_pages_median,cover_i');
+  const data = await getJSON(url);
+  return (data.docs || []).filter(item => item.title && /^\/works\/OL\d+W$/.test(item.key))
+    .map(item => ({ ...openLibraryBook(item), provider: 'openlibrary', id: item.key.split('/').at(-1) }));
+}
+
+async function searchScreens(query) {
+  const data = await tmdbJSON('/search/multi', process.env.TMDB_API_KEY, { query, include_adult: 'false' });
+  return (data.results || []).filter(item => ['movie', 'tv'].includes(item.media_type) && (item.title || item.name))
+    .slice(0, 5).map(item => ({ ...tmdbWork(item, item.media_type), provider: item.media_type, id: String(item.id) }));
+}
+
+async function openLibraryDetails(id) {
+  const data = await getJSON(`${OPEN_LIBRARY}/works/${id}.json`);
+  const authors = await Promise.allSettled((data.authors || []).slice(0, 5).map(entry => {
+    const key = entry.author?.key || entry.key;
+    return /^\/authors\/OL\d+A$/.test(key) ? getJSON(`${OPEN_LIBRARY}${key}.json`) : null;
+  }));
+  const creator = authors.map(author => author.value?.name).filter(Boolean).join(', ');
+  return {
+    ...openLibraryBook({ ...data, key: `/works/${id}`, cover_i: data.covers?.find(cover => cover > 0) }),
+    creator,
+    description: plainText(data.description?.value || data.description),
+    genre: data.subjects?.slice(0, 5).map(subject => subject.toLowerCase()),
+  };
+}
+
+async function resolve(provider, id) {
+  if (['movie', 'tv'].includes(provider) && /^\d{1,12}$/.test(id) && process.env.TMDB_API_KEY) return screenDetails(provider, id);
+  if (provider === 'books' && /^[A-Za-z0-9_-]{1,40}$/.test(id)) return bookWork(await getJSON(booksURL(id)));
+  if (provider === 'openlibrary' && /^OL\d+W$/.test(id)) return openLibraryDetails(id);
+  throw new Error('Source indisponible');
+}
+
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST');
+    return res.status(405).json({ error: 'Méthode non autorisée.' });
+  }
+  res.setHeader('Cache-Control', 'no-store');
+  const { url: input, provider, id } = req.body || {};
+
+  try {
+    if (typeof provider === 'string' && typeof id === 'string') {
+      return res.status(200).json({ work: await resolve(provider, id) });
+    }
+    const url = publicLink(input);
+    if (!url) return res.status(400).json({ error: 'Colle une adresse complète commençant par https:// ou http://.' });
+    const host = url.hostname.replace(/^www\./, '');
+
+    if (/^google\.(com|fr|be|ch|ca|co\.uk|co\.il)$/.test(host) && url.pathname === '/search') {
+      const query = url.searchParams.get('q')?.trim().slice(0, 160);
+      if (!query) return res.status(400).json({ error: 'Ce lien Google ne contient aucun terme de recherche.' });
+      const searches = [searchBooks(query)];
+      if (process.env.TMDB_API_KEY) searches.push(searchScreens(query));
+      const results = await Promise.allSettled(searches);
+      if (results.every(result => result.status === 'rejected')) throw new Error('Sources indisponibles');
+      return res.status(200).json({
+        query,
+        matches: results.flatMap(result => result.status === 'fulfilled' ? result.value : []),
+        incomplete: searches.length < 2 || results.some(result => result.status === 'rejected'),
+      });
+    }
+
+    const tmdb = /^\/(movie|tv)\/(\d{1,12})(?:[-/]|$)/.exec(url.pathname);
+    if (host === 'themoviedb.org' && tmdb) {
+      return res.status(200).json({ work: await resolve(tmdb[1], tmdb[2]) });
+    }
+    const imdb = /^\/title\/(tt\d{5,12})(?:\/|$)/.exec(url.pathname);
+    if (host === 'imdb.com' && imdb && process.env.TMDB_API_KEY) {
+      const data = await tmdbJSON(`/find/${imdb[1]}`, process.env.TMDB_API_KEY, { external_source: 'imdb_id' });
+      const media = data.movie_results?.length ? 'movie' : 'tv';
+      const hit = data[`${media}_results`]?.[0];
+      if (hit) return res.status(200).json({ work: { ...await screenDetails(media, hit.id), source_url: `https://www.imdb.com/title/${imdb[1]}/` } });
+    }
+    const bookId = url.searchParams.get('id');
+    if (/^books\.google\.(com|fr|be|ch|ca|co\.uk|co\.il)$/.test(host) && bookId) {
+      return res.status(200).json({ work: await resolve('books', bookId) });
+    }
+    const workId = /^\/works\/(OL\d+W)(?:\/|$)/.exec(url.pathname)?.[1];
+    if (host === 'openlibrary.org' && workId) {
+      return res.status(200).json({ work: await resolve('openlibrary', workId) });
+    }
+    if (['youtube.com', 'm.youtube.com', 'youtu.be'].includes(host)) {
+      const videoId = host === 'youtu.be' || /^\/(shorts|live|embed)\//.test(url.pathname)
+        ? url.pathname.split('/').filter(Boolean).at(-1) : url.searchParams.get('v');
+      if (/^[A-Za-z0-9_-]{11}$/.test(videoId || '')) {
+        const source = `https://www.youtube.com/watch?v=${videoId}`;
+        const endpoint = new URL('https://www.youtube.com/oembed');
+        endpoint.searchParams.set('url', source);
+        endpoint.searchParams.set('format', 'json');
+        const data = await getJSON(endpoint);
+        return res.status(200).json({ work: { title: data.title, type: 'vidéo', creator: data.author_name, cover_image: data.thumbnail_url, source_url: source } });
+      }
+    }
+
+    return res.status(422).json({ error: 'Ce lien ne permet pas de retrouver automatiquement la fiche. Utilise une recherche Google avec le titre, ou garde le lien et saisis le titre.' });
+  } catch {
+    return res.status(502).json({ error: 'Impossible de récupérer les informations auprès de la source. Réessaie ou complète la fiche à la main.' });
+  }
+}

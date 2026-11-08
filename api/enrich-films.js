@@ -10,8 +10,7 @@
 
 import { neon } from '@neondatabase/serverless';
 
-const TMDB = 'https://api.themoviedb.org/3';
-const IMG = 'https://image.tmdb.org/t/p/w500';
+import { IMG, tmdbJSON } from '../server/tmdb.js';
 
 // Filtre SQL commun : œuvres film/série/doc à qui il manque au moins un champ.
 const TYPE_FILTER = "lower(type) IN ('film', 'série', 'serie', 'documentaire', 'documentary')";
@@ -37,16 +36,6 @@ function cleanTitle(t) {
     .replace(/[·|–—-]\s*saison\s*\d+.*/i, ' ')
     .replace(/\s+/g, ' ')
     .trim();
-}
-
-async function tmdbJSON(path, key, params = {}) {
-  const url = new URL(TMDB + path);
-  url.searchParams.set('api_key', key);
-  url.searchParams.set('language', 'fr-FR');
-  for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
-  const r = await fetch(url.toString());
-  if (!r.ok) throw new Error('TMDB ' + r.status + ' sur ' + path);
-  return r.json();
 }
 
 function searchKind(type) {
