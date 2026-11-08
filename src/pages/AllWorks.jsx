@@ -1,13 +1,13 @@
 import React, { useMemo, useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import WorksGrid from "../components/works/WorksGrid";
 import WorksLoadError from "@/components/works/WorksLoadError";
 import { useWorks, WORKS_KEY } from "@/hooks/useWorks";
 import { worksApi } from "@/api/works";
 import { useWorkMutations } from "@/hooks/useWorkMutations";
 import { StatusButton, TypeButton } from "../components/works/FilterButtons";
-import { X, CheckSquare, Square } from "lucide-react";
+import { X, CheckSquare, Square, Users } from "lucide-react";
 import BulkActionBar from "../components/works/BulkActionBar";
 import { useToast } from "@/components/ui/use-toast";
 import { STATUS_CONFIG, TYPE_COLORS, effectiveStatus, matchesStatusFilter, STATUS_ALIASES, statusPatch } from "@/lib/statusActions";
@@ -338,6 +338,12 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
             >
               {selectMode ? <><X className="w-3.5 h-3.5" /> Annuler</> : <><Square className="w-3.5 h-3.5" /> Sélectionner</>}
             </button>
+            {!selectMode && (
+              <Link to="/PersonStudies" className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold"
+                style={{ borderColor: "var(--border)", color: "var(--text-primary)", backgroundColor: "var(--card-bg)" }}>
+                <Users className="h-3.5 w-3.5" aria-hidden="true" /> Études de personnes
+              </Link>
+            )}
             {!selectMode && (
               <span className="text-[12.5px] font-semibold" style={{ color: "var(--text-muted)" }}>
                 {isLoading ? "Chargement…" : `${filteredWorks.length} œuvre${filteredWorks.length !== 1 ? "s" : ""}`}

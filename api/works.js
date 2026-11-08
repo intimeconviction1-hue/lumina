@@ -2,6 +2,7 @@ import { randomBytes } from 'crypto';
 import { getSql, WRITABLE, ARRAY_COLS, SORT_COLUMNS, norm } from './_lib.js';
 import { gqDocumentaries } from '../server/gqDocumentaries.js';
 import { saveGqDocumentaries } from '../server/saveGqDocumentaries.js';
+import { savePersonStudy } from '../server/savePersonStudy.js';
 
 async function addGqSelection(sql, ids, res) {
   const selected = gqDocumentaries.filter(work => ids.includes(work.id));
@@ -31,6 +32,7 @@ export default async function handler(req, res) {
 
     if (req.method === 'POST') {
       const body = req.body || {};
+      if (body.personStudy && typeof body.personStudy === "object") return await savePersonStudy(sql, body.personStudy, res);
       if (Array.isArray(body.gqDocumentaries)) return await addGqSelection(sql, body.gqDocumentaries, res);
       const cols = ['id'];
       const ph = ['$1'];
@@ -56,6 +58,6 @@ export default async function handler(req, res) {
     res.setHeader('Allow', 'GET, POST');
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (e) {
-    return res.status(500).json({ error: String(e?.message || e) });
+    return res.status(e?.status || 500).json({ error: String(e?.message || e) });
   }
 }

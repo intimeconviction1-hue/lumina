@@ -164,7 +164,15 @@ export default function WorkDetail({ onEditWork }) {
               <h1 className="text-[28px] font-bold leading-tight" style={{ color: "var(--text-primary)" }}>{work.title}</h1>
               {(work.creator || work.creator_name) && (
                 <p className="text-[15px] font-medium mt-2" style={{ color: "var(--text-secondary)" }}>
-                  par {work.creator || work.creator_name}
+                  par {(work.creator || work.creator_name).split(/\s*;\s*|,\s+(?=\p{Lu}[^,;]*\s+\p{L})/u).filter(Boolean).map((name, index) => (
+                    <React.Fragment key={`${name}-${index}`}>
+                      {index > 0 && ", "}
+                      <Link className="underline underline-offset-2" title={`Étudier ${name}`}
+                        to={`/PersonStudies?catalogue=${work.type === "livre" ? "books" : "cinema"}&q=${encodeURIComponent(name)}`}>
+                        {name}
+                      </Link>
+                    </React.Fragment>
+                  ))}
                 </p>
               )}
 
