@@ -12,6 +12,7 @@ const roles = { directing: "Réalisation", acting: "Interprétation", writing: "
 const panel = { backgroundColor: "var(--card-bg)", borderColor: "var(--border)" };
 const secondary = { color: "var(--text-secondary)" };
 const normalize = text => String(text || "").trim().toLowerCase();
+const isLink = value => /^(?:https?:\/\/|www\.)/i.test(value);
 
 async function getStudies(params, signal) {
   const query = new URLSearchParams({ mode: "person-studies", ...params });
@@ -168,11 +169,29 @@ function StudyWorks({ person, catalogue }) {
 
 export default function PersonStudies() {
   const [params, setParams] = useSearchParams();
-  const catalogue = params.get("catalogue") === "books" ? "books" : "cinema";
-  const q = params.get("q") || "";
-  const id = params.get("id") || "";
-  const [draft, setDraft] = useState(q);
-  useEffect(() => setDraft(q), [q]);
+  const tab = params.get("catalogue") === "books" ? "books" : "cinema";
+  const rawQuery = params.get("q") || "";
+  const url = params.get("url") || "";
+  const [draft, setDraft] = useState(url || rawQuery);
+  useEffect(() => setDraft(url || rawQuery), [url, rawQuery]);
+
+  const link = useQuery({
+    queryKey: ["person-studies", tab, "link", url],
+    queryFn: ({ signal }) => getStudies({ catalogue: tab, url }, signal),
+    enabled: Boolean(url),
+    retry: false,
+  });
+  const catalogue = link.data?.catalogue || tab;
+  const q = link.data?.name || rawQuery;
+  const id = link.data?.id || params.get("id") || "";
+  const submitSearch = (value, target = catalogue) => {
+    const query = value.trim();
+    if (isLink(query)) {
+      setParams({ catalogue: target, url: /^www\./i.test(query) ? `https://${query}` : query });
+    } else {
+      setParams({ catalogue: target, ...(query.length >= 2 ? { q: query } : {}) });
+    }
+  };
   const people = useQuery({
     queryKey: ["person-studies", catalogue, "search", q],
     queryFn: ({ signal }) => getStudies({ catalogue, q }, signal),
@@ -197,22 +216,32 @@ export default function PersonStudies() {
         <div className="flex flex-wrap gap-2">
           {[["cinema", "Cinéma et séries"], ["books", "Auteurs de livres"]].map(([key, label]) => (
             <Button key={key} type="button" size="sm" variant={catalogue === key ? "default" : "outline"} aria-pressed={catalogue === key}
-              onClick={() => setParams({ catalogue: key, ...(draft.trim().length >= 2 ? { q: draft.trim() } : {}) })}>{label}</Button>
+              onClick={() => submitSearch(draft, key)}>{label}</Button>
           ))}
         </div>
         <form className="flex flex-wrap gap-2" onSubmit={event => {
           event.preventDefault();
-          setParams({ catalogue, q: draft.trim() });
+          submitSearch(draft);
         }}>
-          <Input value={draft} onChange={event => setDraft(event.target.value)} className="min-w-40 flex-1" maxLength={120}
-            placeholder={catalogue === "books" ? "Nom de l’auteur" : "Nom du réalisateur, acteur ou scénariste"}
-            aria-label="Nom de la personne" />
-          <Button type="submit" disabled={draft.trim().length < 2}>
+          <Input value={draft} onChange={event => setDraft(event.target.value)} className="min-w-40 flex-1" maxLength={4096}
+            placeholder="Saisir un nom ou coller un lien"
+            aria-label="Nom ou lien de la personne"
+            onPaste={event => {
+              const value = event.clipboardData.getData("text").trim();
+              if (!isLink(value) || value.length > 4096) return;
+              event.preventDefault();
+              setDraft(value);
+              submitSearch(value);
+            }} />
+          <Button type="submit" disabled={draft.trim().length < 2 || (!isLink(draft.trim()) && draft.trim().length > 120)}>
             <Search className="mr-2 h-4 w-4" aria-hidden="true" /> Rechercher
           </Button>
         </form>
       </div>
 
+      {link.isLoading && <p role="status" style={secondary}>Lecture du lien…</p>}
+      {link.isError && <CatalogueError query={link} />}
+      {link.data?.name && <p className="text-sm" style={secondary}>Nom repéré dans le lien <strong>{link.data.name}</strong></p>}
       {(people.isLoading || profile.isLoading) && <p role="status" style={secondary}>Chargement du catalogue…</p>}
       {id && profile.isError && <CatalogueError query={profile} />}
       {!id && people.isError && <CatalogueError query={people} />}
