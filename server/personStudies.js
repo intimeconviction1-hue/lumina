@@ -1,4 +1,5 @@
 import { IMG, tmdbJSON } from './tmdb.js';
+import { resolveStudyLink } from './personStudyLink.js';
 
 const OPEN_LIBRARY = 'https://openlibrary.org';
 const pageSize = 1000;
@@ -137,8 +138,16 @@ export default async function personStudies(req, res) {
     res.setHeader('Allow', 'GET');
     return res.status(405).json({ error: 'Méthode non autorisée.' });
   }
-  const { catalogue, id, q } = req.query;
+  const { catalogue, id, q, url } = req.query;
   if (!['cinema', 'books'].includes(catalogue)) return res.status(400).json({ error: 'Catalogue inconnu.' });
+  if (typeof url === 'string' && url.length <= 4096) {
+    res.setHeader('Cache-Control', 'no-store');
+    try {
+      return res.json(await resolveStudyLink(url, catalogue));
+    } catch {
+      return res.status(422).json({ error: 'Impossible de reconnaître un nom dans ce lien. Saisis directement le nom de la personne.' });
+    }
+  }
   try {
     if (validStudyId(catalogue, id)) return res.json(await studyProfile(catalogue, id));
     if (typeof q === 'string' && q.trim().length >= 2 && q.length <= 120) {
