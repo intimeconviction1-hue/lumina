@@ -12,7 +12,9 @@ async function parse(res) {
     } catch {
       /* corps non-JSON */
     }
-    throw new Error(msg);
+    const error = new Error(msg);
+    error.status = res.status;
+    throw error;
   }
   return res.json();
 }
@@ -23,7 +25,7 @@ export const worksApi = {
   list: (sort = '-created_date', limit = 5000) =>
     fetch(`${BASE}?sort=${encodeURIComponent(sort)}&limit=${limit}`).then(parse),
 
-  get: (id) => fetch(`${BASE}/${encodeURIComponent(id)}`).then(parse),
+  get: (id, signal) => fetch(`${BASE}/${encodeURIComponent(id)}`, { signal }).then(parse),
 
   create: (data) =>
     fetch(BASE, { method: 'POST', headers: JSON_HEADERS, body: JSON.stringify(data) }).then(parse),
