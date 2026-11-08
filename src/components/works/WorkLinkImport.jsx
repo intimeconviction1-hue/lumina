@@ -3,7 +3,7 @@ import { Link2, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-export default function WorkLinkImport({ onFill, onSource }) {
+export default function WorkLinkImport({ onFill, onSource, onAddGqSelection }) {
   const inputId = useId();
   const request = useRef(null);
   const unrecognizedLink = useRef(null);
@@ -11,6 +11,7 @@ export default function WorkLinkImport({ onFill, onSource }) {
   const [pending, setPending] = useState(false);
   const [results, setResults] = useState(null);
   const [message, setMessage] = useState("");
+  const [selected, setSelected] = useState([]);
 
   useEffect(() => () => request.current?.abort(), []);
 
@@ -39,6 +40,7 @@ export default function WorkLinkImport({ onFill, onSource }) {
         setMessage("Fiche préremplie. Vérifie les informations, puis ajoute l’œuvre.");
       } else if (data.matches?.length) {
         setResults(data);
+        if (data.collection === "gq-documentaries") setSelected(data.matches.map(work => work.id));
       } else {
         setMessage(`Aucune œuvre trouvée pour « ${data.query || input} ». Essaie avec le titre complet.`);
       }
@@ -53,6 +55,22 @@ export default function WorkLinkImport({ onFill, onSource }) {
       }
     } finally {
       if (!controller.signal.aborted) setPending(false);
+    }
+  };
+
+  const addSelection = async () => {
+    if (pending || !selected.length) return;
+    setPending(true);
+    setMessage("");
+    try {
+      const { added, skipped } = await onAddGqSelection(selected);
+      setResults(null);
+      setSelected([]);
+      setMessage(`${added} documentaire${added === 1 ? " ajouté" : "s ajoutés"}${skipped ? ` · ${skipped} déjà dans la bibliothèque` : ""}.`);
+    } catch {
+      setMessage("Impossible d’ajouter la sélection. Réessaie.");
+    } finally {
+      setPending(false);
     }
   };
 
@@ -111,7 +129,33 @@ export default function WorkLinkImport({ onFill, onSource }) {
           Colle un lien de livre Amazon, une fiche Allociné, une vidéo OK.ru ou saisis le titre.
         </p>
       </form>
-      {results && (
+      {results?.collection === "gq-documentaries" && (
+        <div className="space-y-3">
+          <p className="text-sm font-semibold">{results.matches.length} documentaires dans la sélection GQ</p>
+          <ul className="max-h-64 space-y-1 overflow-y-auto">
+            {results.matches.map(work => (
+              <li key={work.id}>
+                <label className="flex min-h-11 items-center gap-3 rounded-lg border p-2 text-sm"
+                  style={{ backgroundColor: "var(--card-bg)", borderColor: "var(--border)" }}>
+                  <input type="checkbox" checked={selected.includes(work.id)} disabled={pending} onChange={event => {
+                    const checked = event.target.checked;
+                    setSelected(current => checked ? [...current, work.id] : current.filter(id => id !== work.id));
+                  }} />
+                  <span>
+                    <span className="block font-semibold">{work.title}</span>
+                    <span className="block text-xs" style={{ color: "var(--text-secondary)" }}>{work.year} · {work.creator}</span>
+                  </span>
+                </label>
+              </li>
+            ))}
+          </ul>
+          <Button type="button" disabled={pending || !selected.length} onClick={addSelection}
+            style={{ backgroundColor: "var(--accent)", color: "#23150e" }}>
+            {pending ? "Ajout en cours…" : selected.length === 1 ? "Ajouter le documentaire" : `Ajouter les ${selected.length} documentaires`}
+          </Button>
+        </div>
+      )}
+      {results && !results.collection && (
         <div>
           <p className="mb-2 text-sm font-semibold">Choisis l’œuvre pour « {results.query} »</p>
           {results.incomplete && (

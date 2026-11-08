@@ -180,6 +180,7 @@ export default function Layout({ children, currentPageName }) {
         onClose={() => { setShowAddWork(false); setEditingWork(null); }}
         work={editingWork}
         onSave={handleSaveWork}
+        onAddGqSelection={ids => create.mutateAsync({ gqDocumentaries: ids })}
       />
 
       <FiltersPanel

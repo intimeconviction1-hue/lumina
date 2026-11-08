@@ -137,7 +137,7 @@ function TagInput({ tags = [], onChange, suggestions = [] }) {
   );
 }
 
-export default function WorkFormModal({ open, onClose, work, onSave }) {
+export default function WorkFormModal({ open, onClose, work, onSave, onAddGqSelection }) {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -283,7 +283,7 @@ export default function WorkFormModal({ open, onClose, work, onSave }) {
 
         <div className="flex-1 overflow-y-auto px-5 sm:px-8 py-6 space-y-6">
 
-          {open && !work && <WorkLinkImport onFill={fillFromLink} onSource={url => set("source_url", url)} />}
+          {open && !work && <WorkLinkImport onFill={fillFromLink} onSource={url => set("source_url", url)} onAddGqSelection={onAddGqSelection} />}
 
           {/* — TITRE + CRÉATEUR — */}
           <div className="grid grid-cols-2 gap-4">
