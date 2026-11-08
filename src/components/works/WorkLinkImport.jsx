@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 export default function WorkLinkImport({ onFill, onSource }) {
   const inputId = useId();
   const request = useRef(null);
-  const [url, setUrl] = useState("");
+  const unrecognizedLink = useRef(null);
+  const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
   const [results, setResults] = useState(null);
   const [message, setMessage] = useState("");
@@ -27,21 +28,24 @@ export default function WorkLinkImport({ onFill, onSource }) {
         signal: controller.signal,
       });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Impossible de lire ce lien.");
+      if (!response.ok) {
+        if (response.status === 422 && payload.url) unrecognizedLink.current = payload.url;
+        throw new Error(data.error || "Impossible de lire ce lien.");
+      }
       if (data.work?.title) {
         const fields = Object.fromEntries(Object.entries(data.work).filter(([, value]) => value != null && value !== ""));
-        onFill({ ...candidate, ...fields });
+        onFill({ ...candidate, ...fields, source_url: unrecognizedLink.current || fields.source_url || candidate?.source_url });
         setResults(null);
         setMessage("Fiche préremplie. Vérifie les informations, puis ajoute l’œuvre.");
       } else if (data.matches?.length) {
         setResults(data);
       } else {
-        setMessage(`Aucune œuvre trouvée pour « ${data.query || url} ». Essaie avec le titre complet.`);
+        setMessage(`Aucune œuvre trouvée pour « ${data.query || input} ». Essaie avec le titre complet.`);
       }
     } catch (error) {
       if (controller.signal.aborted) return;
       if (candidate) {
-        onFill(candidate);
+        onFill({ ...candidate, source_url: unrecognizedLink.current || candidate.source_url });
         setResults(null);
         setMessage("Les informations de base ont été récupérées. La source des détails est indisponible.");
       } else {
@@ -55,13 +59,19 @@ export default function WorkLinkImport({ onFill, onSource }) {
   const startSearch = value => {
     if (!value.trim() || pending) return;
     setResults(null);
-    try {
-      const link = new URL(value.trim());
-      if (["https:", "http:"].includes(link.protocol) && !link.username && !link.password) onSource(link.href);
-    } catch {
-      // L’API renvoie le message de validation du lien.
+    const query = value.trim();
+    if (/^https?:\/\//i.test(query)) {
+      unrecognizedLink.current = null;
+      try {
+        const link = new URL(query);
+        if (!link.username && !link.password) onSource(link.href);
+      } catch {
+        // L’API valide les adresses incomplètes.
+      }
+      importMetadata({ url: query });
+    } else {
+      importMetadata({ title: query });
     }
-    importMetadata({ url: value.trim() });
   };
 
   return (
@@ -69,36 +79,36 @@ export default function WorkLinkImport({ onFill, onSource }) {
       style={{ backgroundColor: "var(--accent-soft)", borderColor: "var(--border)" }}>
       <form onSubmit={event => {
         event.preventDefault();
-        startSearch(url);
+        startSearch(input);
       }} className="space-y-2">
         <label htmlFor={inputId} className="flex items-center gap-2 text-sm font-bold">
-          <Link2 className="h-4 w-4" aria-hidden="true" /> Ajouter avec un lien
+          <Link2 className="h-4 w-4" aria-hidden="true" /> Ajouter avec un lien ou un titre
         </label>
         <div className="flex flex-wrap items-center gap-2">
-          <Input id={inputId} type="url" inputMode="url" autoComplete="off" maxLength={4096}
-            placeholder="Coller un lien"
+          <Input id={inputId} type="search" autoComplete="off" maxLength={4096}
+            placeholder="Coller un lien ou saisir un titre"
             className="min-w-[150px] flex-1"
             style={{ backgroundColor: "var(--bg)", color: "var(--text-primary)", borderColor: "var(--border)" }}
-            value={url} disabled={pending}
+            value={input} disabled={pending}
             onPaste={event => {
               const value = event.clipboardData.getData("text").trim();
               if (!/^https?:\/\/\S+$/i.test(value) || value.length > 4096) return;
               event.preventDefault();
-              setUrl(value);
+              setInput(value);
               startSearch(value);
             }}
             onChange={event => {
-              setUrl(event.target.value);
+              setInput(event.target.value);
               setResults(null);
               setMessage("");
             }} />
-          <Button type="submit" disabled={!url.trim() || pending}
+          <Button type="submit" disabled={!input.trim() || pending}
             style={{ backgroundColor: "var(--accent)", color: "#23150e" }}>
             <Search className="mr-2 h-4 w-4" aria-hidden="true" /> {pending ? "Recherche…" : "Préremplir"}
           </Button>
         </div>
         <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
-          Recherche Google, IMDb, TMDB, Google Books, Open Library ou YouTube.
+          Tu peux aussi chercher directement par titre, sans quitter Lumina.
         </p>
       </form>
       {results && (
