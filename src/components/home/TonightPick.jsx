@@ -158,29 +158,30 @@ export default function TonightPick({ enVeille, onAddWork }) {
   const [time, setTime] = useState("environ 2 heures");
   const [mood, setMood] = useState("peu importe");
   const [context, setContext] = useState("seul(e)");
-  const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null); // { work, reason } | { no_match, reason }
-  const [error, setError] = useState(null);
+  const [customizing, setCustomizing] = useState(false);
+
+  const firstPick = enVeille.find(work => work.priority === "urgent") || enVeille[0];
+  const suggested = result?.work && enVeille.find(work => work.id === result.work.id);
+  const displayed = result?.no_match ? result : suggested
+    ? { work: suggested, reason: result.reason }
+    : { work: firstPick, reason: "Dans ta liste à découvrir" };
 
   const handleAsk = () => {
-    if (enVeille.length === 0) return;
-    setLoading(true);
-    setResult(null);
-    setError(null);
-
-    // Petit délai pour l'animation, puis calcul local instantané
-    setTimeout(() => {
-      const data = localSuggest({ time, mood, context, candidates: enVeille });
-      setLoading(false);
-      setResult(data);
-    }, 450);
+    const alternatives = enVeille.filter(work => work.id !== displayed.work?.id);
+    const pool = context === "en groupe ou en famille"
+      ? alternatives.filter(work => WATCHABLE.has(work.type))
+      : alternatives;
+    setResult(localSuggest({ time, mood, context, candidates: pool.length ? pool : enVeille }));
+    setCustomizing(false);
   };
-
-  const reset = () => { setResult(null); setError(null); };
 
   const ResultWork = ({ work, reason }) => {
     const Icon = TYPE_ICONS[work.type] || FileText;
     const color = TYPE_COLORS[work.type] || "#667085";
+    const length = work.type === "livre"
+      ? (Number(work.page_count) > 0 && `${work.page_count} pages`)
+      : (Number(work.duration_minutes) > 0 && `${work.duration_minutes} min`);
     return (
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
         <Link
@@ -189,7 +190,7 @@ export default function TonightPick({ enVeille, onAddWork }) {
           style={{ backgroundColor: "var(--bg)", borderColor: "rgba(201,168,76,0.3)" }}
         >
           <div
-            className="w-14 h-14 rounded-[10px] flex-shrink-0 overflow-hidden flex items-center justify-center"
+            className="w-12 h-[64px] rounded-[8px] flex-shrink-0 overflow-hidden flex items-center justify-center"
             style={{ backgroundColor: `${color}18` }}
           >
             {work.cover_image ? (
@@ -200,24 +201,17 @@ export default function TonightPick({ enVeille, onAddWork }) {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-[14px] font-bold truncate" style={{ color: "var(--text-primary)" }}>{work.title}</p>
-            <p className="text-[11.5px] mt-0.5 font-medium" style={{ color: "#C9A84C" }}>✦ {reason}</p>
+            <p className="text-[11.5px] mt-0.5 font-medium" style={{ color: "#C9A84C" }}>{length ? `${reason} · ${length}` : reason}</p>
           </div>
-          <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-60 transition-opacity" style={{ color: "var(--text-muted)" }} />
+          <ArrowRight className="w-4 h-4 shrink-0" style={{ color: "var(--text-muted)" }} />
         </Link>
-        <button
-          onClick={handleAsk}
-          className="flex items-center gap-1.5 mt-2 mx-auto text-[11.5px] font-medium transition-opacity hover:opacity-70"
-          style={{ color: "var(--text-muted)" }}
-        >
-          <RotateCcw className="w-3 h-3" /> Autre suggestion
-        </button>
       </motion.div>
     );
   };
 
   return (
     <div
-      className="p-5"
+      className="p-3 sm:p-5"
       style={{
         backgroundColor: "var(--card-bg)",
         borderRadius: "var(--radius-card)",
@@ -235,7 +229,7 @@ export default function TonightPick({ enVeille, onAddWork }) {
         </motion.div>
         <div>
           <span className="text-[13px] font-bold" style={{ color: "var(--text-primary)" }}>
-            Ce soir je regarde quoi ?
+            Ce soir
           </span>
           <p className="text-[11px]" style={{ color: "var(--text-muted)" }}>Basé sur ta liste</p>
         </div>
@@ -260,7 +254,7 @@ export default function TonightPick({ enVeille, onAddWork }) {
         </div>
       ) : (
         <AnimatePresence mode="wait">
-          {!result ? (
+          {customizing ? (
             <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               {/* Formulaire */}
               <div className="space-y-3">
@@ -290,53 +284,37 @@ export default function TonightPick({ enVeille, onAddWork }) {
                 </div>
               </div>
 
-              <motion.button
-                onClick={handleAsk}
-                disabled={loading}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.97 }}
-                className="mt-4 w-full py-3 rounded-[12px] text-[13px] font-bold transition-all flex items-center justify-center gap-2 relative overflow-hidden"
-                style={{
-                  background: loading ? "rgba(201,168,76,0.4)" : "linear-gradient(135deg, #C9A84C, #D4AF37)",
-                  color: "#0B2545",
-                  boxShadow: loading ? "none" : "0 4px 16px rgba(201,168,76,0.35)",
-                }}
-              >
-                {!loading && (
-                  <motion.div
-                    className="absolute inset-0 rounded-[12px]"
-                    style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)" }}
-                    animate={{ x: ["-100%", "200%"] }}
-                    transition={{ duration: 2, repeat: Infinity, repeatDelay: 2 }}
-                  />
-                )}
-                {loading ? (
-                  <>
-                    <div className="w-3.5 h-3.5 border-2 border-[#0B2545]/30 border-t-[#0B2545] rounded-full animate-spin" />
-                    Analyse en cours…
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="w-3.5 h-3.5" /> Surprends-moi 🎬
-                  </>
-                )}
-              </motion.button>
-
-              {error && (
-                <p className="text-[11.5px] mt-2 text-center" style={{ color: "#EF4444" }}>{error}</p>
-              )}
+              <button type="button" onClick={handleAsk}
+                className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-xl px-4 text-sm font-bold"
+                style={{ backgroundColor: "var(--accent)", color: "#23150e" }}>
+                <Sparkles className="h-4 w-4" /> Trouver une suggestion
+              </button>
             </motion.div>
-          ) : result.no_match ? (
+          ) : displayed.no_match ? (
             <motion.div key="nomatch" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-3">
               <p className="text-[13px] font-medium mb-1" style={{ color: "var(--text-secondary)" }}>
-                {result.reason}
+                {displayed.reason}
               </p>
-              <button onClick={reset} className="mt-2 text-[11.5px] font-medium transition-opacity hover:opacity-70 flex items-center gap-1.5 mx-auto" style={{ color: "var(--text-muted)" }}>
+              <button onClick={() => setCustomizing(true)} className="mt-2 text-[11.5px] font-medium transition-opacity hover:opacity-70 flex items-center gap-1.5 mx-auto" style={{ color: "var(--text-muted)" }}>
                 <RotateCcw className="w-3 h-3" /> Modifier les critères
               </button>
             </motion.div>
           ) : (
-            <ResultWork key="result" work={result.work} reason={result.reason} />
+            <motion.div key="result" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+              <ResultWork work={displayed.work} reason={displayed.reason} />
+              <div className="flex flex-wrap gap-x-4">
+                {enVeille.length > 1 && (
+                  <button type="button" onClick={handleAsk} className="inline-flex min-h-11 items-center gap-1.5 text-xs font-semibold"
+                    style={{ color: "var(--text-secondary)" }}>
+                    <RotateCcw className="h-3.5 w-3.5" /> Autre suggestion
+                  </button>
+                )}
+                <button type="button" onClick={() => setCustomizing(true)} className="min-h-11 text-xs font-semibold"
+                  style={{ color: "var(--text-secondary)" }}>
+                  Ajuster les critères
+                </button>
+              </div>
+            </motion.div>
           )}
         </AnimatePresence>
       )}

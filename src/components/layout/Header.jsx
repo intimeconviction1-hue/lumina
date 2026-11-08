@@ -2,10 +2,10 @@ import React from "react";
 import { SlidersHorizontal, Plus, User, BookMarked, Menu, X } from "lucide-react";
 import SearchBar from "./SearchBar";
 
-export default function Header({ searchQuery, onSearchChange, onOpenFilters, onAddWork, onOpenSidebar, sidebarOpen, searchRef, works = [] }) {
+export default function Header({ searchQuery, onSearchChange, onOpenFilters, onAddWork, onOpenSidebar, sidebarOpen, searchRef, isLibrary, works = [] }) {
   return (
     <header
-      className="sticky top-0 z-50 flex items-center gap-2 px-4 py-2.5 lg:px-6 lg:py-3.5"
+      className="sticky top-0 z-50 flex min-h-14 items-center gap-2 px-4 py-2.5 lg:min-h-16 lg:px-6 lg:py-3.5"
       style={{
         backgroundColor: "var(--surface)",
         borderBottom: "1px solid var(--border)",
@@ -40,7 +40,9 @@ export default function Header({ searchQuery, onSearchChange, onOpenFilters, onA
 
       {/* Right utilities */}
       <div className="flex items-center gap-2 flex-shrink-0">
+        {!isLibrary && (
         <button
+          aria-label="Filtrer"
           onClick={onOpenFilters}
           className="flex items-center gap-1.5 px-3 py-2.5 text-[12.5px] font-medium transition-all border"
           style={{
@@ -55,9 +57,11 @@ export default function Header({ searchQuery, onSearchChange, onOpenFilters, onA
           <SlidersHorizontal className="w-3.5 h-3.5" />
           <span className="hidden sm:inline">Filtrer</span>
         </button>
+        )}
 
         <button
           onClick={onAddWork}
+          aria-label="Ajouter une œuvre"
           className="flex items-center gap-1.5 px-4 py-2.5 text-[12.5px] font-semibold text-white transition-all"
           style={{
             borderRadius: "var(--radius-btn)",

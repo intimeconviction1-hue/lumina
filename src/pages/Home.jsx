@@ -97,14 +97,14 @@ export default function Home({ onAddWork, onEditWork }) {
 
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }} className="pt-1">
-        <span className="text-[9px] sm:text-[10.5px] font-bold uppercase tracking-[0.15em]" style={{ color: "#E56B3A" }}>
+        <span className="hidden sm:inline text-[10.5px] font-bold uppercase tracking-[0.15em]" style={{ color: "#E56B3A" }}>
           ✦ Tableau de bord
         </span>
         <h1 className="text-[20px] sm:text-[28px] font-bold leading-snug mt-1" style={{ color: "var(--text-primary)" }}>
           {getGreeting()}, bienvenue 👋
         </h1>
         {works.length > 0 && (
-          <div className="inline-flex items-center gap-2 mt-3 px-3 py-1.5 rounded-full"
+          <div className="hidden sm:inline-flex items-center gap-2 mt-3 px-3 py-1.5 rounded-full"
             style={{ backgroundColor: "rgba(229,107,58,0.1)", border: "1px solid rgba(229,107,58,0.25)" }}>
             <span className="w-2 h-2 rounded-full bg-[#E56B3A]" />
             <p className="text-[12px] sm:text-[13px] font-semibold" style={{ color: "#E56B3A" }}>
@@ -120,9 +120,57 @@ export default function Home({ onAddWork, onEditWork }) {
         </div>
       </motion.div>
 
+      {isLoading ? <SkelBlock h={180} /> : works.length > 0 && (
+        <div className={toConsume.length > 0 ? "grid items-start gap-3 lg:grid-cols-2" : undefined}>
+          <ResumeSection works={inProgress} />
+          {toConsume.length > 0 && <TonightPick enVeille={toConsume} onAddWork={onAddWork} />}
+        </div>
+      )}
+
       {/* Type shortcuts */}
       {!isLoading && works.length > 0 && (
         <TypeShortcuts works={works} />
+      )}
+
+      {/* Derniers ajouts sous forme de cartes miniatures — masqué pendant un filtre par tags (non pertinent) */}
+      {!isLoading && works.length > 0 && activeTags.length === 0 && (
+        <RecentWorks works={works} />
+      )}
+
+      {/* ── MODULE 2 : Terminé récemment (vus + lus) ── */}
+      {!isLoading && <RecentlyFinished works={finished} />}
+
+      {/* ── MODULE 3 : Selon ton humeur (à voir + à lire) ── */}
+      {isLoading ? (
+        <SkelBlock h={200} />
+      ) : (
+        <MoodSuggestions works={works} enVeille={toConsume} onAddWork={onAddWork} />
+      )}
+
+      {/* À voir */}
+      {!isLoading && aVoir.length > 0 && (
+        <Section>
+          <HorizontalScroll title="À voir" works={aVoir} seeAllStatus="À voir" accentColor="#94A3B8" />
+        </Section>
+      )}
+
+      {/* Surprise — films/séries uniquement */}
+      {!isLoading && filmsSeries.length > 0 && (
+        <SurpriseCard works={filmsSeries} />
+      )}
+
+      {/* Favoris */}
+      {!isLoading && favorites.length > 0 && (
+        <Section>
+          <HorizontalScroll title="❤ Favoris" works={favorites} accentColor="#F472B6" />
+        </Section>
+      )}
+
+      {/* Pas sorti */}
+      {!isLoading && pasSorti.length > 0 && (
+        <Section>
+          <HorizontalScroll title="Pas sorti" works={pasSorti} seeAllStatus="Pas sorti" accentColor="#6366F1" />
+        </Section>
       )}
 
       {/* Tag cloud — filtrage cumulatif */}
@@ -154,59 +202,6 @@ export default function Home({ onAddWork, onEditWork }) {
             onToggleFavorite={handleToggleFavorite}
             emptyMessage="Aucune œuvre avec ce(s) tag(s)"
           />
-        </Section>
-      )}
-
-      {/* Derniers ajouts sous forme de cartes miniatures — masqué pendant un filtre par tags (non pertinent) */}
-      {!isLoading && works.length > 0 && activeTags.length === 0 && (
-        <RecentWorks works={works} />
-      )}
-
-      {/* ── MODULE 1 : Reprendre ── */}
-      {isLoading ? (
-        <SkelBlock h={180} />
-      ) : (
-        <ResumeSection works={inProgress} onAddWork={onAddWork} />
-      )}
-
-      {/* ── MODULE 2 : Terminé récemment (vus + lus) ── */}
-      {!isLoading && <RecentlyFinished works={finished} />}
-
-      {/* ── MODULE 3 : Selon ton humeur (à voir + à lire) ── */}
-      {isLoading ? (
-        <SkelBlock h={200} />
-      ) : (
-        <MoodSuggestions works={works} enVeille={toConsume} onAddWork={onAddWork} />
-      )}
-
-      {/* ── MODULE 4 : Ce soir je regarde quoi ? ── */}
-      {!isLoading && (
-        <TonightPick enVeille={aVoir} onAddWork={onAddWork} />
-      )}
-
-      {/* À voir */}
-      {!isLoading && aVoir.length > 0 && (
-        <Section>
-          <HorizontalScroll title="À voir" works={aVoir} seeAllStatus="À voir" accentColor="#94A3B8" />
-        </Section>
-      )}
-
-      {/* Surprise — films/séries uniquement */}
-      {!isLoading && filmsSeries.length > 0 && (
-        <SurpriseCard works={filmsSeries} />
-      )}
-
-      {/* Favoris */}
-      {!isLoading && favorites.length > 0 && (
-        <Section>
-          <HorizontalScroll title="❤ Favoris" works={favorites} accentColor="#F472B6" />
-        </Section>
-      )}
-
-      {/* Pas sorti */}
-      {!isLoading && pasSorti.length > 0 && (
-        <Section>
-          <HorizontalScroll title="Pas sorti" works={pasSorti} seeAllStatus="Pas sorti" accentColor="#6366F1" />
         </Section>
       )}
 

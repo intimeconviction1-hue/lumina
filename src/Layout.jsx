@@ -109,6 +109,8 @@ export default function Layout({ children, currentPageName }) {
     searchQuery,
     filters,
     onFiltersChange: setFilters,
+    onRestoreSearch: setSearchQuery,
+    onOpenFilters: () => setShowFilters(true),
     onEditWork: (work) => { setEditingWork(work); setShowAddWork(true); },
     onAddWork: () => { setEditingWork(null); setShowAddWork(true); },
   };
@@ -156,6 +158,7 @@ export default function Layout({ children, currentPageName }) {
           onAddWork={() => { setEditingWork(null); setShowAddWork(true); }}
           onOpenSidebar={() => setSidebarOpen(v => !v)}
           sidebarOpen={sidebarOpen}
+          isLibrary={currentPageName === "AllWorks"}
           searchRef={searchRef}
           works={works}
         />

@@ -1,23 +1,29 @@
 import React, { useState } from "react";
 import WorkCard from "./WorkCard";
+import WorkCardActions from "./WorkCardActions";
 import { LayoutGrid, List, Star } from "lucide-react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { typeIcons, typeColors, statusConfig } from "./WorkCard";
 import { effectiveStatus } from "@/lib/statusActions";
 
-function WorkRow({ work, onEdit, onDelete, onStatusChange, onToggleFavorite, index }) {
+function WorkRow({ work, onEdit, onDelete, onStatusChange, onToggleFavorite, onOpenWork, index }) {
   const TypeIcon = typeIcons[work.type] || (() => null);
   const tColor   = typeColors[work.type] || "#C9A84C";
   const sConfig  = statusConfig[effectiveStatus(work)] || statusConfig["À voir"];
   const displayYear = work.year || work.released_year;
+  const open = event => {
+    if (!onOpenWork || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    onOpenWork(work);
+  };
 
   return (
     <motion.div
       initial={{ opacity: 0, x: -8 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.22, delay: Math.min(index * 0.02, 0.25) }}
-      className="flex items-center gap-4 px-4 py-3 rounded-[12px] group transition-all"
+      className="flex flex-wrap sm:flex-nowrap items-center gap-2 sm:gap-4 px-3 py-2 rounded-[12px] group transition-all"
       style={{
         backgroundColor: "var(--card-bg)",
         border: "1px solid var(--border)",
@@ -27,13 +33,13 @@ function WorkRow({ work, onEdit, onDelete, onStatusChange, onToggleFavorite, ind
       onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.boxShadow = "var(--shadow-sm)"; }}
     >
       {/* Type indicator — large emoji */}
-      <div className="flex-shrink-0 w-8 flex items-center justify-center">
+      <div className="hidden sm:flex flex-shrink-0 w-8 items-center justify-center">
         <span className="text-[20px] leading-none" title={work.type}>
           {work.type === "livre" ? "📚" : work.type === "film" ? "🎬" : work.type === "série" ? "📺" : work.type === "documentaire" ? "🎙️" : work.type === "podcast" ? "🎧" : work.type === "vidéo" ? "▶️" : "📄"}
         </span>
       </div>
 
-      <Link to={`/WorkDetail?id=${work.id}`} className="flex-shrink-0">
+      <Link to={`/WorkDetail?id=${work.id}`} onClick={open} className="flex-shrink-0">
         <div className="overflow-hidden rounded-[8px]" style={{ width: 38, height: 54 }}>
           {work.cover_image ? (
             <img src={work.cover_image} alt={work.title} className="w-full h-full object-cover" loading="lazy" />
@@ -48,7 +54,7 @@ function WorkRow({ work, onEdit, onDelete, onStatusChange, onToggleFavorite, ind
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <Link to={`/WorkDetail?id=${work.id}`}>
+          <Link to={`/WorkDetail?id=${work.id}`} onClick={open}>
             <span className="text-[13.5px] font-semibold hover:opacity-70 transition-opacity" style={{ color: "var(--text-primary)" }}>
               {work.title}
             </span>
@@ -97,38 +103,22 @@ function WorkRow({ work, onEdit, onDelete, onStatusChange, onToggleFavorite, ind
       <span className="flex items-center gap-1 px-2 py-1 rounded-full text-[12px] font-semibold flex-shrink-0"
         style={{ backgroundColor: sConfig.bg, color: sConfig.color }}>
         <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: sConfig.dot }} />
-        <span className="hidden sm:inline">{sConfig.label}</span>
+        <span>{sConfig.label}</span>
       </span>
 
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-        <button onClick={() => onToggleFavorite?.(work)}
-          className="w-7 h-7 rounded-lg flex items-center justify-center"
-          style={{ color: work.favorite ? "#EC4899" : "var(--text-muted)" }}>
-          <span className="text-[13px]">{work.favorite ? "♥" : "♡"}</span>
-        </button>
-        <button onClick={() => onEdit?.(work)}
-          className="w-7 h-7 rounded-lg flex items-center justify-center hover:opacity-70"
-          style={{ color: "var(--text-secondary)" }}>
-          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-          </svg>
-        </button>
-        <button onClick={() => onDelete?.(work)}
-          className="w-7 h-7 rounded-lg flex items-center justify-center hover:text-red-400 transition-colors"
-          style={{ color: "var(--text-muted)" }}>
-          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-            <path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
-          </svg>
-        </button>
+      <div className="w-full sm:w-auto">
+        <WorkCardActions work={work} onEdit={onEdit} onDelete={onDelete}
+          onStatusChange={onStatusChange} onToggleFavorite={onToggleFavorite} />
       </div>
     </motion.div>
   );
 }
 
-export default function WorksGrid({ works, onEdit, onDelete, onStatusChange, onToggleFavorite, onFilter, emptyMessage, emptySubtext, activeTab, selectMode = false, selectedIds = new Set(), onToggleSelect }) {
-  const [viewMode, setViewMode] = useState("grid");
+export default function WorksGrid({ works, onEdit, onDelete, onStatusChange, onToggleFavorite, onFilter, emptyMessage, emptySubtext, activeTab, selectMode = false, selectedIds = new Set(), onToggleSelect, onOpenWork }) {
+  const [preferredView, setViewMode] = useState(() =>
+    onOpenWork && localStorage.getItem("lumina-library-view") === "list" ? "list" : "grid"
+  );
+  const viewMode = selectMode ? "grid" : preferredView;
 
   // Le tri est piloté par le panneau de filtres (filters.sort) en amont dans AllWorks.
   // WorksGrid respecte l'ordre reçu — pas de second tri concurrent ici.
@@ -162,7 +152,13 @@ export default function WorksGrid({ works, onEdit, onDelete, onStatusChange, onT
           ].map(({ mode, Icon }) => (
             <button
               key={mode}
-              onClick={() => setViewMode(mode)}
+              disabled={selectMode}
+              aria-label={mode === "grid" ? "Afficher en grille" : "Afficher en liste"}
+              aria-pressed={viewMode === mode}
+              onClick={() => {
+                setViewMode(mode);
+                if (onOpenWork) localStorage.setItem("lumina-library-view", mode);
+              }}
               className="px-3 py-2 transition-all"
               style={{
                 backgroundColor: viewMode === mode ? "rgba(229,107,58,0.12)" : "transparent",
@@ -190,6 +186,7 @@ export default function WorksGrid({ works, onEdit, onDelete, onStatusChange, onT
                 key={work.id}
                 work={work}
                 index={i}
+                onOpenWork={onOpenWork}
                 onEdit={onEdit}
                 onDelete={onDelete}
                 onStatusChange={onStatusChange}
@@ -215,6 +212,7 @@ export default function WorksGrid({ works, onEdit, onDelete, onStatusChange, onT
                 key={work.id}
                 work={work}
                 index={i}
+                onOpenWork={onOpenWork}
                 onEdit={onEdit}
                 onDelete={onDelete}
                 onStatusChange={onStatusChange}

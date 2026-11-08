@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft, Pencil, Trash2, Heart, FileText,
   Calendar, MapPin, Globe, Clock, Monitor, BookMarked, Zap, Play, Pause, CheckCircle2, RotateCcw, Flag, PlayCircle, BookOpen
@@ -33,6 +33,17 @@ function MetaItem({ icon: IconComp, label, value }) {
 export default function WorkDetail({ onEditWork }) {
   const { updateWork, removeWork } = useWorkMutations();
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromLibrary = location.state?.fromLibrary;
+  React.useLayoutEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, [location.key]);
+
+  const returnToLibrary = event => {
+    if (!fromLibrary || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    navigate(-1);
+  };
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const [searchParams] = useSearchParams();
@@ -89,7 +100,7 @@ export default function WorkDetail({ onEditWork }) {
         <p className="text-[13px] mb-5" style={{ color: "var(--text-muted)" }}>
           {workId ? "Cette œuvre n'existe pas ou a été supprimée." : "Aucun identifiant fourni."}
         </p>
-        <Link to="/AllWorks" className="px-4 py-2.5 rounded-[12px] text-[13px] font-semibold transition-all hover:opacity-90"
+        <Link to="/AllWorks" onClick={returnToLibrary} className="px-4 py-2.5 rounded-[12px] text-[13px] font-semibold transition-all hover:opacity-90"
           style={{ backgroundColor: "rgba(229,107,58,0.1)", color: "#E56B3A", border: "1.5px solid rgba(229,107,58,0.3)" }}>
           <ArrowLeft className="w-4 h-4 inline mr-1.5" />Retour à la bibliothèque
         </Link>
@@ -108,7 +119,7 @@ export default function WorkDetail({ onEditWork }) {
   return (
     <div className="max-w-5xl mx-auto">
       {/* Doublon du bouton retour flottant du Layout sur mobile (lg:hidden côté Layout) — visible seulement en desktop ici. */}
-      <Link to="/AllWorks" className="hidden lg:inline-flex items-center gap-2 text-[13px] font-medium mb-7 transition-opacity hover:opacity-70" style={{ color: "var(--text-secondary)" }}>
+      <Link to="/AllWorks" onClick={returnToLibrary} className="hidden lg:inline-flex items-center gap-2 text-[13px] font-medium mb-7 transition-opacity hover:opacity-70" style={{ color: "var(--text-secondary)" }}>
         <ArrowLeft className="w-3.5 h-3.5" /> Retour à la bibliothèque
       </Link>
 

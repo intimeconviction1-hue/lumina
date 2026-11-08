@@ -7,7 +7,7 @@ const navItems = [
   { label: "Bibliothèque",icon: LayoutGrid,  path: "/AllWorks",                  color: "#E56B3A" },
   { label: "Envie",       icon: Bookmark,    path: "/WantToWatch",               color: "#EC4899" },
   { label: "En cours",    icon: Clock,       path: "/AllWorks?status=En+cours",  color: "#D4AF37" },
-  { label: "Visionné",    icon: Eye,         path: "/AllWorks?status=Visionn%C3%A9", color: "#2AA6A0" },
+  { label: "Terminés",    icon: Eye,         path: "/AllWorks?collection=finished", color: "#2AA6A0" },
 ];
 
 export default function BottomNav() {
@@ -27,12 +27,15 @@ export default function BottomNav() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const currentPath = location.pathname + location.search;
+  const params = new URLSearchParams(location.search);
 
   const isActive = (item) => {
     if (item.exact) return location.pathname === "/";
-    if (item.path === "/AllWorks") return location.pathname === "/AllWorks" && !location.search;
-    return currentPath === item.path || currentPath.startsWith(item.path.split("?")[0] + "?");
+    if (!item.path.startsWith("/AllWorks")) return location.pathname === item.path;
+    if (location.pathname !== "/AllWorks") return false;
+    if (params.get("collection") === "finished") return item.label === "Terminés";
+    if (params.get("status") === "En cours") return item.label === "En cours";
+    return item.path === "/AllWorks";
   };
 
   const handleNav = (item) => {
@@ -63,6 +66,8 @@ export default function BottomNav() {
         return (
           <button
             key={item.path}
+            type="button"
+            aria-current={active ? "page" : undefined}
             onClick={() => handleNav(item)}
             className="flex items-center justify-center flex-1 py-2 transition-all"
             style={{
@@ -84,7 +89,7 @@ export default function BottomNav() {
                 />
               </div>
               <span style={{
-                fontSize: "9px",
+                fontSize: "10px",
                 fontWeight: active ? 700 : 500,
                 letterSpacing: "0.01em",
                 color: active ? accentColor : "var(--text-muted)",

@@ -204,6 +204,10 @@ button, a, [role="button"] {
     z-index: 20 !important;
   }
 
+  .library-tools[class] {
+    z-index: 10 !important;
+  }
+
   /* BottomNav : au-dessus du contenu mais pas du modal */
   nav.fixed.bottom-0 {
     z-index: 40 !important;
