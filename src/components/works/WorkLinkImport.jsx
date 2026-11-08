@@ -63,10 +63,10 @@ export default function WorkLinkImport({ onFill, onSource, onAddGqSelection }) {
     setPending(true);
     setMessage("");
     try {
-      const { added, skipped } = await onAddGqSelection(selected);
+      const { added, completed, skipped } = await onAddGqSelection(selected);
       setResults(null);
       setSelected([]);
-      setMessage(`${added} documentaire${added === 1 ? " ajouté" : "s ajoutés"}${skipped ? ` · ${skipped} déjà dans la bibliothèque` : ""}.`);
+      setMessage(`${added} documentaire${added === 1 ? " ajouté" : "s ajoutés"}${completed ? ` · ${completed} complété${completed > 1 ? "s" : ""}` : ""}${skipped ? ` · ${skipped} déjà dans la bibliothèque` : ""}.`);
     } catch {
       setMessage("Impossible d’ajouter la sélection. Réessaie.");
     } finally {
@@ -141,6 +141,7 @@ export default function WorkLinkImport({ onFill, onSource, onAddGqSelection }) {
                     const checked = event.target.checked;
                     setSelected(current => checked ? [...current, work.id] : current.filter(id => id !== work.id));
                   }} />
+                  <img src={work.cover_image} alt="" loading="lazy" className="h-12 w-8 rounded object-cover" />
                   <span>
                     <span className="block font-semibold">{work.title}</span>
                     <span className="block text-xs" style={{ color: "var(--text-secondary)" }}>{work.year} · {work.creator}</span>

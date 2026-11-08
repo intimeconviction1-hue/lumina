@@ -1,45 +1,15 @@
-import { createHash, randomBytes } from 'crypto';
+import { randomBytes } from 'crypto';
 import { getSql, WRITABLE, ARRAY_COLS, SORT_COLUMNS, norm } from './_lib.js';
 import { gqDocumentaries } from '../server/gqDocumentaries.js';
-import { enrichMovieLink } from '../server/importLink.js';
+import { saveGqDocumentaries } from '../server/saveGqDocumentaries.js';
 
 async function addGqSelection(sql, ids, res) {
   const selected = gqDocumentaries.filter(work => ids.includes(work.id));
   if (!selected.length || selected.length !== new Set(ids).size) {
     return res.status(400).json({ error: 'Sélection de documentaires invalide.' });
   }
-  const movies = await Promise.all(selected.map(async work => {
-    const enriched = await enrichMovieLink(work);
-    return {
-      ...work,
-      cover_image: enriched.cover_image,
-      country: enriched.country,
-      duration_minutes: enriched.duration_minutes,
-      genre: enriched.genre,
-      description: enriched.description || work.description,
-    };
-  }));
-  const results = await sql.transaction(tx => movies.map(work => {
-    const id = createHash('sha256').update(`lumina:gq-documentaries:${work.id}`).digest('hex').slice(0, 24);
-    return tx`
-      insert into works (id, title, type, status, year, creator, creator_name, description, cover_image,
-                         source_url, country, duration_minutes, genre, created_date, updated_date)
-      select ${id}, ${work.title}, ${work.type}, ${work.status}, ${work.year}, ${work.creator}, ${work.creator},
-             ${work.description}, ${work.cover_image ?? null}, ${work.source_url}, ${work.country ?? null},
-             ${work.duration_minutes ?? null}, ${norm('genre', work.genre)}::text[], now(), now()
-      where not exists (
-        select 1 from works where lower(trim(title)) = lower(${work.title})
-          and coalesce(year, released_year) = ${work.year}
-          and type in ('film', 'documentaire', 'vidéo')
-      )
-      on conflict (id) do nothing
-      returning id
-    `;
-  }));
-  const added = results.reduce((count, rows) => count + rows.length, 0);
-  return res.status(201).json({ added, skipped: selected.length - added });
+  return res.status(201).json(await saveGqDocumentaries(sql, selected));
 }
-
 
 export default async function handler(req, res) {
   try {
