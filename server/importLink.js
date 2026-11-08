@@ -1,5 +1,6 @@
 import { IMG, tmdbJSON } from './tmdb.js';
 import { franceTvReplay, franceTvReplayPath } from './franceTv.js';
+import { amazonBookPage, amazonProduct } from './amazonBookPage.js';
 import { allocineMovie, allocineMovieId } from './allocine.js';
 import { okruVideo, okruVideoId } from './okru.js';
 import { gqDocumentaries, isGqDocumentaryList } from './gqDocumentaries.js';
@@ -118,15 +119,10 @@ function openLibraryBook(item) {
   };
 }
 
-const amazonHost = /^(?:www\.|m\.)?amazon\.(?:fr|com|ca|de|es|it|co\.uk|com\.be)$/;
-const isbn10 = /^\d{9}[\dX]$/;
-
-function amazonIsbn(url) {
-  if (!amazonHost.test(url.hostname)) return null;
-  const isbn = /\/(?:dp|gp\/product|gp\/aw\/d)\/([\dX]{10})(?:\/|$)/i.exec(url.pathname)?.[1].toUpperCase();
-  if (!isbn || !isbn10.test(isbn)) return null;
+function validIsbn10(isbn) {
+  if (!/^\d{9}[\dX]$/.test(isbn)) return false;
   const checksum = [...isbn].reduce((sum, digit, index) => sum + (digit === 'X' ? 10 : Number(digit)) * (10 - index), 0);
-  return checksum % 11 === 0 ? isbn : null;
+  return checksum % 11 === 0;
 }
 
 function isbn13From10(isbn) {
@@ -166,7 +162,7 @@ async function openLibraryEdition(isbn, identifiers) {
   };
 }
 
-async function amazonBook(url, isbn) {
+async function amazonBook({ source, asin: isbn }) {
   const identifiers = new Set([isbn, isbn13From10(isbn)]);
   const search = booksURL();
   search.searchParams.set('q', `isbn:${isbn}`);
@@ -183,7 +179,7 @@ async function amazonBook(url, isbn) {
   return {
     ...edition,
     ...fields,
-    source_url: `https://${url.hostname.replace(/^m\./, 'www.')}/dp/${isbn}`,
+    source_url: source,
   };
 }
 
@@ -284,8 +280,19 @@ export default async function handler(req, res) {
       return res.status(200).json({ collection: 'gq-documentaries', matches: gqDocumentaries });
     }
 
-    const isbn = amazonIsbn(url);
-    if (isbn) return res.status(200).json({ work: await amazonBook(url, isbn) });
+    const product = amazonProduct(url);
+    if (product) {
+      let work = validIsbn10(product.asin) ? await amazonBook(product).catch(() => null) : null;
+      if (!work) {
+        try {
+          work = await amazonBookPage(product);
+        } catch {
+          return res.status(422).json({ error: 'Amazon ne donne pas accès à cette fiche depuis Lumina. Le lien est gardé. Saisis le titre ici pour rechercher le livre.' });
+        }
+      }
+      if (work) return res.status(200).json({ work });
+      return res.status(422).json({ error: 'Lumina n’a pas pu identifier un livre sur cette fiche Amazon. Le lien est gardé. Saisis le titre si c’est un livre.' });
+    }
 
     const replayPath = franceTvReplayPath(url);
     if (replayPath) return res.status(200).json({ work: await franceTvReplay(replayPath) });
