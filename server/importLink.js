@@ -1,4 +1,5 @@
 import { IMG, tmdbJSON } from './tmdb.js';
+import { allocineMovie, allocineMovieId } from './allocine.js';
 
 const GOOGLE_BOOKS = 'https://www.googleapis.com/books/v1/volumes';
 const OPEN_LIBRARY = 'https://openlibrary.org';
@@ -180,6 +181,9 @@ export default async function handler(req, res) {
       const query = url.searchParams.get('q') || new URLSearchParams(url.hash.slice(1)).get('q');
       return await catalogSearch(query, res);
     }
+
+    const allocineId = allocineMovieId(url);
+    if (allocineId) return res.status(200).json({ work: await allocineMovie(allocineId) });
 
     const tmdb = /^\/(movie|tv)\/(\d{1,12})(?:[-/]|$)/.exec(url.pathname);
     if (host === 'themoviedb.org' && tmdb) {
