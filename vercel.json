@@ -1,5 +1,4 @@
 {
-  "buildCommand": "npm run build && node scripts/fix-spermworld-poster.mjs",
   "rewrites": [
     { "source": "/((?!api/|posters/).*)", "destination": "/index.html" }
   ]
