@@ -10,9 +10,9 @@ import { motion } from "framer-motion";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { typeIcons, typeColors } from "../components/works/WorkCard";
 import { STATUS_CONFIG, STATUS_ACTIONS, effectiveStatus, isFinished, statusPatch } from "@/lib/statusActions";
-import { useWorks } from "@/hooks/useWorks";
 import { worksApi } from "@/api/works";
 import { useWorkMutations } from "@/hooks/useWorkMutations";
+import WorksLoadError from "@/components/works/WorksLoadError";
 
 const ACTION_ICONS = { Play, Pause, CheckCircle2, RotateCcw };
 
@@ -38,25 +38,11 @@ export default function WorkDetail({ onEditWork }) {
   const [searchParams] = useSearchParams();
   const workId = searchParams.get("id") || new URLSearchParams(window.location.search).get("id");
 
-  const { data: allWorks = [] } = useWorks();
-  
-  const { data: work, isLoading } = useQuery({
+  const { data: work, error, isLoading, isFetching, refetch } = useQuery({
     queryKey: ["work", workId],
-    queryFn: async () => {
-      if (!workId) return null;
-      // Try cache first (WORKS_KEY)
-      const found = allWorks.find(w => w.id === workId);
-      if (found) return found;
-      // Fallback: try worksApi.get
-      try {
-        return await worksApi.get(workId);
-      } catch {
-        // Last resort: list + find
-        const list = await worksApi.list();
-        return list.find(w => w.id === workId) || null;
-      }
-    },
+    queryFn: ({ signal }) => worksApi.get(workId, signal),
     enabled: !!workId,
+    retry: (failureCount, error) => error.status !== 404 && failureCount < 1,
   });
 
   // Optimistic + rollback + toast + invalidation gérés par useWorkMutations
@@ -89,7 +75,11 @@ export default function WorkDetail({ onEditWork }) {
     );
   }
 
-  if (!workId || (!isLoading && !work)) {
+  if (error && error.status !== 404) {
+    return <WorksLoadError retry={refetch} retrying={isFetching} />;
+  }
+
+  if (!workId || error?.status === 404) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4" style={{ backgroundColor: "var(--border-subtle)" }}>

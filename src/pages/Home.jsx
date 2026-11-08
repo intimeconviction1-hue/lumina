@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { useWorks } from "@/hooks/useWorks";
+import WorksLoadError from "@/components/works/WorksLoadError";
 import { useWorkMutations } from "@/hooks/useWorkMutations";
 import { effectiveStatus, statusPatch } from "@/lib/statusActions";
 import StatsCards from "../components/home/StatsCards";
@@ -53,7 +54,7 @@ const SkelBlock = ({ h = 160 }) => (
 export default function Home({ onAddWork, onEditWork }) {
   const [activeTags, setActiveTags] = useState([]);
 
-  const { data: works = [], isLoading } = useWorks();
+  const { data: works = [], isLoading, isError, isFetching, refetch } = useWorks();
   const { updateWork, removeWork } = useWorkMutations();
 
   const toggleTag = (tag) => {
@@ -86,6 +87,10 @@ export default function Home({ onAddWork, onEditWork }) {
     }
     return g;
   }, [filteredWorks]);
+
+  if (isError) {
+    return <WorksLoadError retry={refetch} retrying={isFetching} />;
+  }
 
   return (
     <div className="max-w-6xl mx-auto space-y-5 sm:space-y-6">

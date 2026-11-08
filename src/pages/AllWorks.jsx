@@ -2,6 +2,7 @@ import React, { useMemo, useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "react-router-dom";
 import WorksGrid from "../components/works/WorksGrid";
+import WorksLoadError from "@/components/works/WorksLoadError";
 import { useWorks, WORKS_KEY } from "@/hooks/useWorks";
 import { worksApi } from "@/api/works";
 import { useWorkMutations } from "@/hooks/useWorkMutations";
@@ -148,7 +149,7 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
     return list;
   }, [filters]);
 
-  const { data: works = [], isLoading } = useWorks();
+  const { data: works = [], isLoading, isError, isFetching, refetch } = useWorks();
 
   // Counts for tabs
   const tabCounts = useMemo(() => ({
@@ -278,6 +279,10 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
     setSelectMode(false);
     setSelectedIds(new Set());
   };
+
+  if (isError) {
+    return <WorksLoadError retry={refetch} retrying={isFetching} />;
+  }
 
   return (
     <div className="max-w-7xl mx-auto">
