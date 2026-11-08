@@ -132,34 +132,53 @@ async function resolve(provider, id) {
   throw new Error('Source indisponible');
 }
 
+const googleHost = host => /^(?:www\.|m\.)?google\.(?:com|[a-z]{2}|(?:co|com)\.[a-z]{2})$/.test(host);
+const googlePath = url => url.pathname.replace(/\/+$/, '') || '/';
+
+function unwrapGoogleLink(url) {
+  for (let depth = 0; url && depth < 3; depth++) {
+    if (!googleHost(url.hostname) || googlePath(url) !== '/url') break;
+    url = publicLink(url.searchParams.get('url') || url.searchParams.get('q'));
+  }
+  return url;
+}
+
+async function catalogSearch(input, res) {
+  const query = input?.trim().slice(0, 160);
+  if (!query) return res.status(400).json({ error: 'Saisis le titre de l’œuvre à rechercher.' });
+  const searches = [searchBooks(query)];
+  if (process.env.TMDB_API_KEY) searches.push(searchScreens(query));
+  const results = await Promise.allSettled(searches);
+  if (results.every(result => result.status === 'rejected')) throw new Error('Sources indisponibles');
+  return res.status(200).json({
+    query,
+    matches: results.flatMap(result => result.status === 'fulfilled' ? result.value : []),
+    incomplete: searches.length < 2 || results.some(result => result.status === 'rejected'),
+  });
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ error: 'Méthode non autorisée.' });
   }
   res.setHeader('Cache-Control', 'no-store');
-  const { url: input, provider, id } = req.body || {};
+  const { url: input, provider, id, title } = req.body || {};
 
   try {
     if (typeof provider === 'string' && typeof id === 'string') {
       return res.status(200).json({ work: await resolve(provider, id) });
     }
-    const url = publicLink(input);
-    if (!url) return res.status(400).json({ error: 'Colle une adresse complète commençant par https:// ou http://.' });
+    if (typeof title === 'string') return await catalogSearch(title, res);
+    const original = publicLink(input);
+    if (!original) return res.status(400).json({ error: 'Colle une adresse complète ou saisis le titre de l’œuvre.' });
+    const url = unwrapGoogleLink(original);
+    if (!url) return res.status(422).json({ error: 'Le lien Google ne contient pas d’adresse exploitable. Recherche l’œuvre par titre dans ce même champ.' });
     const host = url.hostname.replace(/^www\./, '');
 
-    if (/^google\.(com|fr|be|ch|ca|co\.uk|co\.il)$/.test(host) && url.pathname === '/search') {
-      const query = url.searchParams.get('q')?.trim().slice(0, 160);
-      if (!query) return res.status(400).json({ error: 'Ce lien Google ne contient aucun terme de recherche.' });
-      const searches = [searchBooks(query)];
-      if (process.env.TMDB_API_KEY) searches.push(searchScreens(query));
-      const results = await Promise.allSettled(searches);
-      if (results.every(result => result.status === 'rejected')) throw new Error('Sources indisponibles');
-      return res.status(200).json({
-        query,
-        matches: results.flatMap(result => result.status === 'fulfilled' ? result.value : []),
-        incomplete: searches.length < 2 || results.some(result => result.status === 'rejected'),
-      });
+    if (googleHost(url.hostname) && ['/', '/search', '/webhp', '/custom', '/m'].includes(googlePath(url))) {
+      const query = url.searchParams.get('q') || new URLSearchParams(url.hash.slice(1)).get('q');
+      return await catalogSearch(query, res);
     }
 
     const tmdb = /^\/(movie|tv)\/(\d{1,12})(?:[-/]|$)/.exec(url.pathname);
@@ -194,7 +213,7 @@ export default async function handler(req, res) {
       }
     }
 
-    return res.status(422).json({ error: 'Ce lien ne permet pas de retrouver automatiquement la fiche. Utilise une recherche Google avec le titre, ou garde le lien et saisis le titre.' });
+    return res.status(422).json({ error: 'Ce lien a été conservé dans la fiche. Remplace-le ici par le titre de l’œuvre, puis lance la recherche.' });
   } catch {
     return res.status(502).json({ error: 'Impossible de récupérer les informations auprès de la source. Réessaie ou complète la fiche à la main.' });
   }
