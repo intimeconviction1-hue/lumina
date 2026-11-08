@@ -6,7 +6,7 @@ import { TYPE_COLORS } from "@/lib/statusActions";
 const STATUSES = ["À voir", "En cours", "Visionné", "Pas sorti", "Envie de lire", "Lu"];
 const PLATFORMS = ["Netflix", "Prime Video", "Disney+", "Canal+", "HBO", "Apple TV+", "Arte", "FranceTV", "Ciné", "OneDrive", "Yggtorrent", "Khan Israël", "IKROMI", "Lenny", "OKRU"];
 const TYPES = ["film", "série", "livre", "documentaire", "podcast", "vidéo", "article"];
-const SORT_OPTIONS = [
+export const SORT_OPTIONS = [
   { value: "-created_date", label: "Plus récents" },
   { value: "-year", label: "Année (récent → ancien)" },
   { value: "year", label: "Année (ancien → récent)" },

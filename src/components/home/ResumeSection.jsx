@@ -38,7 +38,7 @@ function ResumeCard({ work, index }) {
     >
       <Link
         to={`/WorkDetail?id=${work.id}`}
-        className="flex items-center gap-3.5 p-3.5 rounded-[14px] border group transition-all hover:shadow-sm"
+        className="flex items-center gap-3 p-2.5 sm:p-3 rounded-[14px] border transition-shadow hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
         style={{
           backgroundColor: "var(--bg)",
           borderColor: "var(--border)",
@@ -46,7 +46,7 @@ function ResumeCard({ work, index }) {
       >
         {/* Cover or icon */}
         <div
-          className="w-12 h-12 rounded-[10px] flex-shrink-0 overflow-hidden flex items-center justify-center"
+          className="w-12 h-[64px] rounded-[8px] flex-shrink-0 overflow-hidden flex items-center justify-center"
           style={{ backgroundColor: `${color}18` }}
         >
           {work.cover_image ? (
@@ -58,25 +58,27 @@ function ResumeCard({ work, index }) {
 
         {/* Info */}
         <div className="flex-1 min-w-0">
-          <p className="text-[13.5px] font-semibold truncate" style={{ color: "var(--text-primary)" }}>
+          <p className="text-sm sm:text-base font-bold truncate" style={{ color: "var(--text-primary)" }}>
             {work.title}
           </p>
-          {work.creator && (
-            <p className="text-[11.5px] truncate" style={{ color: "var(--text-muted)" }}>{work.creator}</p>
+          {(work.creator || work.creator_name) && (
+            <p className="text-[11.5px] truncate" style={{ color: "var(--text-muted)" }}>{work.creator || work.creator_name}</p>
           )}
           {signal && (
-            <p className="text-[11px] mt-0.5 font-medium" style={{ color: "#D4AF37" }}>{signal}</p>
+            <p className="text-[11px] mt-0.5 font-medium" style={{ color: "var(--text-secondary)" }}>{signal}</p>
           )}
         </div>
 
-        {/* Arrow */}
-        <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-60 transition-opacity flex-shrink-0" style={{ color: "var(--text-muted)" }} />
+        <span className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-xs font-bold"
+          style={{ backgroundColor: "var(--accent)", color: "#23150e" }}>
+          Continuer <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+        </span>
       </Link>
     </motion.div>
   );
 }
 
-export default function ResumeSection({ works, onAddWork }) {
+export default function ResumeSection({ works }) {
   // Sort: started_at présent en premier, puis updated_date pour les autres
   const withDate = [...works.filter(w => w.started_at)].sort((a, b) => new Date(b.started_at) - new Date(a.started_at));
   const withoutDate = [...works.filter(w => !w.started_at)].sort((a, b) => new Date(b.updated_date || 0) - new Date(a.updated_date || 0));
@@ -84,26 +86,25 @@ export default function ResumeSection({ works, onAddWork }) {
 
   return (
     <div
-      className="p-5"
+      className="p-3 sm:p-5"
       style={{
-        backgroundColor: "var(--card-bg)",
+        background: "linear-gradient(135deg, var(--accent-soft), var(--card-bg) 55%)",
         borderRadius: "var(--radius-card)",
         border: "1px solid var(--border)",
         boxShadow: "var(--shadow-sm)",
       }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-2 sm:mb-3">
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: "#D4AF37" }} />
-          <span className="text-[12px] font-bold uppercase tracking-[0.12em]" style={{ color: "var(--text-muted)" }}>
+          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: "#D4AF37" }} />
+          <h2 className="text-lg sm:text-xl font-bold" style={{ color: "var(--text-primary)" }}>
             Reprendre
-          </span>
+          </h2>
         </div>
         {sorted.length > 0 && (
           <Link
-            to="/AllWorks"
-            onClick={() => window.dispatchEvent(new CustomEvent("sidebar-filter", { detail: { status: "En cours" } }))}
+            to="/AllWorks?status=En+cours"
             className="text-[11.5px] font-medium transition-opacity hover:opacity-70"
             style={{ color: "#D4AF37" }}
           >
@@ -118,20 +119,19 @@ export default function ResumeSection({ works, onAddWork }) {
             Rien en cours pour l'instant.
           </p>
           <p className="text-[12px] mb-3" style={{ color: "var(--text-muted)" }}>
-            Piocher dans ta liste <strong>À voir</strong> ?
+            Choisis une œuvre à voir ou à lire.
           </p>
           <Link
-            to="/AllWorks"
-            onClick={() => window.dispatchEvent(new CustomEvent("sidebar-filter", { detail: { status: "À voir" } }))}
+            to="/AllWorks?status=%C3%80+voir&status=Envie+de+lire"
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-[10px] text-[12px] font-semibold transition-all hover:opacity-90"
             style={{ backgroundColor: "rgba(212,175,55,0.1)", color: "#B8942E", border: "1px solid rgba(212,175,55,0.25)" }}
           >
-            <Play className="w-3.5 h-3.5" /> Voir la liste À voir
+            <Play className="w-3.5 h-3.5" /> Voir les œuvres à découvrir
           </Link>
         </div>
       ) : (
         <div className="space-y-2">
-          {sorted.slice(0, 5).map((w, i) => (
+          {sorted.slice(0, 3).map((w, i) => (
             <ResumeCard key={w.id} work={w} index={i} />
           ))}
         </div>

@@ -1,15 +1,11 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  MoreVertical, Pencil, Trash2, ArrowRightLeft,
   BookOpen, Film, Tv, Mic, Video, FileText, Radio, Heart
 } from "lucide-react";
-import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
-  DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger, DropdownMenuSeparator
-} from "@/components/ui/dropdown-menu";
+import WorkCardActions from "./WorkCardActions";
 import { motion } from "framer-motion";
-import { STATUS_CONFIG, STATUSES, TYPE_COLORS, effectiveStatus, isFinished } from "@/lib/statusActions";
+import { STATUS_CONFIG, TYPE_COLORS, effectiveStatus, isFinished } from "@/lib/statusActions";
 
 export const typeIcons = {
   livre: BookOpen, film: Film, série: Tv, documentaire: Radio,
@@ -19,7 +15,6 @@ export const typeIcons = {
 export const typeColors = TYPE_COLORS;
 
 export const statusConfig = STATUS_CONFIG;
-const ALL_STATUSES = STATUSES;
 
 const GENRE_COLORS_MAP = {
   "juifs": "#8B5CF6", "polar": "#0B2545", "procès": "#D4AF37",
@@ -28,7 +23,7 @@ const GENRE_COLORS_MAP = {
 };
 const genreColor = (g) => GENRE_COLORS_MAP[g] || "#C9A84C";
 
-export default function WorkCard({ work, onEdit, onDelete, onStatusChange, onToggleFavorite, onFilter, index = 0, selectMode = false, selected = false, onToggleSelect }) {
+export default function WorkCard({ work, onEdit, onDelete, onStatusChange, onToggleFavorite, onFilter, onOpenWork, index = 0, selectMode = false, selected = false, onToggleSelect }) {
   const navigate = useNavigate();
   const TypeIcon = typeIcons[work.type] || Film;
   const tColor = typeColors[work.type] || "#C9A84C";
@@ -46,7 +41,8 @@ export default function WorkCard({ work, onEdit, onDelete, onStatusChange, onTog
   const goDetail = (e) => {
     if (selectMode) { e.stopPropagation(); onToggleSelect?.(work.id); return; }
     e.stopPropagation();
-    navigate(`/WorkDetail?id=${work.id}`);
+    if (onOpenWork) onOpenWork(work);
+    else navigate(`/WorkDetail?id=${work.id}`);
   };
 
   return (
@@ -96,10 +92,6 @@ export default function WorkCard({ work, onEdit, onDelete, onStatusChange, onTog
             />
           )}
 
-          {/* Voile haut pour lisibilité des badges sur affiches claires */}
-          <div className="absolute top-0 left-0 right-0 h-12 pointer-events-none"
-            style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.45), transparent)" }} />
-
           {/* Checkbox en mode sélection */}
           {selectMode && (
             <button
@@ -116,12 +108,7 @@ export default function WorkCard({ work, onEdit, onDelete, onStatusChange, onTog
           )}
 
           {/* Top badges */}
-          <div className="absolute top-2 left-2 right-2 flex items-start justify-between gap-1.5 pointer-events-none">
-            <span className="hidden sm:flex items-center gap-1 min-w-0 max-w-[78%] px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide"
-              style={{ backgroundColor: `${tColor}f2`, color: "#fff", backdropFilter: "blur(6px)" }}>
-              <TypeIcon className="w-2 h-2 flex-shrink-0" />
-              <span className="truncate">{work.type}</span>
-            </span>
+          <div className="absolute top-2 left-2 right-2 flex items-start justify-end gap-1.5 pointer-events-none">
             {work.favorite && (
               <span className="flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center"
                 style={{ backgroundColor: "rgba(0,0,0,0.45)" }}>
@@ -130,79 +117,11 @@ export default function WorkCard({ work, onEdit, onDelete, onStatusChange, onTog
             )}
           </div>
 
-          {/* Overlay hover : description */}
-          <div className="absolute inset-0 flex flex-col justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-2.5 pointer-events-none"
-            style={{ background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 50%, transparent 100%)" }}>
-            {work.description && (
-              <p className="text-white text-[9.5px] leading-relaxed line-clamp-3 mb-8 px-0.5">
-                {work.description}
-              </p>
-            )}
-          </div>
-
           {/* Overlay sélection */}
           {selectMode && selected && (
             <div className="absolute inset-0 pointer-events-none" style={{ backgroundColor: "rgba(229,107,58,0.25)", zIndex: 5 }} />
           )}
 
-          {/* Boutons d'action — au-dessus de tout, pointer-events actifs */}
-          <div className={`absolute bottom-2 left-2 right-2 flex items-center gap-1 transition-opacity duration-300 ${selectMode ? "hidden" : "opacity-0 group-hover:opacity-100"}`} style={{ zIndex: 10 }}>
-            <button
-              type="button"
-              onClick={e => { e.stopPropagation(); onToggleFavorite?.(work); }}
-              className="w-7 h-7 rounded-full flex items-center justify-center"
-              style={{ backgroundColor: "rgba(0,0,0,0.7)", backdropFilter: "blur(6px)" }}
-              title="Favoris">
-              <Heart className={`w-3.5 h-3.5 ${work.favorite ? "fill-[#EC4899] text-[#EC4899]" : "text-white"}`} />
-            </button>
-            <button
-              type="button"
-              onClick={e => { e.stopPropagation(); onEdit?.(work); }}
-              className="w-7 h-7 rounded-full flex items-center justify-center"
-              style={{ backgroundColor: "rgba(0,0,0,0.7)", backdropFilter: "blur(6px)" }}
-              title="Modifier">
-              <Pencil className="w-3.5 h-3.5 text-white" />
-            </button>
-            <button
-              type="button"
-              onClick={e => { e.stopPropagation(); onDelete?.(work); }}
-              className="w-7 h-7 rounded-full flex items-center justify-center"
-              style={{ backgroundColor: "rgba(0,0,0,0.7)", backdropFilter: "blur(6px)" }}
-              title="Supprimer">
-              <Trash2 className="w-3.5 h-3.5 text-red-400" />
-            </button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button type="button" className="w-7 h-7 rounded-full flex items-center justify-center ml-auto"
-                  style={{ backgroundColor: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)" }}>
-                  <MoreVertical className="w-3.5 h-3.5 text-white" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={goDetail}>
-                  <Film className="w-3.5 h-3.5 mr-2" /> Ouvrir
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuSub>
-                  <DropdownMenuSubTrigger>
-                    <ArrowRightLeft className="w-3.5 h-3.5 mr-2" /> Statut
-                  </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent>
-                    {ALL_STATUSES.map(s => (
-                      <DropdownMenuItem key={s} onClick={() => onStatusChange?.(work, s)}>
-                        <span className="w-1.5 h-1.5 rounded-full mr-2 flex-shrink-0" style={{ backgroundColor: statusConfig[s]?.dot }} />
-                        {s}
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuSubContent>
-                </DropdownMenuSub>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => onDelete?.(work)} className="text-red-500 focus:text-red-500">
-                  <Trash2 className="w-3.5 h-3.5 mr-2" /> Supprimer
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
         </div>
 
         {/* Card body */}
@@ -220,12 +139,10 @@ export default function WorkCard({ work, onEdit, onDelete, onStatusChange, onTog
           </div>
 
           {/* Title */}
-          <h3
-            className="font-bold hover:opacity-70 transition-opacity cursor-pointer"
-            onClick={goDetail}
-            style={{ color: "var(--text-primary)", fontSize: "16px", lineHeight: "1.35", wordBreak: "break-word" }}
-          >
-            {work.title}
+          <h3 className="font-bold" style={{ color: "var(--text-primary)", lineHeight: 1.35 }}>
+            <button type="button" onClick={goDetail} className="line-clamp-2 text-left hover:underline">
+              {work.title}
+            </button>
           </h3>
 
           {/* Creator */}
@@ -299,16 +216,11 @@ export default function WorkCard({ work, onEdit, onDelete, onStatusChange, onTog
             </p>
           )}
 
-          {/* Bouton modifier — mobile uniquement, toujours visible */}
           {!selectMode && (
-            <button
-              type="button"
-              onClick={e => { e.stopPropagation(); onEdit?.(work); }}
-              className="lg:hidden mt-2 w-full flex items-center justify-center gap-1 py-1.5 rounded-[8px] text-[11px] font-semibold"
-              style={{ backgroundColor: "rgba(229,107,58,0.1)", color: "#E56B3A", border: "1px solid rgba(229,107,58,0.25)" }}
-            >
-              <Pencil className="w-3 h-3" /> Modifier
-            </button>
+            <div className="mt-2 border-t pt-1" style={{ borderColor: "var(--border-subtle)" }}>
+              <WorkCardActions work={work} onEdit={onEdit} onDelete={onDelete}
+                onStatusChange={onStatusChange} onToggleFavorite={onToggleFavorite} />
+            </div>
           )}
         </div>
       </div>

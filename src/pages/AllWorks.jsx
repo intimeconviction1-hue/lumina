@@ -1,16 +1,17 @@
 import React, { useMemo, useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate, useNavigationType } from "react-router-dom";
 import WorksGrid from "../components/works/WorksGrid";
 import WorksLoadError from "@/components/works/WorksLoadError";
 import { useWorks, WORKS_KEY } from "@/hooks/useWorks";
 import { worksApi } from "@/api/works";
 import { useWorkMutations } from "@/hooks/useWorkMutations";
 import { StatusButton, TypeButton } from "../components/works/FilterButtons";
-import { X, CheckSquare, Square } from "lucide-react";
+import { X, CheckSquare, Square, SlidersHorizontal } from "lucide-react";
+import { SORT_OPTIONS } from "@/components/works/FiltersPanel";
 import BulkActionBar from "../components/works/BulkActionBar";
 import { useToast } from "@/components/ui/use-toast";
-import { STATUS_CONFIG, TYPE_COLORS, effectiveStatus, matchesStatusFilter, STATUS_ALIASES, statusPatch } from "@/lib/statusActions";
+import { STATUS_CONFIG, TYPE_COLORS, effectiveStatus, isFinished, matchesStatusFilter, normalizeNavStatus, statusPatch } from "@/lib/statusActions";
 
 const STATUS_COLORS = Object.fromEntries(
   Object.entries(STATUS_CONFIG).map(([k, v]) => [k, v.color])
@@ -48,12 +49,23 @@ const TYPE_TABS = [
   { key: "livre", label: "Livres", emoji: "📚", color: "#6366F1" },
 ];
 
-export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChange, onEditWork }) {
+export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChange, onEditWork, onOpenFilters, onRestoreSearch }) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { updateWork, removeWork } = useWorkMutations();
   const [showMoreFilters, setShowMoreFilters] = useState(false);
+  const routerLocation = useLocation();
+  const navigate = useNavigate();
+  const navigationType = useNavigationType();
   const [activeTab, setActiveTab] = useState("");
+  const scrollToRestore = React.useRef(null);
+  const finishedView = new URLSearchParams(routerLocation.search).get("collection") === "finished";
+
+  const openWork = work => {
+    const library = { filters, searchQuery, activeTab, scrollY: window.scrollY };
+    window.history.replaceState({ ...window.history.state, luminaLibrary: library }, "");
+    navigate(`/WorkDetail?id=${encodeURIComponent(work.id)}`, { state: { fromLibrary: true } });
+  };
 
   // Sélection multiple
   const [selectMode, setSelectMode] = useState(false);
@@ -76,33 +88,39 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
     setSelectedIds(new Set(filteredWorks.map(w => w.id)));
   };
 
-  // Consume URL params whenever location.search changes (sidebar nav, redirects from InProgress/Watched/etc.)
-  const routerLocation = useLocation();
-  React.useEffect(() => {
-    const params = new URLSearchParams(routerLocation.search);
-    const urlStatus   = params.get("status");
-    const urlGenre    = params.get("genre");
-    const urlPlatform = params.get("platform");
-    const urlType     = params.get("type");
-    const urlTag      = params.get("tag");
-    const urlPriority = params.get("priority");
-    if ((urlStatus || urlGenre || urlPlatform || urlType || urlTag || urlPriority) && onFiltersChange) {
-      const base = { type: "", status: [], genre: [], platform: [], tags: [], year_min: "", year_max: "", favorite: false, min_rating: "", priority: "", sort: "-created_date" };
-      // Normalise les statuts legacy (ex. "En veille" → "À voir") via la source unique.
-      if (urlStatus)   base.status   = [STATUS_ALIASES[urlStatus] || urlStatus];
-      if (urlGenre)    base.genre    = [urlGenre];
-      if (urlPlatform) base.platform = [urlPlatform];
-      if (urlType)     base.type     = urlType;
-      if (urlTag)      base.tags     = [urlTag];
-      if (urlPriority) base.priority = urlPriority;
-      onFiltersChange(base);
-      window.history.replaceState({}, "", window.location.pathname);
+  React.useLayoutEffect(() => {
+    const saved = navigationType === "POP" ? window.history.state?.luminaLibrary : null;
+    scrollToRestore.current = saved?.scrollY ?? 0;
+    if (saved) {
+      onFiltersChange(saved.filters);
+      onRestoreSearch(saved.searchQuery);
+      setActiveTab(saved.activeTab);
+      return;
     }
-  }, [routerLocation.search]);
+
+    const params = new URLSearchParams(routerLocation.search);
+    const statuses = params.getAll("status").map(normalizeNavStatus).filter(Boolean);
+    const genre = params.get("genre");
+    const platform = params.get("platform");
+    const tag = params.get("tag");
+    setActiveTab("");
+    if (finishedView || statuses.length || genre || platform || tag || params.has("type") || params.has("priority")) {
+      onRestoreSearch("");
+      onFiltersChange({
+        type: params.get("type") || "", status: statuses, genre: genre ? [genre] : [],
+        platform: platform ? [platform] : [], tags: tag ? [tag] : [], priority: params.get("priority") || "",
+        year_min: "", year_max: "", favorite: false, min_rating: "", sort: "-created_date",
+      });
+    }
+  }, [routerLocation.key]);
 
   const toggleStatus = (s) => {
     if (!onFiltersChange) return;
     const arr = filters.status || [];
+    if (finishedView) {
+      onFiltersChange({ ...filters, status: arr.includes(s) ? [] : [s] });
+      return;
+    }
     onFiltersChange({ ...filters, status: arr.includes(s) ? arr.filter(x => x !== s) : [...arr, s] });
   };
   const toggleType = (t) => {
@@ -151,16 +169,27 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
 
   const { data: works = [], isLoading, isError, isFetching, refetch } = useWorks();
 
+  React.useLayoutEffect(() => {
+    if (isLoading || scrollToRestore.current === null) return;
+    const frame = requestAnimationFrame(() => {
+      window.scrollTo({ top: scrollToRestore.current, behavior: "instant" });
+      scrollToRestore.current = null;
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [routerLocation.key, isLoading]);
+
+  const collectionWorks = useMemo(() => finishedView ? works.filter(isFinished) : works, [works, finishedView]);
+
   // Counts for tabs
   const tabCounts = useMemo(() => ({
-    film: works.filter(w => w.type === "film").length,
-    "série": works.filter(w => w.type === "série").length,
-    livre: works.filter(w => w.type === "livre").length,
-  }), [works]);
+    film: collectionWorks.filter(w => w.type === "film").length,
+    "série": collectionWorks.filter(w => w.type === "série").length,
+    livre: collectionWorks.filter(w => w.type === "livre").length,
+  }), [collectionWorks]);
 
   // Apply tab filter on top of existing filters
   const filteredWorks = useMemo(() => {
-    let result = [...works];
+    let result = [...collectionWorks];
 
     // Onglet actif = un seul type (Films / Séries / Livres). Sinon, type du panneau.
     if (activeTab) {
@@ -229,7 +258,7 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
     else if (sort === "title") result.sort((a, b) => a.title?.localeCompare(b.title, "fr"));
 
     return result;
-  }, [works, searchQuery, filters, activeTab]);
+  }, [collectionWorks, searchQuery, filters, activeTab]);
 
   // Optimistic + rollback + toast d'erreur sont gérés par le hook useWorkMutations.
   const handleDelete = (work) => removeWork(work.id);
@@ -312,7 +341,7 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
         </span>
         <div className="flex items-end justify-between mt-0.5 gap-3 flex-wrap">
           <h2 className="text-[20px] sm:text-[26px] font-bold leading-tight" style={{ color: "var(--text-primary)" }}>
-            Toutes les œuvres
+            {finishedView ? "Terminés" : "Toutes les œuvres"}
           </h2>
           <div className="flex items-center gap-2 mb-1">
             {selectMode && (
@@ -338,11 +367,6 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
             >
               {selectMode ? <><X className="w-3.5 h-3.5" /> Annuler</> : <><Square className="w-3.5 h-3.5" /> Sélectionner</>}
             </button>
-            {!selectMode && (
-              <span className="text-[12.5px] font-semibold" style={{ color: "var(--text-muted)" }}>
-                {isLoading ? "Chargement…" : `${filteredWorks.length} œuvre${filteredWorks.length !== 1 ? "s" : ""}`}
-              </span>
-            )}
           </div>
         </div>
       </div>
@@ -351,7 +375,7 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
       <div className="flex items-center gap-2 mb-4 overflow-x-auto flex-nowrap no-scrollbar" style={{ scrollbarWidth: "none" }}>
         {TYPE_TABS.map(tab => {
           const isActive = activeTab === tab.key;
-          const count = tab.key === "" ? works.length : tabCounts[tab.key] || 0;
+          const count = tab.key === "" ? collectionWorks.length : tabCounts[tab.key] || 0;
           const color = tab.color || "#C9A84C";
           return (
             <button
@@ -386,15 +410,32 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
 
       {/* Barre de filtres rapides */}
       <div
-        className="-mx-3 px-3 lg:-mx-8 lg:px-8 pb-2 pt-2 mb-3 sticky top-[52px] lg:top-[64px] z-10"
+        className="library-tools -mx-3 px-3 lg:-mx-8 lg:px-8 pb-2 pt-2 mb-3 sticky top-14 lg:top-16 z-10"
         style={{
           backgroundColor: "var(--bg)",
           borderBottom: "1px solid var(--border)",
         }}
       >
+        <div className="mb-2 flex items-center gap-2">
+          <button type="button" onClick={onOpenFilters}
+            className="inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-bold"
+            style={{ borderColor: "var(--border)", backgroundColor: "var(--card-bg)", color: "var(--text-primary)" }}>
+            <SlidersHorizontal className="h-4 w-4" />
+            Filtres{activeFilters.length ? ` (${activeFilters.length})` : ""}
+          </button>
+          <select aria-label="Trier les œuvres" value={filters.sort || "-created_date"}
+            onChange={event => onFiltersChange({ ...filters, sort: event.target.value })}
+            className="min-h-10 min-w-0 max-w-[48%] rounded-lg border px-2 text-xs"
+            style={{ borderColor: "var(--border)", backgroundColor: "var(--card-bg)", color: "var(--text-primary)" }}>
+            {SORT_OPTIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+          </select>
+          <span aria-live="polite" className="ml-auto text-right text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>
+            {isLoading ? "Chargement…" : `${filteredWorks.length} résultat${filteredWorks.length !== 1 ? "s" : ""}`}
+          </span>
+        </div>
         {/* Statuts — scroll horizontal sur mobile */}
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 no-scrollbar" style={{ scrollbarWidth: "none" }}>
-          {(activeTab === "livre"
+          {(finishedView ? ["Visionné", "Lu"] : activeTab === "livre"
             ? ["Envie de lire", "En cours", "Lu"]
             : (activeTab === "film" || activeTab === "série")
             ? ["À voir", "En cours", "Visionné", "Pas sorti"]
@@ -402,7 +443,7 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
           ).map(s => {
             const active = (filters.status || []).includes(s);
             // Côté livres : "Envie de lire" → "À lire" (le reste garde son libellé).
-            const label = activeTab === "livre"
+            const label = finishedView ? (s === "Lu" ? "Lus" : "Vus") : activeTab === "livre"
               ? (s === "Envie de lire" ? "À lire" : s)
               : s;
             return (
@@ -471,7 +512,7 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
                 className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold"
                 style={{ backgroundColor: `${f.color}15`, color: f.color, border: `1px solid ${f.color}35` }}>
                 {f.label}
-                <button onClick={() => removeFilter(f.key, f.val)} className="hover:opacity-70 transition-opacity ml-0.5">
+                <button aria-label={`Retirer le filtre ${f.label}`} onClick={() => removeFilter(f.key, f.val)} className="hover:opacity-70 transition-opacity ml-0.5">
                   <X className="w-3 h-3" />
                 </button>
               </span>
@@ -512,6 +553,7 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
       ) : (
         <WorksGrid
           works={filteredWorks}
+          onOpenWork={openWork}
           onEdit={onEditWork}
           onDelete={handleDelete}
           onStatusChange={handleStatusChange}
