@@ -1,4 +1,4 @@
-import { IMG, tmdbJSON } from './_tmdb.js';
+import { IMG, tmdbJSON } from './tmdb.js';
 
 const GOOGLE_BOOKS = 'https://www.googleapis.com/books/v1/volumes';
 const OPEN_LIBRARY = 'https://openlibrary.org';

@@ -20,7 +20,7 @@ export default function WorkLinkImport({ onFill, onSource }) {
     setPending(true);
     setMessage("");
     try {
-      const response = await fetch("/api/import-link", {
+      const response = await fetch("/api/cover?mode=import-link", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

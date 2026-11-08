@@ -10,7 +10,7 @@
 
 import { neon } from '@neondatabase/serverless';
 
-import { IMG, tmdbJSON } from './_tmdb.js';
+import { IMG, tmdbJSON } from '../server/tmdb.js';
 
 // Filtre SQL commun : œuvres film/série/doc à qui il manque au moins un champ.
 const TYPE_FILTER = "lower(type) IN ('film', 'série', 'serie', 'documentaire', 'documentary')";
