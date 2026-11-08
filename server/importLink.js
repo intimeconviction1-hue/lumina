@@ -55,7 +55,7 @@ async function screenDetails(media, id) {
 const normalizedTitle = title => (title || '').normalize('NFD').replace(/\p{M}/gu, '')
   .toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
 
-export async function enrichMovieLink(work) {
+async function enrichMovieLink(work) {
   const key = process.env.TMDB_API_KEY;
   if (!key || !work.year) return work;
   try {

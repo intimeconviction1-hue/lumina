@@ -1,4 +1,5 @@
 {
+  "buildCommand": "npm run build && node scripts/import-gq-production.mjs",
   "rewrites": [
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
