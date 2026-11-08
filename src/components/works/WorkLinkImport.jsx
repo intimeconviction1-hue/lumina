@@ -108,7 +108,7 @@ export default function WorkLinkImport({ onFill, onSource }) {
           </Button>
         </div>
         <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
-          Tu peux aussi chercher directement par titre, sans quitter Lumina.
+          Colle une fiche Allociné, un autre lien pris en charge ou saisis le titre.
         </p>
       </form>
       {results && (
