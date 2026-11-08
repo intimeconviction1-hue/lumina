@@ -187,6 +187,7 @@ export default function WorkFormModal({ open, onClose, work, onSave }) {
       cover_image: metadata.cover_image || "",
       source_url: metadata.source_url || previous.source_url,
       genre: metadata.genre || [],
+      platform: metadata.platform || previous.platform,
       country: metadata.country || "",
       duration_minutes: metadata.duration_minutes || "",
       page_count: metadata.page_count || "",

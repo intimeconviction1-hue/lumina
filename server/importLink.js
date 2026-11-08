@@ -1,5 +1,6 @@
 import { IMG, tmdbJSON } from './tmdb.js';
 import { allocineMovie, allocineMovieId } from './allocine.js';
+import { okruVideo, okruVideoId } from './okru.js';
 
 const GOOGLE_BOOKS = 'https://www.googleapis.com/books/v1/volumes';
 const OPEN_LIBRARY = 'https://openlibrary.org';
@@ -48,6 +49,36 @@ async function screenDetails(media, id) {
     genre: data.genres?.map(genre => genre.name.toLowerCase()),
     country: data.production_countries?.map(country => regions.of(country.iso_3166_1)).join(', '),
   };
+}
+
+const normalizedTitle = title => (title || '').normalize('NFD').replace(/\p{M}/gu, '')
+  .toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+
+async function enrichOkru(work) {
+  const key = process.env.TMDB_API_KEY;
+  if (!key || !work.year) return work;
+  try {
+    const data = await tmdbJSON('/search/movie', key, {
+      query: work.title, year: String(work.year), include_adult: 'false',
+    });
+    const title = normalizedTitle(work.title);
+    const matches = (data.results || []).filter(item =>
+      yearOf(item.release_date) === work.year &&
+      [item.title, item.original_title].some(name => normalizedTitle(name) === title)
+    );
+    if (matches.length !== 1) return work;
+    const details = await screenDetails('movie', matches[0].id);
+    return {
+      ...details,
+      source_url: work.source_url,
+      platform: work.platform,
+      description: details.description || work.description,
+      cover_image: details.cover_image || work.cover_image,
+      duration_minutes: details.duration_minutes || work.duration_minutes,
+    };
+  } catch {
+    return work;
+  }
 }
 
 function bookWork(item) {
@@ -184,6 +215,9 @@ export default async function handler(req, res) {
 
     const allocineId = allocineMovieId(url);
     if (allocineId) return res.status(200).json({ work: await allocineMovie(allocineId) });
+
+    const okruId = okruVideoId(url);
+    if (okruId) return res.status(200).json({ work: await enrichOkru(await okruVideo(okruId)) });
 
     const tmdb = /^\/(movie|tv)\/(\d{1,12})(?:[-/]|$)/.exec(url.pathname);
     if (host === 'themoviedb.org' && tmdb) {
