@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Home, LayoutGrid, Clock, Eye, Sun, Moon, Clapperboard, Calendar, Bookmark, Trash2, PlayCircle, BookOpen, BookCheck, ShieldAlert, BookImage, Tags, X } from "lucide-react";
+import { Home, LayoutGrid, Clock, Eye, Sun, Moon, Clapperboard, Calendar, Bookmark, Trash2, PlayCircle, BookOpen, BookCheck, ShieldAlert, BookImage, Tags, Users, X } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useWorks } from "@/hooks/useWorks";
 import { worksApi } from "@/api/works";
@@ -9,6 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 const navItems = [
   { label: "Accueil", icon: Home, path: "/", exact: true },
   { label: "Bibliothèque", icon: LayoutGrid, path: "/AllWorks" },
+  { label: "Études de personnes", icon: Users, path: "/PersonStudies" },
   { label: "Envie de voir",  icon: Bookmark,  path: "/WantToWatch",                        color: "#EC4899" },
   { label: "Envie de lire", icon: BookOpen,  path: "/AllWorks?status=Envie+de+lire",       color: "#8B5CF6" },
   { label: "En cours",   icon: Clock,    path: "/AllWorks?status=En+cours",        color: "#D4AF37" },

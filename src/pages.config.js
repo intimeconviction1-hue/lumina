@@ -66,7 +66,10 @@ const Enrichissement = lazy(() => import('./pages/Enrichissement'));
 const TagsManager    = lazy(() => import('./pages/TagsManager'));
 
 
+const PersonStudies = lazy(() => import('./pages/PersonStudies'));
+
 export const PAGES = {
+    "PersonStudies": PersonStudies,
     "AllWorks": AllWorks,
     "Home": Home,
     "InProgress": InProgress,
