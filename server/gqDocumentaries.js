@@ -10,7 +10,7 @@ export const gqDocumentaries = [
     description: 'Werner Herzog revient sur la vie de Timothy Treadwell, qui filmait les grizzlis en Alaska.' },
   { id: 'spermworld', title: 'Spermworld', year: 2024, creator: 'Lance Oppenheim',
     duration_minutes: 84, country: 'États-Unis',
-    cover_image: 'https://static.wixstatic.com/media/7956db_640ec5bc81e740d4b86c2abd12446881~mv2.jpg',
+    cover_image: '/posters/spermworld.webp',
     description: 'Une plongée dans le monde des dons de sperme organisés en dehors des cliniques.' },
   { id: 'tickled', title: 'Tickled', year: 2016, creator: 'David Farrier, Dylan Reeve',
     duration_minutes: 92, country: 'Nouvelle-Zélande',
