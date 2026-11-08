@@ -1,6 +1,7 @@
 import { IMG, tmdbJSON } from './tmdb.js';
 import { allocineMovie, allocineMovieId } from './allocine.js';
 import { okruVideo, okruVideoId } from './okru.js';
+import { gqDocumentaries, isGqDocumentaryList } from './gqDocumentaries.js';
 
 const GOOGLE_BOOKS = 'https://www.googleapis.com/books/v1/volumes';
 const OPEN_LIBRARY = 'https://openlibrary.org';
@@ -54,7 +55,7 @@ async function screenDetails(media, id) {
 const normalizedTitle = title => (title || '').normalize('NFD').replace(/\p{M}/gu, '')
   .toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
 
-async function enrichOkru(work) {
+export async function enrichMovieLink(work) {
   const key = process.env.TMDB_API_KEY;
   if (!key || !work.year) return work;
   try {
@@ -278,6 +279,10 @@ export default async function handler(req, res) {
       return await catalogSearch(query, res);
     }
 
+    if (isGqDocumentaryList(url)) {
+      return res.status(200).json({ collection: 'gq-documentaries', matches: gqDocumentaries });
+    }
+
     const isbn = amazonIsbn(url);
     if (isbn) return res.status(200).json({ work: await amazonBook(url, isbn) });
 
@@ -285,7 +290,7 @@ export default async function handler(req, res) {
     if (allocineId) return res.status(200).json({ work: await allocineMovie(allocineId) });
 
     const okruId = okruVideoId(url);
-    if (okruId) return res.status(200).json({ work: await enrichOkru(await okruVideo(okruId)) });
+    if (okruId) return res.status(200).json({ work: await enrichMovieLink(await okruVideo(okruId)) });
 
     const tmdb = /^\/(movie|tv)\/(\d{1,12})(?:[-/]|$)/.exec(url.pathname);
     if (host === 'themoviedb.org' && tmdb) {
