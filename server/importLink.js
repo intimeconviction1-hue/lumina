@@ -8,8 +8,8 @@ const regions = new Intl.DisplayNames(['fr'], { type: 'region' });
 const yearOf = date => Number(String(date || '').slice(0, 4)) || undefined;
 const plainText = value => typeof value === 'string' ? value.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim() : undefined;
 
-async function getJSON(url) {
-  const response = await fetch(url, { signal: AbortSignal.timeout(6500) });
+async function getJSON(url, timeout = 6500) {
+  const response = await fetch(url, { signal: AbortSignal.timeout(timeout) });
   if (!response.ok) throw new Error('Source indisponible');
   return response.json();
 }
@@ -116,6 +116,75 @@ function openLibraryBook(item) {
   };
 }
 
+const amazonHost = /^(?:www\.|m\.)?amazon\.(?:fr|com|ca|de|es|it|co\.uk|com\.be)$/;
+const isbn10 = /^\d{9}[\dX]$/;
+
+function amazonIsbn(url) {
+  if (!amazonHost.test(url.hostname)) return null;
+  const isbn = /\/(?:dp|gp\/product|gp\/aw\/d)\/([\dX]{10})(?:\/|$)/i.exec(url.pathname)?.[1].toUpperCase();
+  if (!isbn || !isbn10.test(isbn)) return null;
+  const checksum = [...isbn].reduce((sum, digit, index) => sum + (digit === 'X' ? 10 : Number(digit)) * (10 - index), 0);
+  return checksum % 11 === 0 ? isbn : null;
+}
+
+function isbn13From10(isbn) {
+  const prefix = '978' + isbn.slice(0, 9);
+  const checksum = [...prefix].reduce((sum, digit, index) => sum + Number(digit) * (index % 2 ? 3 : 1), 0);
+  return prefix + (10 - checksum % 10) % 10;
+}
+
+async function openLibraryAuthors(entries = []) {
+  const authors = await Promise.allSettled(entries.slice(0, 5).map(entry => {
+    const key = entry.author?.key || entry.key;
+    return /^\/authors\/OL\d+A$/.test(key) ? getJSON(`${OPEN_LIBRARY}${key}.json`) : null;
+  }));
+  return authors.map(author => author.value?.name).filter(Boolean).join(', ');
+}
+
+async function openLibraryEdition(isbn, identifiers) {
+  const edition = await getJSON(`${OPEN_LIBRARY}/isbn/${isbn}.json`, 12000);
+  if (!edition.title || ![...(edition.isbn_10 || []), ...(edition.isbn_13 || [])].some(value => identifiers.has(value))) {
+    throw new Error('Édition ISBN indisponible');
+  }
+  const key = edition.works?.[0]?.key;
+  const details = /^\/works\/OL\d+W$/.test(key)
+    ? getJSON(`${OPEN_LIBRARY}${key}.json`).catch(() => ({})) : Promise.resolve({});
+  const [work, creator] = await Promise.all([details, openLibraryAuthors(edition.authors)]);
+  const cover = edition.covers?.find(value => Number.isInteger(value) && value > 0);
+  const description = edition.description || work.description;
+  return {
+    title: edition.title,
+    type: 'livre',
+    creator: creator || await openLibraryAuthors(work.authors),
+    year: Number(String(edition.publish_date || '').match(/\b\d{4}\b/)?.[0]) || undefined,
+    page_count: edition.number_of_pages,
+    description: plainText(description?.value || description),
+    genre: (edition.subjects || work.subjects)?.slice(0, 5).map(subject => subject.toLowerCase()),
+    cover_image: cover ? `https://covers.openlibrary.org/b/id/${cover}-L.jpg` : undefined,
+  };
+}
+
+async function amazonBook(url, isbn) {
+  const identifiers = new Set([isbn, isbn13From10(isbn)]);
+  const search = booksURL();
+  search.searchParams.set('q', `isbn:${isbn}`);
+  search.searchParams.set('maxResults', '5');
+  const data = await getJSON(search).catch(() => ({}));
+  const item = data.items?.find(item => item.volumeInfo?.title && item.volumeInfo.industryIdentifiers?.some(
+    ({ identifier }) => identifiers.has(identifier)
+  ));
+  const google = item ? bookWork(item) : null;
+  const needsEdition = !google || !google.description || !google.page_count || !google.cover_image || !google.creator || !google.year;
+  const edition = needsEdition ? await openLibraryEdition(isbn, identifiers).catch(() => null) : null;
+  if (!google && !edition) throw new Error('Livre introuvable pour cet ISBN');
+  const fields = Object.fromEntries(Object.entries(google || {}).filter(([, value]) => value != null && value !== ''));
+  return {
+    ...edition,
+    ...fields,
+    source_url: `https://${url.hostname.replace(/^m\./, 'www.')}/dp/${isbn}`,
+  };
+}
+
 async function searchBooks(query) {
   try {
     const url = booksURL();
@@ -144,11 +213,7 @@ async function searchScreens(query) {
 
 async function openLibraryDetails(id) {
   const data = await getJSON(`${OPEN_LIBRARY}/works/${id}.json`);
-  const authors = await Promise.allSettled((data.authors || []).slice(0, 5).map(entry => {
-    const key = entry.author?.key || entry.key;
-    return /^\/authors\/OL\d+A$/.test(key) ? getJSON(`${OPEN_LIBRARY}${key}.json`) : null;
-  }));
-  const creator = authors.map(author => author.value?.name).filter(Boolean).join(', ');
+  const creator = await openLibraryAuthors(data.authors);
   return {
     ...openLibraryBook({ ...data, key: `/works/${id}`, cover_i: data.covers?.find(cover => cover > 0) }),
     creator,
@@ -212,6 +277,9 @@ export default async function handler(req, res) {
       const query = url.searchParams.get('q') || new URLSearchParams(url.hash.slice(1)).get('q');
       return await catalogSearch(query, res);
     }
+
+    const isbn = amazonIsbn(url);
+    if (isbn) return res.status(200).json({ work: await amazonBook(url, isbn) });
 
     const allocineId = allocineMovieId(url);
     if (allocineId) return res.status(200).json({ work: await allocineMovie(allocineId) });

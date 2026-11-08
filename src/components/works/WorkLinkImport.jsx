@@ -108,7 +108,7 @@ export default function WorkLinkImport({ onFill, onSource }) {
           </Button>
         </div>
         <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
-          Colle une fiche Allociné, une vidéo OK.ru ou saisis le titre.
+          Colle un lien de livre Amazon, une fiche Allociné, une vidéo OK.ru ou saisis le titre.
         </p>
       </form>
       {results && (
