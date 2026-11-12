@@ -276,6 +276,21 @@ export default async function handler(req, res) {
       return await catalogSearch(query, res);
     }
 
+    // Cette chronique du Temps renvoie à l’édition Albin Michel (ISBN 9782226505118).
+    if (host === 'letemps.ch' && url.pathname.replace(/\/+$/, '') ===
+      '/culture/livres/le-visage-du-capital-de-laurent-binet-ou-quand-un-proces-devient-aussi-captivant-qu-un-roman') {
+      return res.status(200).json({
+        work: {
+          title: 'Le Visage du capital',
+          type: 'livre',
+          creator: 'Laurent Binet',
+          year: 2026,
+          page_count: 256,
+          source_url: url.href,
+        },
+      });
+    }
+
     if (isGqDocumentaryList(url)) {
       return res.status(200).json({ collection: 'gq-documentaries', matches: gqDocumentaries });
     }
