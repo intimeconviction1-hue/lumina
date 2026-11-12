@@ -1,7 +1,7 @@
 import { IMG, tmdbJSON } from './tmdb.js';
 import { franceTvReplay, franceTvReplayPath } from './franceTv.js';
 import { amazonBookPage, amazonProduct } from './amazonBookPage.js';
-import { allocineMovie, allocineMovieId } from './allocine.js';
+import { allocineArticleId, allocineArticleMovie, allocineMovie, allocineMovieId } from './allocine.js';
 import { okruVideo, okruVideoId } from './okru.js';
 import { gqDocumentaries, isGqDocumentaryList } from './gqDocumentaries.js';
 
@@ -314,6 +314,12 @@ export default async function handler(req, res) {
 
     const allocineId = allocineMovieId(url);
     if (allocineId) return res.status(200).json({ work: await allocineMovie(allocineId) });
+
+    const articleId = allocineArticleId(url);
+    if (articleId) {
+      const work = await allocineArticleMovie(articleId);
+      if (work) return res.status(200).json({ work: { ...work, source_url: original.href } });
+    }
 
     const okruId = okruVideoId(url);
     if (okruId) return res.status(200).json({ work: await enrichMovieLink(await okruVideo(okruId)) });
