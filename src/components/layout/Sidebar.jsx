@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Home, LayoutGrid, Clock, Eye, Sun, Moon, Clapperboard, Calendar, Bookmark, Trash2, PlayCircle, BookOpen, BookCheck, ShieldAlert, BookImage, Tags, Users, X } from "lucide-react";
+import { Home, LayoutGrid, Clock, Eye, Sun, Moon, Clapperboard, Calendar, Bookmark, Trash2, PlayCircle, BookOpen, BookCheck, ShieldAlert, BookImage, Tags, Users, X, Gift } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useWorks } from "@/hooks/useWorks";
 import { worksApi } from "@/api/works";
@@ -19,6 +19,7 @@ const navItems = [
   { label: "Audit",      icon: ShieldAlert, path: "/Audit",                            color: "#E56B3A" },
   { label: "Enrichissement", icon: BookImage, path: "/Enrichissement",                  color: "#6366F1" },
   { label: "Tags",       icon: Tags,      path: "/TagsManager",                     color: "#8B5CF6" },
+  { label: "Cadeaux", icon: Gift, path: "/Gifts" },
 ];
 
 const TOP_GENRES = ["juifs", "polar", "procès", "cinéma", "biopic", "histoire"];

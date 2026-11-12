@@ -66,9 +66,11 @@ const Enrichissement = lazy(() => import('./pages/Enrichissement'));
 const TagsManager    = lazy(() => import('./pages/TagsManager'));
 
 
+const Gifts = lazy(() => import('./pages/Gifts'));
 const PersonStudies = lazy(() => import('./pages/PersonStudies'));
 
 export const PAGES = {
+    "Gifts": Gifts,
     "PersonStudies": PersonStudies,
     "AllWorks": AllWorks,
     "Home": Home,

@@ -1,4 +1,4 @@
-import { getSql, WRITABLE, ARRAY_COLS, norm } from '../_lib.js';
+import { ensureGiftRecipientsColumn, getSql, WRITABLE, ARRAY_COLS, norm } from '../_lib.js';
 
 export default async function handler(req, res) {
   try {
@@ -13,6 +13,7 @@ export default async function handler(req, res) {
 
     if (req.method === 'PATCH' || req.method === 'PUT') {
       const body = req.body || {};
+      if ('gift_recipients' in body) await ensureGiftRecipientsColumn(sql);
       const sets = [];
       const vals = [];
       for (const k of WRITABLE) {

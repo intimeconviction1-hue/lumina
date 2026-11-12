@@ -1,5 +1,5 @@
 import { randomBytes } from 'crypto';
-import { getSql, WRITABLE, ARRAY_COLS, SORT_COLUMNS, norm } from './_lib.js';
+import { ensureGiftRecipientsColumn, getSql, WRITABLE, ARRAY_COLS, SORT_COLUMNS, norm } from './_lib.js';
 import { gqDocumentaries } from '../server/gqDocumentaries.js';
 import { saveGqDocumentaries } from '../server/saveGqDocumentaries.js';
 import { isPersonStudyImport } from '../server/personStudyWorkId.js';
@@ -41,6 +41,7 @@ export default async function handler(req, res) {
       const body = req.body || {};
       if (body.personStudy && typeof body.personStudy === "object") return await savePersonStudy(sql, body.personStudy, res);
       if (Array.isArray(body.gqDocumentaries)) return await addGqSelection(sql, body.gqDocumentaries, res);
+      if ('gift_recipients' in body) await ensureGiftRecipientsColumn(sql);
       const cols = ['id'];
       const ph = ['$1'];
       // Convention Lumina : IDs 24 caractères hex (comme les imports Neon existants),
