@@ -1,4 +1,5 @@
 import { IMG, tmdbJSON } from './tmdb.js';
+import { personStudyWorkId } from './personStudyWorkId.js';
 import { resolveStudyLink } from './personStudyLink.js';
 
 const OPEN_LIBRARY = 'https://openlibrary.org';
@@ -115,6 +116,7 @@ export function validStudyId(catalogue, id) {
 
 export async function studyProfile(catalogue, id) {
   const profile = catalogue === 'cinema' ? await cinemaProfile(id) : await authorProfile(id);
+  for (const work of profile.works) work.library_id = personStudyWorkId(catalogue, work.id);
   profile.works.sort((a, b) => (b.year || 0) - (a.year || 0) || a.title.localeCompare(b.title, 'fr'));
   return profile;
 }

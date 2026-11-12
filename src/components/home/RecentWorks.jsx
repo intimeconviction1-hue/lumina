@@ -23,7 +23,7 @@ function timeAgo(dateStr) {
 }
 
 export default function RecentWorks({ works }) {
-  const recent = [...works]
+  const recent = works.filter(work => !work.from_person_study)
     .sort((a, b) => new Date(b.created_date) - new Date(a.created_date))
     .slice(0, 8);
 

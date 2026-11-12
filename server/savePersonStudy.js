@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto';
+import { personStudyWorkId } from './personStudyWorkId.js';
 import { studyProfile, validStudyId } from './personStudies.js';
 
 export async function savePersonStudy(sql, selection, res) {
@@ -15,10 +15,29 @@ export async function savePersonStudy(sql, selection, res) {
   }
   const incoming = selected.map(work => ({
     ...work,
-    id: createHash('sha256').update(`lumina:person-study:${catalogue}:${work.id}`).digest('hex').slice(0, 24),
+    id: personStudyWorkId(catalogue, work.id),
     creator: work.roles.some(role => role !== 'acting') ? profile.name : null,
   }));
+  const [table] = await sql`select to_regclass('person_studies') as name`;
+  if (!table.name) {
+    await sql.transaction([
+      sql`select pg_advisory_xact_lock(hashtext('lumina:person_studies'))`,
+      sql`
+        create table if not exists person_studies (
+          catalogue text not null,
+          person_id text not null,
+          name text not null,
+          primary key (catalogue, person_id)
+        )
+      `,
+    ]);
+  }
   const rows = await sql`
+    with saved_study as (
+      insert into person_studies (catalogue, person_id, name)
+      values (${catalogue}, ${personId}, ${profile.name})
+      on conflict (catalogue, person_id) do update set name = excluded.name
+    )
     insert into works (id, title, type, status, year, creator, creator_name, description, cover_image,
                        source_url, genre, created_date, updated_date)
     select i.id, i.title, i.type, i.status, i.year, i.creator, i.creator, i.description, i.cover_image,

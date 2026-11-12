@@ -2,6 +2,7 @@ import { randomBytes } from 'crypto';
 import { getSql, WRITABLE, ARRAY_COLS, SORT_COLUMNS, norm } from './_lib.js';
 import { gqDocumentaries } from '../server/gqDocumentaries.js';
 import { saveGqDocumentaries } from '../server/saveGqDocumentaries.js';
+import { isPersonStudyImport } from '../server/personStudyWorkId.js';
 import { savePersonStudy } from '../server/savePersonStudy.js';
 
 async function addGqSelection(sql, ids, res) {
@@ -17,6 +18,12 @@ export default async function handler(req, res) {
     const sql = getSql();
 
     if (req.method === 'GET') {
+      if (req.query.mode === 'person-studies') {
+        res.setHeader('Cache-Control', 'no-store');
+        const [table] = await sql`select to_regclass('person_studies') as name`;
+        const studies = table.name ? await sql`select catalogue, person_id as id, name from person_studies order by name` : [];
+        return res.status(200).json(studies);
+      }
       let sort = (req.query.sort || '-created_date').toString();
       let dir = 'ASC';
       if (sort.startsWith('-')) { dir = 'DESC'; sort = sort.slice(1); }
@@ -27,7 +34,7 @@ export default async function handler(req, res) {
         `select * from works order by ${sort} ${dir} nulls last limit $1`,
         [limit]
       );
-      return res.status(200).json(rows);
+      return res.status(200).json(rows.map(work => isPersonStudyImport(work) ? { ...work, from_person_study: true } : work));
     }
 
     if (req.method === 'POST') {

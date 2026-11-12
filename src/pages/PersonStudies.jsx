@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
 import { BookOpen, Clapperboard, Search, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,15 @@ import { Input } from "@/components/ui/input";
 import { useWorks } from "@/hooks/useWorks";
 import { useWorkMutations } from "@/hooks/useWorkMutations";
 import { effectiveStatus, isFinished } from "@/lib/statusActions";
+
+const studiesKey = ["saved-person-studies"];
+const assiDayan = { catalogue: "cinema", name: "Assi Dayan" };
+
+async function getSavedStudies(signal) {
+  const response = await fetch("/api/works?mode=person-studies", { signal });
+  if (!response.ok) throw new Error("Impossible de charger les études enregistrées.");
+  return response.json();
+}
 
 const roles = { directing: "Réalisation", acting: "Interprétation", writing: "Scénario / Création", author: "Auteur" };
 const panel = { backgroundColor: "var(--card-bg)", borderColor: "var(--border)" };
@@ -31,9 +40,11 @@ function CatalogueError({ query }) {
   );
 }
 
-function StudyWorks({ person, catalogue }) {
+function StudyWorks({ person, catalogue, savedStudy }) {
+  const queryClient = useQueryClient();
   const { data: works = [] } = useWorks();
   const { create } = useWorkMutations();
+  const [onlySaved, setOnlySaved] = useState(savedStudy);
   const [role, setRole] = useState("all");
   const [filter, setFilter] = useState("");
   const [selected, setSelected] = useState([]);
@@ -41,6 +52,7 @@ function StudyWorks({ person, catalogue }) {
   const [message, setMessage] = useState("");
 
   const linked = useMemo(() => {
+    const byId = new Map(works.map(work => [work.id, work]));
     const bySource = new Map(works.filter(work => work.source_url).map(work => [work.source_url, work]));
     const byTitle = new Map();
     for (const work of works) {
@@ -49,7 +61,7 @@ function StudyWorks({ person, catalogue }) {
       candidates.push(work);
       byTitle.set(key, candidates);
     }
-    return new Map(person.works.map(entry => [entry.id, bySource.get(entry.source_url) ||
+    return new Map(person.works.map(entry => [entry.id, byId.get(entry.library_id) || bySource.get(entry.source_url) ||
       byTitle.get(normalize(entry.title))?.find(work =>
         entry.type === "livre"
           ? work.type === "livre" && normalize(work.creator || work.creator_name) === normalize(person.name)
@@ -60,9 +72,9 @@ function StudyWorks({ person, catalogue }) {
   }, [works, person]);
   const availableRoles = Object.keys(roles).filter(key => person.works.some(work => work.roles.includes(key)));
   const scoped = person.works.filter(work => role === "all" || work.roles.includes(role));
-  const visible = scoped.filter(work => normalize(work.title).includes(normalize(filter)));
   const added = new Set(addedIds);
   const known = work => Boolean(linked.get(work.id) || added.has(work.id));
+  const visible = scoped.filter(work => (!onlySaved || known(work)) && normalize(work.title).includes(normalize(filter)));
   const candidates = scoped.filter(work => !known(work));
   const visibleCandidates = visible.filter(work => !known(work));
   const visibleIds = new Set(visibleCandidates.map(work => work.id));
@@ -73,6 +85,7 @@ function StudyWorks({ person, catalogue }) {
     setMessage("");
     try {
       const { added, skipped } = await create.mutateAsync({ personStudy: { catalogue, personId: person.id, workIds: ids } });
+      queryClient.invalidateQueries({ queryKey: studiesKey });
       setAddedIds(current => [...new Set([...current, ...ids])]);
       setSelected(current => current.filter(id => !ids.includes(id)));
       setMessage(`${added} œuvre${added === 1 ? " ajoutée" : "s ajoutées"}${skipped ? ` · ${skipped} déjà dans la bibliothèque` : ""}.`);
@@ -114,24 +127,33 @@ function StudyWorks({ person, catalogue }) {
             ))}
           </div>
         )}
+        {savedStudy && (
+          <div className="flex flex-wrap gap-2" aria-label="Œuvres de cette personne">
+            <Button type="button" size="sm" variant={onlySaved ? "default" : "outline"}
+              aria-pressed={onlySaved} onClick={() => setOnlySaved(true)}>En bibliothèque</Button>
+            <Button type="button" size="sm" variant={onlySaved ? "outline" : "default"}
+              aria-pressed={!onlySaved} onClick={() => setOnlySaved(false)}>Catalogue complet</Button>
+          </div>
+        )}
         <Input value={filter} onChange={event => setFilter(event.target.value)} placeholder="Filtrer les titres" aria-label="Filtrer les titres" />
-        <div className="flex flex-wrap items-center gap-2">
-          <Button type="button" disabled={create.isPending || !candidates.length}
-            onClick={() => add(candidates.map(work => work.id))}>
-            {create.isPending ? "Ajout en cours…" : `Tout ajouter (${candidates.length})`}
-          </Button>
-          <Button type="button" variant="outline" disabled={create.isPending || !selectedVisible.length}
-            onClick={() => add(selectedVisible)}>
-            Ajouter la sélection ({selectedVisible.length})
-          </Button>
-          {visibleCandidates.length > 1 && (
-            <button type="button" className="px-2 py-2 text-xs font-semibold underline" disabled={create.isPending}
-              onClick={() => setSelected(selectedVisible.length === visibleCandidates.length ? [] : visibleCandidates.map(work => work.id))}>
-              {selectedVisible.length === visibleCandidates.length ? "Tout décocher" : "Cocher les titres affichés"}
-            </button>
-          )}
-        </div>
-        <p className="text-xs" style={secondary}>« Tout ajouter » importe les titres manquants du rôle sélectionné, même si la recherche masque certains titres.</p>
+        {!onlySaved && (
+          <div className="flex flex-wrap items-center gap-2">
+            <Button type="button" disabled={create.isPending || !candidates.length}
+              onClick={() => add(candidates.map(work => work.id))}>
+              {create.isPending ? "Ajout en cours…" : `Tout ajouter (${candidates.length})`}
+            </Button>
+            <Button type="button" variant="outline" disabled={create.isPending || !selectedVisible.length}
+              onClick={() => add(selectedVisible)}>
+              Ajouter la sélection ({selectedVisible.length})
+            </Button>
+            {visibleCandidates.length > 1 && (
+              <button type="button" className="px-2 py-2 text-xs font-semibold underline" disabled={create.isPending}
+                onClick={() => setSelected(selectedVisible.length === visibleCandidates.length ? [] : visibleCandidates.map(work => work.id))}>
+                {selectedVisible.length === visibleCandidates.length ? "Tout décocher" : "Cocher les titres affichés"}
+              </button>
+            )}
+          </div>
+        )}
         {message && <p role="status" className="text-sm font-semibold">{message}</p>}
       </div>
 
@@ -170,7 +192,12 @@ function StudyWorks({ person, catalogue }) {
 export default function PersonStudies() {
   const [params, setParams] = useSearchParams();
   const tab = params.get("catalogue") === "books" ? "books" : "cinema";
-  const rawQuery = params.get("q") || "";
+  const assiSelected = params.get("study") === "assi-dayan";
+  const rawQuery = params.get("q") || (assiSelected ? assiDayan.name : "");
+  const studies = useQuery({ queryKey: studiesKey, queryFn: ({ signal }) => getSavedStudies(signal) });
+  const saved = studies.data || [];
+  const assi = saved.find(person => person.catalogue === assiDayan.catalogue && normalize(person.name) === normalize(assiDayan.name));
+  const tabs = [assi || assiDayan, ...saved.filter(person => person !== assi)];
   const url = params.get("url") || "";
   const [draft, setDraft] = useState(url || rawQuery);
   useEffect(() => setDraft(url || rawQuery), [url, rawQuery]);
@@ -183,7 +210,7 @@ export default function PersonStudies() {
   });
   const catalogue = link.data?.catalogue || tab;
   const q = link.data?.name || rawQuery;
-  const id = link.data?.id || params.get("id") || "";
+  const explicitId = link.data?.id || params.get("id") || (assiSelected ? assi?.id : "") || "";
   const submitSearch = (value, target = catalogue) => {
     const query = value.trim();
     if (isLink(query)) {
@@ -195,9 +222,11 @@ export default function PersonStudies() {
   const people = useQuery({
     queryKey: ["person-studies", catalogue, "search", q],
     queryFn: ({ signal }) => getStudies({ catalogue, q }, signal),
-    enabled: q.length >= 2 && !id,
+    enabled: q.length >= 2 && !explicitId,
     retry: false,
   });
+  const id = explicitId || (assiSelected ? people.data?.find(person => normalize(person.name) === normalize(assiDayan.name))?.id : "") || "";
+  const savedStudy = assiSelected || params.get("study") === "saved";
   const profile = useQuery({
     queryKey: ["person-studies", catalogue, "profile", id],
     queryFn: ({ signal }) => getStudies({ catalogue, id }, signal),
@@ -212,6 +241,18 @@ export default function PersonStudies() {
         <h1 className="mt-1 text-2xl font-bold sm:text-4xl">Études de personnes</h1>
         <p className="mt-2 text-sm" style={secondary}>Explore une filmographie ou une bibliographie et ajoute les œuvres à ta collection.</p>
       </header>
+      <nav aria-label="Personnes étudiées" className="flex flex-wrap gap-2">
+        {tabs.map(person => {
+          const active = savedStudy && (person.id ? person.catalogue === catalogue && person.id === id : assiSelected);
+          const query = new URLSearchParams(person.id
+            ? { catalogue: person.catalogue, id: person.id, study: "saved" }
+            : { catalogue: person.catalogue, study: "assi-dayan" });
+          return <Button key={`${person.catalogue}:${person.id || person.name}`} asChild size="sm" variant={active ? "default" : "outline"}>
+            <Link to={`?${query}`} aria-current={active ? "page" : undefined}>{person.name}</Link>
+          </Button>;
+        })}
+      </nav>
+      {studies.isError && <CatalogueError query={studies} />}
       <div className="space-y-3 rounded-2xl border p-3 sm:p-4" style={panel}>
         <div className="flex flex-wrap gap-2">
           {[["cinema", "Cinéma et séries"], ["books", "Auteurs de livres"]].map(([key, label]) => (
@@ -263,7 +304,7 @@ export default function PersonStudies() {
           </ul>
         ) : <p style={secondary}>Aucune personne trouvée pour « {q} ».</p>
       )}
-      {id && profile.data && <StudyWorks key={`${catalogue}:${id}`} person={profile.data} catalogue={catalogue} />}
+      {id && profile.data && <StudyWorks key={`${catalogue}:${id}:${savedStudy}`} person={profile.data} catalogue={catalogue} savedStudy={savedStudy} />}
     </div>
   );
 }
