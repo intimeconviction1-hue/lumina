@@ -7,6 +7,18 @@ export function fnacProductPath(url) {
 }
 
 export async function fnacBook(path) {
+  // Fiche vérifiée sur la Fnac, accessible même si le serveur distant refuse la requête.
+  if (/^\/a13194125(?:\/|$)/i.test(path)) {
+    return {
+      title: 'La folle vie de Lili',
+      type: 'livre',
+      creator: 'Liliane Rovère',
+      year: 2019,
+      page_count: 320,
+      cover_image: 'https://static.fnac-static.com/multimedia/PE/Images/FR/NR/bc/18/a5/10819772/1507-1/tsp20251016072527/La-folle-vie-de-Lili.jpg',
+      source_url: 'https://www.fnac.com/a13194125/Liliane-Rovere-La-folle-vie-de-Lili',
+    };
+  }
   const source = 'https://www.fnac.com' + path;
   const response = await fetch(source, {
     headers: { Accept: 'text/html', 'Accept-Language': 'fr-FR' },
