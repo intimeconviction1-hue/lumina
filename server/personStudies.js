@@ -62,6 +62,20 @@ async function cinemaProfile(id) {
   for (const credit of credits.crew || []) {
     add(credit, credit.job === 'Director' ? 'directing' : writerJobs.has(credit.job) ? 'writing' : credit.job === 'Creator' ? 'writing' : null);
   }
+  // Crédit absent de TMDB, confirmé par le National Center for Jewish Film.
+  // https://jewishfilm.org/Catalogue/films/asif0.html
+  if (id === '41644') {
+    const work = {
+      id: 'imdb:tt0205176',
+      title: 'As If Nothing Happened',
+      year: 1999,
+      type: 'film',
+      status: 'À voir',
+      source_url: 'https://www.imdb.com/fr-ca/title/tt0205176/',
+      roles: ['acting'],
+    };
+    works.set(work.id, work);
+  }
   return {
     id, name: person.name, bio: person.biography, image: person.profile_path ? IMG + person.profile_path : null,
     works: [...works.values()],
