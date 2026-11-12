@@ -19,6 +19,18 @@ export async function fnacBook(path) {
       source_url: 'https://www.fnac.com/a13194125/Liliane-Rovere-La-folle-vie-de-Lili',
     };
   }
+  // ISBN 9782251459981, édition Les Belles Lettres.
+  if (/^\/a23104858(?:\/|$)/i.test(path)) {
+    return {
+      title: 'À mes très chères femme et fille… — Birkenau, 6 novembre 1944',
+      type: 'livre',
+      creator: 'Hersz Strasfogel',
+      year: 2026,
+      page_count: 150,
+      cover_image: 'https://static.fnac-static.com/multimedia/PE/Images/FR/NR/22/4e/36/20336162/1507-1/tsp20261021075741/L-histoire-de-la-lettre-de-Hersz-Herman-Strasfogel-retrouvee-enterree-a-Auschwitz-Birkenau.jpg',
+      source_url: 'https://www.fnac.com/a23104858/Hersz-Strasfogel-A-mes-tres-cheres-femme-et-fille-Birkenau-6-novembre-1944',
+    };
+  }
   const source = 'https://www.fnac.com' + path;
   const response = await fetch(source, {
     headers: { Accept: 'text/html', 'Accept-Language': 'fr-FR' },
