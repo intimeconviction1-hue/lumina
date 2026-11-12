@@ -3,6 +3,7 @@ import { franceTvReplay, franceTvReplayPath } from './franceTv.js';
 import { amazonBookPage, amazonProduct } from './amazonBookPage.js';
 import { allocineArticleId, allocineArticleMovie, allocineMovie, allocineMovieId } from './allocine.js';
 import { okruVideo, okruVideoId } from './okru.js';
+import { loplovFilm, loplovFilmPath } from './loplov.js';
 import { gqDocumentaries, isGqDocumentaryList } from './gqDocumentaries.js';
 
 const GOOGLE_BOOKS = 'https://www.googleapis.com/books/v1/volumes';
@@ -320,6 +321,9 @@ export default async function handler(req, res) {
       const work = await allocineArticleMovie(articleId);
       if (work) return res.status(200).json({ work: { ...work, source_url: original.href } });
     }
+
+    const loplovPath = loplovFilmPath(url);
+    if (loplovPath) return res.status(200).json({ work: await loplovFilm(loplovPath) });
 
     const okruId = okruVideoId(url);
     if (okruId) return res.status(200).json({ work: await enrichMovieLink(await okruVideo(okruId)) });
