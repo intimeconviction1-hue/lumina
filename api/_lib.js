@@ -14,10 +14,18 @@ export const WRITABLE = [
   'difficulty_level', 'language', 'mood', 'country', 'year', 'released_year',
   'rating', 'anticipation_rating', 'page_count', 'duration_minutes', 'favorite', 'source_url',
   'cover_image', 'recommended_by', 'description', 'personal_note',
-  'short_review', 'genre', 'platform', 'tags', 'started_at', 'finished_at',
+  'short_review', 'gift_recipients', 'genre', 'platform', 'tags', 'started_at', 'finished_at',
 ];
 
 export const ARRAY_COLS = new Set(['genre', 'platform', 'tags']);
+
+export async function ensureGiftRecipientsColumn(sql) {
+  const [column] = await sql`select exists (
+    select 1 from pg_attribute where attrelid = 'works'::regclass
+      and attname = 'gift_recipients' and not attisdropped
+  ) as present`;
+  if (!column.present) await sql`alter table works add column if not exists gift_recipients text`;
+}
 
 export function getSql() {
   const url = process.env.DATABASE_URL;

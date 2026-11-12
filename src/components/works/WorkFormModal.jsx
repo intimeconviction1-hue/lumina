@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { X, Upload, Heart, Link2, ChevronDown, ChevronUp } from "lucide-react";
 import { STATUSES, STATUS_CONFIG } from "@/lib/statusActions";
 import { useWorks } from "@/hooks/useWorks";
+import { GIFT_TAG, isGiftTag } from "@/lib/gifts";
 import StarRating from "./StarRating";
 import WorkLinkImport from "./WorkLinkImport";
 
@@ -255,6 +256,7 @@ export default function WorkFormModal({ open, onClose, work, onSave, onAddGqSele
         duration_minutes: form.duration_minutes ? Number(form.duration_minutes) : null,
         page_count: form.page_count ? Number(form.page_count) : null,
       };
+      delete data.gift_recipients;
       await onSave(data);
       setSaving(false);
     } catch (err) {
@@ -464,6 +466,13 @@ export default function WorkFormModal({ open, onClose, work, onSave, onAddGqSele
           {/* — TAGS — */}
           <div>
             <Label className="mb-2">Tags</Label>
+            <label className="mb-3 flex min-h-10 items-center gap-2 text-sm font-medium">
+              <input type="checkbox" checked={form.tags.some(isGiftTag)}
+                onChange={event => set("tags", event.target.checked
+                  ? [...form.tags.filter(tag => !isGiftTag(tag)), GIFT_TAG]
+                  : form.tags.filter(tag => !isGiftTag(tag)))} />
+              Cadeau
+            </label>
             <TagInput tags={form.tags} onChange={v => set("tags", v)} suggestions={allTags} />
           </div>
 

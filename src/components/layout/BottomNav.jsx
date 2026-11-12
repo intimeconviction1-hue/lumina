@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { Home, LayoutGrid, Bookmark, Clock, Eye } from "lucide-react";
+import { Home, LayoutGrid, Bookmark, Clock, Eye, Gift } from "lucide-react";
 
 const navItems = [
   { label: "Accueil",     icon: Home,        path: "/",            exact: true,  color: "#E56B3A" },
@@ -8,6 +8,7 @@ const navItems = [
   { label: "Envie",       icon: Bookmark,    path: "/WantToWatch",               color: "#EC4899" },
   { label: "En cours",    icon: Clock,       path: "/AllWorks?status=En+cours",  color: "#D4AF37" },
   { label: "Visionné",    icon: Eye,         path: "/AllWorks?status=Visionn%C3%A9", color: "#2AA6A0" },
+  { label: "Cadeaux", icon: Gift, path: "/Gifts" },
 ];
 
 export default function BottomNav() {
