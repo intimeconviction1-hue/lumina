@@ -527,7 +527,7 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
             else if (key === "platform") onFiltersChange({ ...filters, platform: [...(filters.platform || []), val].filter((v, i, a) => a.indexOf(v) === i) });
             else if (key === "tag") onFiltersChange({ ...filters, tags: [...(filters.tags || []), val].filter((v, i, a) => a.indexOf(v) === i) });
           }}
-          activeTab={activeTab}
+          resultScope={JSON.stringify([routerLocation.key, searchQuery, filters, activeTab])}
           selectMode={selectMode}
           selectedIds={selectedIds}
           onToggleSelect={toggleSelect}
