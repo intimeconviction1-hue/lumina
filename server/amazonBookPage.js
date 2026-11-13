@@ -5,7 +5,16 @@ export function amazonProduct(url) {
   const asin = /\/(?:dp|gp\/product|gp\/aw\/d)\/([a-z0-9]{10})(?:\/|$)/i.exec(url.pathname)?.[1]?.toUpperCase();
   if (!asin) return null;
   const host = url.hostname.replace(/^(?:www\.|m\.)/, '');
-  return { asin, source: `https://www.${host}/dp/${asin}` };
+  const [slug] = url.pathname.split('/').filter(Boolean);
+  let query = '';
+  if (/^\/[^/]+\/dp\//i.test(url.pathname)) {
+    try {
+      query = decodeURIComponent(slug).replace(/[-_]+/g, ' ').trim().slice(0, 160);
+    } catch {
+      // Le lien canonique reste exploitable.
+    }
+  }
+  return { asin, query, source: `https://www.${host}/dp/${asin}` };
 }
 
 function decode(value) {
