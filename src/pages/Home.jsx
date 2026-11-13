@@ -148,6 +148,7 @@ export default function Home({ onAddWork, onEditWork }) {
           </div>
           <WorksGrid
             works={filteredWorks}
+            resultScope={JSON.stringify(activeTags)}
             onEdit={onEditWork}
             onDelete={handleDelete}
             onStatusChange={handleStatusChange}

@@ -8,7 +8,6 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger, DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
-import { motion } from "framer-motion";
 import { STATUS_CONFIG, STATUSES, TYPE_COLORS, effectiveStatus, isFinished } from "@/lib/statusActions";
 
 export const typeIcons = {
@@ -28,7 +27,7 @@ const GENRE_COLORS_MAP = {
 };
 const genreColor = (g) => GENRE_COLORS_MAP[g] || "#C9A84C";
 
-export default function WorkCard({ work, onEdit, onDelete, onStatusChange, onToggleFavorite, onFilter, index = 0, selectMode = false, selected = false, onToggleSelect }) {
+export default function WorkCard({ work, onEdit, onDelete, onStatusChange, onToggleFavorite, onFilter, selectMode = false, selected = false, onToggleSelect }) {
   const navigate = useNavigate();
   const TypeIcon = typeIcons[work.type] || Film;
   const tColor = typeColors[work.type] || "#C9A84C";
@@ -50,10 +49,7 @@ export default function WorkCard({ work, onEdit, onDelete, onStatusChange, onTog
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.28, delay: Math.min(index * 0.03, 0.35) }}
+    <div
       className="group cinema-card"
     >
       <div
@@ -312,6 +308,6 @@ export default function WorkCard({ work, onEdit, onDelete, onStatusChange, onTog
           )}
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }

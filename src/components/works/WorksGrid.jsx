@@ -1,22 +1,21 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import WorkCard from "./WorkCard";
 import { LayoutGrid, List, Star } from "lucide-react";
 import { Link } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { Button } from "@/components/ui/button";
 import { typeIcons, typeColors, statusConfig } from "./WorkCard";
 import { effectiveStatus } from "@/lib/statusActions";
 
-function WorkRow({ work, onEdit, onDelete, onStatusChange, onToggleFavorite, index }) {
+const PAGE_SIZE = 48;
+
+function WorkRow({ work, onEdit, onDelete, onToggleFavorite }) {
   const TypeIcon = typeIcons[work.type] || (() => null);
   const tColor   = typeColors[work.type] || "#C9A84C";
   const sConfig  = statusConfig[effectiveStatus(work)] || statusConfig["À voir"];
   const displayYear = work.year || work.released_year;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, x: -8 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.22, delay: Math.min(index * 0.02, 0.25) }}
+    <div
       className="flex items-center gap-4 px-4 py-3 rounded-[12px] group transition-all"
       style={{
         backgroundColor: "var(--card-bg)",
@@ -100,7 +99,7 @@ function WorkRow({ work, onEdit, onDelete, onStatusChange, onToggleFavorite, ind
         <span className="hidden sm:inline">{sConfig.label}</span>
       </span>
 
-      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+      <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100 transition-opacity flex-shrink-0">
         <button onClick={() => onToggleFavorite?.(work)}
           className="w-7 h-7 rounded-lg flex items-center justify-center"
           style={{ color: work.favorite ? "#EC4899" : "var(--text-muted)" }}>
@@ -123,16 +122,18 @@ function WorkRow({ work, onEdit, onDelete, onStatusChange, onToggleFavorite, ind
           </svg>
         </button>
       </div>
-    </motion.div>
+    </div>
   );
 }
 
-export default function WorksGrid({ works, onEdit, onDelete, onStatusChange, onToggleFavorite, onFilter, emptyMessage, emptySubtext, activeTab, selectMode = false, selectedIds = new Set(), onToggleSelect }) {
+export default function WorksGrid({ works, onEdit, onDelete, onStatusChange, onToggleFavorite, onFilter, emptyMessage, emptySubtext, resultScope, selectMode = false, selectedIds = new Set(), onToggleSelect }) {
   const [viewMode, setViewMode] = useState("grid");
 
   // Le tri est piloté par le panneau de filtres (filters.sort) en amont dans AllWorks.
   // WorksGrid respecte l'ordre reçu — pas de second tri concurrent ici.
-  const sorted = works;
+  const [limit, setLimit] = useState(PAGE_SIZE);
+  useEffect(() => setLimit(PAGE_SIZE), [resultScope]);
+  const visibleWorks = works.slice(0, limit);
 
   if (works.length === 0) {
     return (
@@ -162,6 +163,9 @@ export default function WorksGrid({ works, onEdit, onDelete, onStatusChange, onT
           ].map(({ mode, Icon }) => (
             <button
               key={mode}
+              type="button"
+              aria-label={mode === "grid" ? "Vue grille" : "Vue liste"}
+              aria-pressed={viewMode === mode}
               onClick={() => setViewMode(mode)}
               className="px-3 py-2 transition-all"
               style={{
@@ -175,55 +179,50 @@ export default function WorksGrid({ works, onEdit, onDelete, onStatusChange, onT
         </div>
       </div>
 
-      <AnimatePresence mode="wait">
-        {viewMode === "grid" ? (
-          <motion.div
-            key="grid"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            className="relative z-0 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-4"
-          >
-            {sorted.map((work, i) => (
-              <WorkCard
-                key={work.id}
-                work={work}
-                index={i}
-                onEdit={onEdit}
-                onDelete={onDelete}
-                onStatusChange={onStatusChange}
-                onToggleFavorite={onToggleFavorite}
-                onFilter={onFilter}
-                selectMode={selectMode}
-                selected={selectedIds.has(work.id)}
-                onToggleSelect={onToggleSelect}
-              />
-            ))}
-          </motion.div>
-        ) : (
-          <motion.div
-            key="list"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            className="flex flex-col gap-2"
-          >
-            {sorted.map((work, i) => (
-              <WorkRow
-                key={work.id}
-                work={work}
-                index={i}
-                onEdit={onEdit}
-                onDelete={onDelete}
-                onStatusChange={onStatusChange}
-                onToggleFavorite={onToggleFavorite}
-              />
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {viewMode === "grid" ? (
+        <div
+          className="relative z-0 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-4"
+        >
+          {visibleWorks.map((work) => (
+            <WorkCard
+              key={work.id}
+              work={work}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              onStatusChange={onStatusChange}
+              onToggleFavorite={onToggleFavorite}
+              onFilter={onFilter}
+              selectMode={selectMode}
+              selected={selectedIds.has(work.id)}
+              onToggleSelect={onToggleSelect}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {visibleWorks.map((work) => (
+            <WorkRow
+              key={work.id}
+              work={work}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              onToggleFavorite={onToggleFavorite}
+            />
+          ))}
+        </div>
+      )}
+      {works.length > PAGE_SIZE && (
+        <div className="mt-5 flex flex-col items-center gap-2">
+          <p role="status" className="text-sm" style={{ color: "var(--text-secondary)" }}>
+            {visibleWorks.length} sur {works.length} œuvres affichées
+          </p>
+          {visibleWorks.length < works.length && (
+            <Button type="button" variant="outline" onClick={() => setLimit(current => current + PAGE_SIZE)}>
+              Afficher plus
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
