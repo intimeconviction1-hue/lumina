@@ -310,15 +310,11 @@ export default async function handler(req, res) {
     const product = amazonProduct(url);
     if (product) {
       let work = validIsbn10(product.asin) ? await amazonBook(product).catch(() => null) : null;
-      if (!work) {
-        try {
-          work = await amazonBookPage(product);
-        } catch {
-          return res.status(422).json({ error: 'Amazon ne donne pas accès à cette fiche depuis Lumina. Le lien est gardé. Saisis le titre ici pour rechercher le livre.' });
-        }
-      }
+      if (!work) work = await amazonBookPage(product).catch(() => null);
       if (work) return res.status(200).json({ work });
-      return res.status(422).json({ error: 'Lumina n’a pas pu identifier un livre sur cette fiche Amazon. Le lien est gardé. Saisis le titre si c’est un livre.' });
+      const query = product.query;
+      const matches = /\p{L}/u.test(query) ? await searchBooks(query).catch(() => []) : [];
+      return res.status(200).json({ query, matches, source_url: product.source });
     }
 
     const replayPath = franceTvReplayPath(url);

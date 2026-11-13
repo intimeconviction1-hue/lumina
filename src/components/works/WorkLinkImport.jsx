@@ -47,7 +47,7 @@ export default function WorkLinkImport({ onFill, onSource, onAddGqSelection }) {
         setResults(data);
         if (data.collection === "gq-documentaries") setSelected(data.matches.map(work => work.id));
       } else if (data.source_url) {
-        setMessage("La fiche Fnac est conservée comme source. Saisis ou précise le titre pour relancer la recherche, ou complète la fiche.");
+        setMessage("Le lien est conservé comme source. Saisis ou précise le titre pour relancer la recherche, ou complète la fiche.");
       } else {
         setMessage(`Aucune œuvre trouvée pour « ${data.query || input} ». Essaie avec le titre complet.`);
       }
