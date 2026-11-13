@@ -34,7 +34,16 @@ export default async function handler(req, res) {
         `select * from works order by ${sort} ${dir} nulls last limit $1`,
         [limit]
       );
-      return res.status(200).json(rows.map(work => isPersonStudyImport(work) ? { ...work, from_person_study: true } : work));
+      return res.status(200).json(rows.map(work => {
+        const row = isPersonStudyImport(work) ? { ...work, from_person_study: true } : work;
+        if (req.query.view !== 'catalogue') return row;
+        const { description, personal_note: _personalNote, ...summary } = row;
+        const preview = description?.trim();
+        return {
+          ...summary,
+          description_preview: preview?.length > 120 ? preview.slice(0, 119).trimEnd() + '…' : preview || undefined,
+        };
+      }));
     }
 
     if (req.method === 'POST') {

@@ -22,8 +22,11 @@ async function parse(res) {
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
 
 export const worksApi = {
-  list: (sort = '-created_date', limit = 5000) =>
-    fetch(`${BASE}?sort=${encodeURIComponent(sort)}&limit=${limit}`).then(parse),
+  list: (sort = '-created_date', limit = 5000, { view, signal } = {}) => {
+    const params = new URLSearchParams({ sort, limit });
+    if (view) params.set('view', view);
+    return fetch(`${BASE}?${params}`, { signal }).then(parse);
+  },
 
   get: (id, signal) => fetch(`${BASE}/${encodeURIComponent(id)}`, { signal }).then(parse),
 

@@ -5,6 +5,9 @@ import BottomNav from "./components/layout/BottomNav";
 import WorkFormModal from "./components/works/WorkFormModal";
 import FiltersPanel from "./components/works/FiltersPanel";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
+import { worksApi } from "@/api/works";
+import { toast } from "@/components/ui/use-toast";
 import { ArrowLeft } from "lucide-react";
 import { useWorks } from "@/hooks/useWorks";
 import { useWorkMutations } from "@/hooks/useWorkMutations";
@@ -42,6 +45,35 @@ export default function Layout({ children, currentPageName }) {
 
 
   const { update, create } = useWorkMutations();
+  const queryClient = useQueryClient();
+  const editRequest = useRef(null);
+
+  useEffect(() => () => { editRequest.current = null; }, [location.key]);
+
+  const openEdit = async (work) => {
+    const request = {};
+    editRequest.current = request;
+    try {
+      const details = await queryClient.fetchQuery({
+        queryKey: ["work", work.id],
+        queryFn: ({ signal }) => worksApi.get(work.id, signal),
+        retry: false,
+      });
+      if (editRequest.current !== request) return;
+      setEditingWork(details);
+      setShowAddWork(true);
+    } catch (error) {
+      if (editRequest.current === request) {
+        toast({ title: "Impossible d’ouvrir la fiche", description: error.message });
+      }
+    }
+  };
+
+  const openAdd = () => {
+    editRequest.current = null;
+    setEditingWork(null);
+    setShowAddWork(true);
+  };
 
   // Écoute navigation sidebar avec filtre
   useEffect(() => {
@@ -70,6 +102,7 @@ export default function Layout({ children, currentPageName }) {
       }
       if (e.key === "n" && !isInput) {
         e.preventDefault();
+        editRequest.current = null;
         setEditingWork(null);
         setShowAddWork(true);
       }
@@ -109,8 +142,8 @@ export default function Layout({ children, currentPageName }) {
     searchQuery,
     filters,
     onFiltersChange: setFilters,
-    onEditWork: (work) => { setEditingWork(work); setShowAddWork(true); },
-    onAddWork: () => { setEditingWork(null); setShowAddWork(true); },
+    onEditWork: openEdit,
+    onAddWork: openAdd,
   };
 
   return (
@@ -153,7 +186,7 @@ export default function Layout({ children, currentPageName }) {
           searchQuery={searchQuery}
           onSearchChange={handleSearchChange}
           onOpenFilters={() => setShowFilters(true)}
-          onAddWork={() => { setEditingWork(null); setShowAddWork(true); }}
+          onAddWork={openAdd}
           onOpenSidebar={() => setSidebarOpen(v => !v)}
           sidebarOpen={sidebarOpen}
           searchRef={searchRef}

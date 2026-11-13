@@ -125,9 +125,9 @@ export default function SurpriseCard({ works }) {
                   </div>
                 )}
 
-                {randomWork.description && (
+                {randomWork.description_preview && (
                   <p className="text-[12.5px] mt-2.5 line-clamp-2 leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-                    {randomWork.description}
+                    {randomWork.description_preview}
                   </p>
                 )}
 
