@@ -1,4 +1,4 @@
-import { fnacBook, fnacProductPath } from './fnac.js';
+import { fnacBook, fnacBookQuery, fnacProductPath } from './fnac.js';
 import { IMG, tmdbJSON } from './tmdb.js';
 import { franceTvReplay, franceTvReplayPath } from './franceTv.js';
 import { amazonBookPage, amazonProduct } from './amazonBookPage.js';
@@ -299,8 +299,12 @@ export default async function handler(req, res) {
 
     const fnacPath = fnacProductPath(url);
     if (fnacPath) {
-      const work = await fnacBook(fnacPath);
+      const work = await fnacBook(fnacPath).catch(() => null);
       if (work) return res.status(200).json({ work });
+      const source_url = 'https://www.fnac.com' + fnacPath;
+      const query = fnacBookQuery(fnacPath);
+      const matches = query && /\p{L}/u.test(query) ? await searchBooks(query).catch(() => []) : [];
+      return res.status(200).json({ query, matches, source_url });
     }
 
     const product = amazonProduct(url);

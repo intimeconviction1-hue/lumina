@@ -33,6 +33,11 @@ export default function WorkLinkImport({ onFill, onSource, onAddGqSelection }) {
         if (response.status === 422 && payload.url) unrecognizedLink.current = payload.url;
         throw new Error(data.error || "Impossible de lire ce lien.");
       }
+      if (payload.url && data.source_url) {
+        unrecognizedLink.current = data.source_url;
+        onSource(data.source_url);
+        setInput(data.query || "");
+      }
       if (data.work?.title) {
         const fields = Object.fromEntries(Object.entries(data.work).filter(([, value]) => value != null && value !== ""));
         onFill({ ...candidate, ...fields, source_url: unrecognizedLink.current || fields.source_url || candidate?.source_url });
@@ -41,6 +46,8 @@ export default function WorkLinkImport({ onFill, onSource, onAddGqSelection }) {
       } else if (data.matches?.length) {
         setResults(data);
         if (data.collection === "gq-documentaries") setSelected(data.matches.map(work => work.id));
+      } else if (data.source_url) {
+        setMessage("La fiche Fnac est conservée comme source. Saisis ou précise le titre pour relancer la recherche, ou complète la fiche.");
       } else {
         setMessage(`Aucune œuvre trouvée pour « ${data.query || input} ». Essaie avec le titre complet.`);
       }
@@ -126,7 +133,7 @@ export default function WorkLinkImport({ onFill, onSource, onAddGqSelection }) {
           </Button>
         </div>
         <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
-          Colle un lien de livre Amazon, une fiche Allociné, un replay France TV, une vidéo OK.ru ou saisis le titre.
+          Colle un lien de livre Amazon, une fiche Allociné, un livre Fnac, un replay France TV, une vidéo OK.ru ou saisis le titre.
         </p>
       </form>
       {results?.collection === "gq-documentaries" && (

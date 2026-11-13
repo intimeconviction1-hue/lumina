@@ -6,6 +6,16 @@ export function fnacProductPath(url) {
   }
 }
 
+export function fnacBookQuery(path) {
+  const slug = path.split('/')[2];
+  if (!slug) return '';
+  try {
+    return decodeURIComponent(slug).replace(/[-_]+/g, ' ').trim().slice(0, 160);
+  } catch {
+    return '';
+  }
+}
+
 export async function fnacBook(path) {
   // Fiche vérifiée sur la Fnac, accessible même si le serveur distant refuse la requête.
   if (/^\/a13194125(?:\/|$)/i.test(path)) {
