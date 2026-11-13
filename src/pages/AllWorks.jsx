@@ -86,7 +86,7 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
     const urlType     = params.get("type");
     const urlTag      = params.get("tag");
     const urlPriority = params.get("priority");
-    if ((urlStatus || urlGenre || urlPlatform || urlType || urlTag || urlPriority) && onFiltersChange) {
+    if (onFiltersChange) {
       const base = { type: "", status: [], genre: [], platform: [], tags: [], year_min: "", year_max: "", favorite: false, min_rating: "", priority: "", sort: "-created_date" };
       // Normalise les statuts legacy (ex. "En veille" → "À voir") via la source unique.
       if (urlStatus)   base.status   = [STATUS_ALIASES[urlStatus] || urlStatus];
@@ -96,9 +96,8 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
       if (urlTag)      base.tags     = [urlTag];
       if (urlPriority) base.priority = urlPriority;
       onFiltersChange(base);
-      window.history.replaceState({}, "", window.location.pathname);
     }
-  }, [routerLocation.search]);
+  }, [routerLocation.key, routerLocation.search, onFiltersChange]);
 
   const toggleStatus = (s) => {
     if (!onFiltersChange) return;
