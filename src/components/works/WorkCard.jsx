@@ -129,9 +129,9 @@ export default function WorkCard({ work, onEdit, onDelete, onStatusChange, onTog
           {/* Overlay hover : description */}
           <div className="absolute inset-0 flex flex-col justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-2.5 pointer-events-none"
             style={{ background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 50%, transparent 100%)" }}>
-            {work.description && (
+            {work.description_preview && (
               <p className="text-white text-[9.5px] leading-relaxed line-clamp-3 mb-8 px-0.5">
-                {work.description}
+                {work.description_preview}
               </p>
             )}
           </div>
