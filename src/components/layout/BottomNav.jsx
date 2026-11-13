@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useRef } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { Home, LayoutGrid, Bookmark, Clock, Eye, Gift } from "lucide-react";
 
 const navItems = [
-  { label: "Accueil",     icon: Home,        path: "/",            exact: true,  color: "#E56B3A" },
+  { label: "Accueil",     icon: Home,        path: "/",  color: "#E56B3A" },
   { label: "Bibliothèque",icon: LayoutGrid,  path: "/AllWorks",                  color: "#E56B3A" },
   { label: "Envie",       icon: Bookmark,    path: "/WantToWatch",               color: "#EC4899" },
   { label: "En cours",    icon: Clock,       path: "/AllWorks?status=En+cours",  color: "#D4AF37" },
@@ -11,61 +10,43 @@ const navItems = [
   { label: "Cadeaux", icon: Gift, path: "/Gifts" },
 ];
 
-export default function BottomNav() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const [visible, setVisible] = useState(true);
-  const lastScrollY = useRef(0);
+export default function BottomNav({ onNavigate }) {
+  const { pathname, search } = useLocation();
+  const currentStatus = new URLSearchParams(search).get("status");
 
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentY = window.scrollY;
-      if (currentY < 40) { setVisible(true); return; }
-      setVisible(currentY < lastScrollY.current);
-      lastScrollY.current = currentY;
-    };
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  const currentPath = location.pathname + location.search;
-
-  const isActive = (item) => {
-    if (item.exact) return location.pathname === "/";
-    if (item.path === "/AllWorks") return location.pathname === "/AllWorks" && !location.search;
-    return currentPath === item.path || currentPath.startsWith(item.path.split("?")[0] + "?");
-  };
-
-  const handleNav = (item) => {
-    navigate(item.path);
-    if (item.path === "/AllWorks") {
-      window.dispatchEvent(new CustomEvent("sidebar-filter", { detail: { clear: true } }));
-    } else if (item.path.includes("?status=")) {
-      const status = decodeURIComponent(item.path.split("?status=")[1]);
-      window.dispatchEvent(new CustomEvent("sidebar-filter", { detail: { status } }));
-    }
+  const isActive = item => {
+    const [path, query] = item.path.split("?");
+    return pathname === path && (path !== "/AllWorks" ||
+      currentStatus === new URLSearchParams(query).get("status"));
   };
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around lg:hidden transition-transform duration-300"
+      aria-label="Navigation principale"
+      className="fixed bottom-0 left-0 right-0 z-40 flex items-stretch lg:hidden"
       style={{
         backgroundColor: "var(--surface)",
         borderTop: "1px solid var(--border)",
         paddingBottom: "env(safe-area-inset-bottom)",
         boxShadow: "0 -2px 10px rgba(0,0,0,0.10)",
         minHeight: 56,
-        transform: visible ? "translateY(0)" : "translateY(100%)",
       }}
     >
       {navItems.map((item) => {
         const active = isActive(item);
         const accentColor = item.color || "#E56B3A";
         return (
-          <button
+          <Link
             key={item.path}
-            onClick={() => handleNav(item)}
-            className="flex items-center justify-center flex-1 py-2 transition-all"
+            to={item.path}
+            aria-current={active ? "page" : undefined}
+            onClick={event => {
+              if (event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) {
+                window.scrollTo(0, 0);
+                onNavigate();
+              }
+            }}
+            className="flex min-h-14 min-w-0 flex-1 touch-manipulation items-center justify-center py-1"
             style={{
               color: active ? accentColor : "var(--text-muted)",
               userSelect: "none",
@@ -92,15 +73,12 @@ export default function BottomNav() {
               }}>
                 {item.label}
               </span>
-              {/* Dot indicateur actif */}
-              {active && (
-                <div
+              <div
                   className="w-1 h-1 rounded-full mt-0.5"
-                  style={{ backgroundColor: accentColor }}
-                />
-              )}
+                  style={{ backgroundColor: active ? accentColor : "transparent" }}
+              />
             </div>
-          </button>
+          </Link>
         );
       })}
     </nav>
