@@ -37,7 +37,8 @@ export async function franceTvReplay(path) {
     signal: AbortSignal.timeout(8000),
   });
   if (!response.ok) throw new Error('Replay France TV indisponible.');
-  const nodes = metadata(await response.text());
+  const html = await response.text();
+  const nodes = metadata(html);
   const hasType = (node, type) => [node?.['@type']].flat().includes(type);
   const videos = nodes.filter(node => ['VideoObject', 'TVEpisode', 'Movie'].some(type => hasType(node, type)) && node.name);
   const video = videos.find(node => node.url === source || node.embedUrl === source)
@@ -50,8 +51,14 @@ export async function franceTvReplay(path) {
     : hasType(video, 'Movie') ? 'film' : hasType(video, 'TVEpisode') ? 'série' : 'vidéo';
   const actors = credits(video.actor);
   const description = [video.description?.trim(), actors && `Avec ${actors}.`].filter(Boolean).join('\n\n');
-  const thumbnails = [video.thumbnailUrl, video.image].flat().map(image => typeof image === 'string' ? image : image?.url);
-  const cover = thumbnails.find(image => typeof image === 'string' && /^https:\/\/[^/]+\//i.test(image));
+  const thumbnails = [video.thumbnailUrl, video.image, video.video?.thumbnailUrl, video.video?.image]
+    .flat()
+    .map(image => typeof image === 'string' ? image : image?.url)
+    .filter(image => typeof image === 'string' && /^https:\/\/[^/]+\//i.test(image));
+  // France TV range ses variantes portrait dans les données de la page.
+  const portrait = [...html.replaceAll('\\"', '"').matchAll(/"vignette_3x4"\s*:\s*\{([^{}]*)\}/g)]
+    .find(([, variants]) => thumbnails.some(image => variants.includes('"' + image + '"')));
+  const cover = portrait?.[1].match(/"650"\s*:\s*"(https:\/\/medias\.france\.tv\/[^"]+)"/)?.[1] || thumbnails[0];
   return {
     title: video.name,
     type,
