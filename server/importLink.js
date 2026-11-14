@@ -1,3 +1,4 @@
+import { appleTvMovie, appleTvMoviePath } from './appleTv.js';
 import { fnacBook, fnacBookQuery, fnacProductPath } from './fnac.js';
 import { IMG, tmdbJSON } from './tmdb.js';
 import { franceTvReplay, franceTvReplayPath } from './franceTv.js';
@@ -316,6 +317,9 @@ export default async function handler(req, res) {
       const matches = /\p{L}/u.test(query) ? await searchBooks(query).catch(() => []) : [];
       return res.status(200).json({ query, matches, source_url: product.source });
     }
+
+    const appleMoviePath = appleTvMoviePath(url);
+    if (appleMoviePath) return res.status(200).json({ work: await appleTvMovie(appleMoviePath) });
 
     const replayPath = franceTvReplayPath(url);
     if (replayPath) return res.status(200).json({ work: await franceTvReplay(replayPath) });
