@@ -90,6 +90,7 @@ export default function WorkDetail({ onEditWork, onBack, onDeleteWork }) {
     );
   }
 
+  const encyclopedia = /^https:\/\/[a-z.-]+\.wikipedia\.org\//i.test(work.source_url || "");
   const TypeIcon = typeIcons[work.type] || FileText;
   const tColor = typeColors[work.type] || "#667085";
 
@@ -229,7 +230,7 @@ export default function WorkDetail({ onEditWork, onBack, onDeleteWork }) {
                     style={{ backgroundColor: "#D4AF37", color: "#0B2545", boxShadow: "0 4px 14px rgba(212,175,55,0.3)" }}
                   >
                     <PlayCircle className="w-4.5 h-4.5 w-5 h-5" />
-                    Regarder maintenant
+                    {encyclopedia ? "Voir sur Wikipédia" : "Regarder maintenant"}
                   </a>
                 </div>
               )}
