@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { isProcesJustice } from "@/lib/thematiques";
 import { useWorks } from "@/hooks/useWorks";
 import WorksLoadError from "@/components/works/WorksLoadError";
 import { useWorkMutations } from "@/hooks/useWorkMutations";
@@ -54,8 +55,9 @@ const SkelBlock = ({ h = 160 }) => (
 export default function Home({ onAddWork, onEditWork, onDeleteWork }) {
   const [activeTags, setActiveTags] = useState([]);
 
-  const { data: works = [], isLoading, isError, isFetching, refetch } = useWorks();
+  const { data, isLoading, isError, isFetching, refetch } = useWorks();
   const { updateWork } = useWorkMutations();
+  const works = useMemo(() => (data || []).filter(work => !isProcesJustice(work)), [data]);
 
   const toggleTag = (tag) => {
     setActiveTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);

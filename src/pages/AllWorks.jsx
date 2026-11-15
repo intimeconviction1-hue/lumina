@@ -7,7 +7,7 @@ import { useWorks, WORKS_KEY } from "@/hooks/useWorks";
 import { worksApi } from "@/api/works";
 import { useWorkMutations } from "@/hooks/useWorkMutations";
 import { StatusButton, TypeButton } from "../components/works/FilterButtons";
-import { X, CheckSquare, Square, Users, SlidersHorizontal, Flame } from "lucide-react";
+import { X, CheckSquare, Square, Users, SlidersHorizontal, Flame, Scale } from "lucide-react";
 import BulkActionBar from "../components/works/BulkActionBar";
 import { useToast } from "@/components/ui/use-toast";
 import { STATUS_CONFIG, TYPE_COLORS, statusPatch } from "@/lib/statusActions";
@@ -252,6 +252,12 @@ export default function AllWorks({ searchQuery = "", matchingWorks = [], filters
             >
               {selectMode ? <><X className="w-3.5 h-3.5" /> Annuler</> : <><Square className="w-3.5 h-3.5" /> Sélectionner</>}
             </button>
+            {!selectMode && (
+              <Link to="/Thematiques" className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold"
+                style={{ borderColor: "var(--border)", color: "var(--text-primary)", backgroundColor: "var(--card-bg)" }}>
+                <Scale className="h-3.5 w-3.5" aria-hidden="true" /> Thématiques
+              </Link>
+            )}
             {!selectMode && (
               <Link to="/PersonStudies" className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold"
                 style={{ borderColor: "var(--border)", color: "var(--text-primary)", backgroundColor: "var(--card-bg)" }}>
