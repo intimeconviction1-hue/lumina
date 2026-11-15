@@ -50,10 +50,10 @@ const TYPE_TABS = [
   { key: "livre", label: "Livres", emoji: "📚", color: "#6366F1" },
 ];
 
-export default function AllWorks({ searchQuery = "", matchingWorks = [], filters = {}, onFiltersChange, onEditWork, onClearSearch, onOpenFilters }) {
+export default function AllWorks({ searchQuery = "", matchingWorks = [], filters = {}, onFiltersChange, onEditWork, onDeleteWork, onClearSearch, onOpenFilters }) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const { updateWork, removeWork } = useWorkMutations();
+  const { updateWork } = useWorkMutations();
   const [showMoreFilters, setShowMoreFilters] = useState(false);
   const activeTab = TYPE_TABS.some(tab => tab.key === filters.type) ? filters.type : "";
 
@@ -147,7 +147,6 @@ export default function AllWorks({ searchQuery = "", matchingWorks = [], filters
   }, [matchingWorks, filters.sort]);
 
   // Optimistic + rollback + toast d'erreur sont gérés par le hook useWorkMutations.
-  const handleDelete = (work) => removeWork(work.id);
   const handleStatusChange = (work, newStatus) => updateWork(work.id, statusPatch(work, newStatus));
   const handleToggleFavorite = (work) => updateWork(work.id, { favorite: !work.favorite });
 
@@ -472,7 +471,7 @@ export default function AllWorks({ searchQuery = "", matchingWorks = [], filters
         <WorksGrid
           works={filteredWorks}
           onEdit={onEditWork}
-          onDelete={handleDelete}
+          onDelete={onDeleteWork}
           onStatusChange={handleStatusChange}
           onToggleFavorite={handleToggleFavorite}
           onFilter={(key, val) => {

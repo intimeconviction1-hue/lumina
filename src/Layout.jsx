@@ -9,6 +9,10 @@ import { useNavigate, useLocation, useNavigationType } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { worksApi } from "@/api/works";
 import { toast } from "@/components/ui/use-toast";
+import {
+  AlertDialog, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import * as Dialog from "@radix-ui/react-dialog";
 import { ArrowLeft } from "lucide-react";
 import { useWorks } from "@/hooks/useWorks";
@@ -61,7 +65,7 @@ export default function Layout({ children, currentPageName }) {
   const isChildScreen = CHILD_SCREENS.includes(currentPageName);
 
 
-  const { update, create } = useWorkMutations();
+  const { update, create, remove } = useWorkMutations();
   const queryClient = useQueryClient();
   const editRequest = useRef(null);
 
@@ -140,6 +144,20 @@ export default function Layout({ children, currentPageName }) {
     setEditingWork(null);
   };
 
+  const [deletion, setDeletion] = useState(null);
+
+  const confirmDeletion = async () => {
+    if (!deletion || remove.isPending) return;
+    try {
+      await remove.mutateAsync(deletion.id);
+      queryClient.removeQueries({ queryKey: ["work", deletion.id], exact: true });
+      setDeletion(null);
+      if (currentPageName === "WorkDetail") goBack();
+    } catch {
+      // Le hook rétablit la liste et affiche l’erreur.
+    }
+  };
+
   const childProps = {
     searchQuery,
     matchingWorks,
@@ -149,6 +167,7 @@ export default function Layout({ children, currentPageName }) {
     filters,
     onFiltersChange: setFilters,
     onEditWork: openEdit,
+    onDeleteWork: setDeletion,
     onAddWork: openAdd,
   };
 
@@ -232,6 +251,26 @@ export default function Layout({ children, currentPageName }) {
         onSave={handleSaveWork}
         onAddGqSelection={ids => create.mutateAsync({ gqDocumentaries: ids })}
       />
+
+      <AlertDialog open={Boolean(deletion)} onOpenChange={open => {
+        if (!open && !remove.isPending) setDeletion(null);
+      }}>
+        <AlertDialogContent className="w-[calc(100%-1.5rem)] rounded-2xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer cette œuvre ?</AlertDialogTitle>
+            <AlertDialogDescription className="break-words">
+              « {deletion?.title} » sera retirée définitivement de la bibliothèque.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={remove.isPending} className="min-h-11">Annuler</AlertDialogCancel>
+            <button type="button" onClick={confirmDeletion} disabled={remove.isPending}
+              className="min-h-11 rounded-md bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800 disabled:opacity-60">
+              {remove.isPending ? "Suppression…" : "Supprimer"}
+            </button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <FiltersPanel
         open={showFilters}

@@ -51,18 +51,17 @@ const SkelBlock = ({ h = 160 }) => (
   <div className="skeleton" style={{ height: h, borderRadius: "var(--radius-card)" }} />
 );
 
-export default function Home({ onAddWork, onEditWork }) {
+export default function Home({ onAddWork, onEditWork, onDeleteWork }) {
   const [activeTags, setActiveTags] = useState([]);
 
   const { data: works = [], isLoading, isError, isFetching, refetch } = useWorks();
-  const { updateWork, removeWork } = useWorkMutations();
+  const { updateWork } = useWorkMutations();
 
   const toggleTag = (tag) => {
     setActiveTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
   };
 
   // Optimistic + rollback + toast + invalidation gérés par useWorkMutations.
-  const handleDelete = (work) => removeWork(work.id);
   const handleStatusChange = (work, newStatus) => updateWork(work.id, statusPatch(work, newStatus));
   const handleToggleFavorite = (work) => updateWork(work.id, { favorite: !work.favorite });
 
@@ -150,7 +149,7 @@ export default function Home({ onAddWork, onEditWork }) {
             works={filteredWorks}
             resultScope={JSON.stringify(activeTags)}
             onEdit={onEditWork}
-            onDelete={handleDelete}
+            onDelete={onDeleteWork}
             onStatusChange={handleStatusChange}
             onToggleFavorite={handleToggleFavorite}
             emptyMessage="Aucune œuvre avec ce(s) tag(s)"
