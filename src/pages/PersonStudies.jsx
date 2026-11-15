@@ -9,7 +9,7 @@ import { useWorkMutations } from "@/hooks/useWorkMutations";
 import { effectiveStatus, isFinished } from "@/lib/statusActions";
 
 const studiesKey = ["saved-person-studies"];
-const assiDayan = { catalogue: "cinema", name: "Assi Dayan" };
+const assiDayanId = "41644";
 
 async function getSavedStudies(signal) {
   const response = await fetch("/api/works?mode=person-studies", { signal });
@@ -203,11 +203,9 @@ export default function PersonStudies() {
   const [params, setParams] = useSearchParams();
   const tab = params.get("catalogue") === "books" ? "books" : "cinema";
   const assiSelected = params.get("study") === "assi-dayan";
-  const rawQuery = params.get("q") || (assiSelected ? assiDayan.name : "");
+  const rawQuery = params.get("q") || "";
   const studies = useQuery({ queryKey: studiesKey, queryFn: ({ signal }) => getSavedStudies(signal) });
   const saved = studies.data || [];
-  const assi = saved.find(person => person.catalogue === assiDayan.catalogue && normalize(person.name) === normalize(assiDayan.name));
-  const tabs = [assi || assiDayan, ...saved.filter(person => person !== assi)];
   const url = params.get("url") || "";
   const [draft, setDraft] = useState(url || rawQuery);
   useEffect(() => setDraft(url || rawQuery), [url, rawQuery]);
@@ -220,7 +218,7 @@ export default function PersonStudies() {
   });
   const catalogue = link.data?.catalogue || tab;
   const q = link.data?.name || rawQuery;
-  const explicitId = link.data?.id || params.get("id") || (assiSelected ? assi?.id : "") || "";
+  const explicitId = link.data?.id || params.get("id") || (assiSelected ? assiDayanId : "") || "";
   const submitSearch = (value, target = catalogue) => {
     const query = value.trim();
     if (isLink(query)) {
@@ -235,7 +233,7 @@ export default function PersonStudies() {
     enabled: q.length >= 2 && !explicitId,
     retry: false,
   });
-  const id = explicitId || (assiSelected ? people.data?.find(person => normalize(person.name) === normalize(assiDayan.name))?.id : "") || "";
+  const id = explicitId;
   const savedStudy = assiSelected || params.get("study") === "saved";
   const profile = useQuery({
     queryKey: ["person-studies", catalogue, "profile", id],
@@ -252,11 +250,9 @@ export default function PersonStudies() {
         <p className="mt-2 text-sm" style={secondary}>Explore une filmographie ou une bibliographie et ajoute les œuvres à ta collection.</p>
       </header>
       <nav aria-label="Personnes étudiées" className="flex flex-wrap gap-2">
-        {tabs.map(person => {
-          const active = savedStudy && (person.id ? person.catalogue === catalogue && person.id === id : assiSelected);
-          const query = new URLSearchParams(person.id
-            ? { catalogue: person.catalogue, id: person.id, study: "saved" }
-            : { catalogue: person.catalogue, study: "assi-dayan" });
+        {saved.map(person => {
+          const active = savedStudy && person.catalogue === catalogue && person.id === id;
+          const query = new URLSearchParams({ catalogue: person.catalogue, id: person.id, study: "saved" });
           return <Button key={`${person.catalogue}:${person.id || person.name}`} asChild className="min-h-11" size="sm" variant={active ? "default" : "outline"}>
             <Link to={`?${query}`} aria-current={active ? "page" : undefined}>{person.name}</Link>
           </Button>;
