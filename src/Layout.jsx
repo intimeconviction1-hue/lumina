@@ -14,6 +14,10 @@ import { useWorks } from "@/hooks/useWorks";
 import { useWorkMutations } from "@/hooks/useWorkMutations";
 
 const CHILD_SCREENS = ["WorkDetail"]; // pages that get a back button on mobile
+const EMPTY_FILTERS = {
+  type: "", status: [], genre: [], platform: [], tags: [], year_min: "", year_max: "",
+  favorite: false, min_rating: "", priority: "", sort: "-created_date",
+};
 
 export default function Layout({ children, currentPageName }) {
   const navigate = useNavigate();
@@ -44,10 +48,7 @@ export default function Layout({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const searchRef = useRef(null);
   const isChildScreen = CHILD_SCREENS.includes(currentPageName);
-  const [filters, setFilters] = useState({
-    type: "", status: [], genre: [], platform: [], tags: [], year_min: "", year_max: "",
-    favorite: false, min_rating: "", priority: "", sort: "-created_date",
-  });
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
 
 
   const { update, create } = useWorkMutations();
@@ -184,7 +185,11 @@ export default function Layout({ children, currentPageName }) {
           searchQuery={searchQuery}
           onSearchChange={handleSearchChange}
           onOpenFilters={() => {
-            if (currentPageName !== "AllWorks") navigate("/AllWorks");
+            if (currentPageName !== "AllWorks") {
+              setFilters(EMPTY_FILTERS);
+              setSearchQuery("");
+              navigate("/AllWorks");
+            }
             setShowFilters(true);
           }}
           onAddWork={openAdd}
