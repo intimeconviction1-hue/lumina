@@ -116,8 +116,8 @@ function WantCard({ work, onEdit, onDelete, onPriorityChange, onToggleFavorite }
   );
 }
 
-export default function WantToWatch({ onEditWork, onAddWork }) {
-  const { updateWork, removeWork } = useWorkMutations();
+export default function WantToWatch({ onEditWork, onDeleteWork, onAddWork }) {
+  const { updateWork } = useWorkMutations();
   const [selectedPriority, setSelectedPriority] = useState("all");
   const [selectedType, setSelectedType] = useState("");
 
@@ -148,7 +148,6 @@ export default function WantToWatch({ onEditWork, onAddWork }) {
 
   // Optimistic + rollback + toast + invalidation gérés par useWorkMutations.
   const handlePriorityChange = (work, newPriority) => updateWork(work.id, { priority: newPriority });
-  const handleDelete = (work) => removeWork(work.id);
   const handleToggleFavorite = (work) => updateWork(work.id, { favorite: !work.favorite });
 
   const urgentCount = wantToWatch.filter(w => (w.priority || "normal") === "urgent").length;
@@ -262,7 +261,7 @@ export default function WantToWatch({ onEditWork, onAddWork }) {
         <AnimatePresence mode="popLayout">
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
             {filtered.map(w => (
-              <WantCard key={w.id} work={w} onEdit={onEditWork} onDelete={handleDelete}
+              <WantCard key={w.id} work={w} onEdit={onEditWork} onDelete={onDeleteWork}
                 onPriorityChange={handlePriorityChange} onToggleFavorite={handleToggleFavorite} />
             ))}
           </div>
@@ -292,7 +291,7 @@ export default function WantToWatch({ onEditWork, onAddWork }) {
                 <AnimatePresence mode="popLayout">
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                     {group.map(w => (
-                      <WantCard key={w.id} work={w} onEdit={onEditWork} onDelete={handleDelete}
+                      <WantCard key={w.id} work={w} onEdit={onEditWork} onDelete={onDeleteWork}
                         onPriorityChange={handlePriorityChange} onToggleFavorite={handleToggleFavorite} />
                     ))}
                   </div>

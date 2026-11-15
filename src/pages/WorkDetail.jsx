@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
@@ -7,7 +7,6 @@ import {
 } from "lucide-react";
 import StarRating from "../components/works/StarRating";
 import { motion } from "framer-motion";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { typeIcons, typeColors } from "../components/works/WorkCard";
 import { STATUS_CONFIG, STATUS_ACTIONS, effectiveStatus, isFinished, statusPatch } from "@/lib/statusActions";
 import { worksApi } from "@/api/works";
@@ -30,10 +29,9 @@ function MetaItem({ icon: IconComp, label, value }) {
   );
 }
 
-export default function WorkDetail({ onEditWork, onBack }) {
-  const { updateWork, removeWork } = useWorkMutations();
+export default function WorkDetail({ onEditWork, onBack, onDeleteWork }) {
+  const { updateWork } = useWorkMutations();
   const navigate = useNavigate();
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const [searchParams] = useSearchParams();
   const workId = searchParams.get("id") || new URLSearchParams(window.location.search).get("id");
@@ -52,11 +50,6 @@ export default function WorkDetail({ onEditWork, onBack }) {
   const handleRatingChange = (r) => updateWork(workId, { rating: r === Number(work.rating) ? 0 : r });
   const handleAnticipationChange = (r) => updateWork(workId, { anticipation_rating: r === Number(work.anticipation_rating) ? 0 : r });
   const handleToggleFavorite = () => updateWork(workId, { favorite: !work.favorite });
-  const handleDelete = async () => {
-    await removeWork(workId);
-    navigate("/AllWorks");
-  };
-
   if (isLoading) {
     return (
       <div className="max-w-5xl mx-auto">
@@ -154,7 +147,7 @@ export default function WorkDetail({ onEditWork, onBack }) {
                     style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}>
                     <Pencil className="w-3.5 h-3.5" /> Modifier
                   </button>
-                  <button onClick={() => setShowDeleteDialog(true)}
+                  <button onClick={() => onDeleteWork?.(work)}
                     aria-label="Supprimer l’œuvre"
                     className="grid min-h-11 min-w-11 place-items-center rounded-[10px] border text-red-500 transition-colors hover:bg-red-50"
                     style={{ borderColor: "var(--border)" }}>
@@ -312,20 +305,6 @@ export default function WorkDetail({ onEditWork, onBack }) {
         </div>
       </motion.div>
 
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent style={{ borderRadius: "var(--radius-modal)" }}>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Supprimer cette œuvre ?</AlertDialogTitle>
-            <AlertDialogDescription>
-              «&nbsp;{work.title}&nbsp;» sera supprimée définitivement. Cette action est irréversible.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-red-600 hover:bg-red-700">Supprimer</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

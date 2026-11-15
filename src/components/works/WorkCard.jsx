@@ -161,15 +161,7 @@ export default function WorkCard({ work, onEdit, onDelete, onStatusChange, onTog
               title="Modifier">
               <Pencil className="w-3.5 h-3.5 text-white" />
             </button>
-            <button
-              type="button"
-              onClick={e => { e.stopPropagation(); onDelete?.(work); }}
-              className="work-card-hover-action w-7 h-7 rounded-full flex items-center justify-center"
-              style={{ backgroundColor: "rgba(0,0,0,0.7)", backdropFilter: "blur(6px)" }}
-              title="Supprimer">
-              <Trash2 className="w-3.5 h-3.5 text-red-400" />
-            </button>
-            <DropdownMenu>
+            <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
                 <button type="button" aria-label={`Options pour ${work.title}`} className="w-7 h-7 rounded-full flex items-center justify-center ml-auto"
                   style={{ backgroundColor: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)" }}>
@@ -198,7 +190,7 @@ export default function WorkCard({ work, onEdit, onDelete, onStatusChange, onTog
                   </DropdownMenuSubContent>
                 </DropdownMenuSub>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => onDelete?.(work)} className="text-red-500 focus:text-red-500">
+                <DropdownMenuItem onSelect={() => onDelete?.(work)} className="text-red-500 focus:text-red-500">
                   <Trash2 className="w-3.5 h-3.5 mr-2" /> Supprimer
                 </DropdownMenuItem>
               </DropdownMenuContent>
