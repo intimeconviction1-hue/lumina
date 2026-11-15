@@ -117,8 +117,8 @@ export default function WorkDetail({ onEditWork }) {
           <div className="flex flex-col lg:flex-row">
             {/* Cover */}
             <div className="lg:w-[320px] flex-shrink-0 relative">
-              <div className="w-full h-72 lg:h-full flex flex-col items-center justify-center gap-4"
-                style={{ background: `linear-gradient(145deg, ${tColor}18 0%, ${tColor}35 100%)`, minHeight: 400 }}>
+              <div className="w-full h-44 sm:h-56 lg:h-full lg:min-h-[400px] flex flex-col items-center justify-center gap-4"
+                style={{ background: `linear-gradient(145deg, ${tColor}18 0%, ${tColor}35 100%)` }}>
                 <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ backgroundColor: `${tColor}25` }}>
                   <TypeIcon className="w-10 h-10" style={{ color: tColor }} />
                 </div>
@@ -126,19 +126,21 @@ export default function WorkDetail({ onEditWork }) {
               </div>
               {work.cover_image && (
                 <img key={work.cover_image} src={work.cover_image} alt={work.title}
-                  className="absolute inset-0 w-full h-full object-cover"
+                  className="absolute inset-0 w-full h-full object-contain lg:object-cover"
                   onError={e => { e.currentTarget.style.display = "none"; }} />
               )}
               <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
               <button onClick={handleToggleFavorite}
-                className="absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center transition-all hover:scale-105"
+                aria-label={work.favorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+                aria-pressed={Boolean(work.favorite)}
+                className="absolute top-4 right-4 w-11 h-11 rounded-full flex items-center justify-center transition-all hover:scale-105"
                 style={{ backgroundColor: "rgba(0,0,0,0.4)", backdropFilter: "blur(8px)" }}>
                 <Heart className={`w-5 h-5 ${work.favorite ? "fill-[#EC4899] text-[#EC4899]" : "text-white"}`} />
               </button>
             </div>
 
             {/* Content */}
-            <div className="flex-1 p-8 lg:p-10 overflow-y-auto">
+            <div className="min-w-0 flex-1 p-4 sm:p-6 lg:p-10">
               {/* Type + Modify/Delete */}
               <div className="flex items-start justify-between gap-4 mb-5">
                 <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-semibold"
@@ -148,12 +150,13 @@ export default function WorkDetail({ onEditWork }) {
                 </span>
                 <div className="flex gap-2">
                   <button onClick={() => onEditWork?.(work)}
-                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-[10px] border text-[12.5px] font-medium transition-all hover:shadow-sm"
+                    className="flex items-center gap-1.5 min-h-11 px-3.5 py-2 rounded-[10px] border text-[12.5px] font-medium transition-all hover:shadow-sm"
                     style={{ borderColor: "var(--border)", color: "var(--text-secondary)" }}>
                     <Pencil className="w-3.5 h-3.5" /> Modifier
                   </button>
                   <button onClick={() => setShowDeleteDialog(true)}
-                    className="p-2 rounded-[10px] border text-red-500 transition-colors hover:bg-red-50"
+                    aria-label="Supprimer l’œuvre"
+                    className="grid min-h-11 min-w-11 place-items-center rounded-[10px] border text-red-500 transition-colors hover:bg-red-50"
                     style={{ borderColor: "var(--border)" }}>
                     <Trash2 className="w-4 h-4" />
                   </button>

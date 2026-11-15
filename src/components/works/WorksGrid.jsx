@@ -16,7 +16,7 @@ function WorkRow({ work, onEdit, onDelete, onToggleFavorite }) {
 
   return (
     <div
-      className="flex items-center gap-4 px-4 py-3 rounded-[12px] group transition-all"
+      className="flex items-center gap-2 px-2 py-3 sm:gap-4 sm:px-4 rounded-[12px] group transition-all"
       style={{
         backgroundColor: "var(--card-bg)",
         border: "1px solid var(--border)",
@@ -26,7 +26,7 @@ function WorkRow({ work, onEdit, onDelete, onToggleFavorite }) {
       onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.boxShadow = "var(--shadow-sm)"; }}
     >
       {/* Type indicator — large emoji */}
-      <div className="flex-shrink-0 w-8 flex items-center justify-center">
+      <div className="hidden sm:flex flex-shrink-0 w-8 items-center justify-center">
         <span className="text-[20px] leading-none" title={work.type}>
           {work.type === "livre" ? "📚" : work.type === "film" ? "🎬" : work.type === "série" ? "📺" : work.type === "documentaire" ? "🎙️" : work.type === "podcast" ? "🎧" : work.type === "vidéo" ? "▶️" : "📄"}
         </span>
@@ -48,7 +48,7 @@ function WorkRow({ work, onEdit, onDelete, onToggleFavorite }) {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <Link to={`/WorkDetail?id=${work.id}`}>
-            <span className="text-[13.5px] font-semibold hover:opacity-70 transition-opacity" style={{ color: "var(--text-primary)" }}>
+            <span className="break-words text-[13.5px] font-semibold hover:opacity-70 transition-opacity" style={{ color: "var(--text-primary)" }}>
               {work.title}
             </span>
           </Link>
@@ -99,22 +99,22 @@ function WorkRow({ work, onEdit, onDelete, onToggleFavorite }) {
         <span className="hidden sm:inline">{sConfig.label}</span>
       </span>
 
-      <div className="flex items-center gap-1 md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100 transition-opacity flex-shrink-0">
-        <button onClick={() => onToggleFavorite?.(work)}
-          className="w-7 h-7 rounded-lg flex items-center justify-center"
+      <div className="flex items-center gap-1 lg:opacity-0 lg:group-hover:opacity-100 lg:focus-within:opacity-100 transition-opacity flex-shrink-0">
+        <button type="button" aria-label={work.favorite ? "Retirer des favoris" : "Ajouter aux favoris"} aria-pressed={Boolean(work.favorite)} onClick={() => onToggleFavorite?.(work)}
+          className="w-9 h-10 lg:w-7 lg:h-7 rounded-lg flex items-center justify-center"
           style={{ color: work.favorite ? "#EC4899" : "var(--text-muted)" }}>
           <span className="text-[13px]">{work.favorite ? "♥" : "♡"}</span>
         </button>
-        <button onClick={() => onEdit?.(work)}
-          className="w-7 h-7 rounded-lg flex items-center justify-center hover:opacity-70"
+        <button type="button" aria-label="Modifier" onClick={() => onEdit?.(work)}
+          className="w-9 h-10 lg:w-7 lg:h-7 rounded-lg flex items-center justify-center hover:opacity-70"
           style={{ color: "var(--text-secondary)" }}>
           <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
           </svg>
         </button>
-        <button onClick={() => onDelete?.(work)}
-          className="w-7 h-7 rounded-lg flex items-center justify-center hover:text-red-400 transition-colors"
+        <button type="button" aria-label="Supprimer" onClick={() => onDelete?.(work)}
+          className="w-9 h-10 lg:w-7 lg:h-7 rounded-lg flex items-center justify-center hover:text-red-400 transition-colors"
           style={{ color: "var(--text-muted)" }}>
           <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
@@ -165,12 +165,13 @@ export default function WorksGrid({ works, onEdit, onDelete, onStatusChange, onT
               key={mode}
               type="button"
               aria-label={mode === "grid" ? "Vue grille" : "Vue liste"}
-              aria-pressed={viewMode === mode}
+              aria-pressed={(selectMode ? "grid" : viewMode) === mode}
+              disabled={selectMode}
               onClick={() => setViewMode(mode)}
-              className="px-3 py-2 transition-all"
+              className="min-h-11 min-w-11 px-3 py-2 transition-all disabled:opacity-50"
               style={{
-                backgroundColor: viewMode === mode ? "rgba(229,107,58,0.12)" : "transparent",
-                color: viewMode === mode ? "#E56B3A" : "var(--text-muted)",
+                backgroundColor: (selectMode ? "grid" : viewMode) === mode ? "rgba(229,107,58,0.12)" : "transparent",
+                color: (selectMode ? "grid" : viewMode) === mode ? "#E56B3A" : "var(--text-muted)",
               }}
             >
               <Icon className="w-3.5 h-3.5" />
@@ -179,7 +180,7 @@ export default function WorksGrid({ works, onEdit, onDelete, onStatusChange, onT
         </div>
       </div>
 
-      {viewMode === "grid" ? (
+      {(selectMode || viewMode === "grid") ? (
         <div
           className="relative z-0 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-4"
         >

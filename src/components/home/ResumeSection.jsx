@@ -102,8 +102,7 @@ export default function ResumeSection({ works, onAddWork }) {
         </div>
         {sorted.length > 0 && (
           <Link
-            to="/AllWorks"
-            onClick={() => window.dispatchEvent(new CustomEvent("sidebar-filter", { detail: { status: "En cours" } }))}
+            to="/AllWorks?status=En+cours"
             className="text-[11.5px] font-medium transition-opacity hover:opacity-70"
             style={{ color: "#D4AF37" }}
           >
@@ -121,8 +120,7 @@ export default function ResumeSection({ works, onAddWork }) {
             Piocher dans ta liste <strong>À voir</strong> ?
           </p>
           <Link
-            to="/AllWorks"
-            onClick={() => window.dispatchEvent(new CustomEvent("sidebar-filter", { detail: { status: "À voir" } }))}
+            to="/AllWorks?status=%C3%80+voir"
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-[10px] text-[12px] font-semibold transition-all hover:opacity-90"
             style={{ backgroundColor: "rgba(212,175,55,0.1)", color: "#B8942E", border: "1px solid rgba(212,175,55,0.25)" }}
           >

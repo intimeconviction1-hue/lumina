@@ -127,7 +127,7 @@ export default function WorkCard({ work, onEdit, onDelete, onStatusChange, onTog
           </div>
 
           {/* Overlay hover : description */}
-          <div className="absolute inset-0 flex flex-col justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-2.5 pointer-events-none"
+          <div className="work-card-preview absolute inset-0 flex flex-col justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-2.5 pointer-events-none"
             style={{ background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 50%, transparent 100%)" }}>
             {work.description_preview && (
               <p className="text-white text-[9.5px] leading-relaxed line-clamp-3 mb-8 px-0.5">
@@ -142,19 +142,21 @@ export default function WorkCard({ work, onEdit, onDelete, onStatusChange, onTog
           )}
 
           {/* Boutons d'action — au-dessus de tout, pointer-events actifs */}
-          <div className={`absolute bottom-2 left-2 right-2 flex items-center gap-1 transition-opacity duration-300 ${selectMode ? "hidden" : "opacity-0 group-hover:opacity-100"}`} style={{ zIndex: 10 }}>
+          <div hidden={selectMode} className={`work-card-actions absolute bottom-2 left-2 right-2 items-center gap-1 transition-opacity duration-300 ${selectMode ? "hidden" : "flex pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100"}`} style={{ zIndex: 10 }}>
             <button
               type="button"
               onClick={e => { e.stopPropagation(); onToggleFavorite?.(work); }}
               className="w-7 h-7 rounded-full flex items-center justify-center"
               style={{ backgroundColor: "rgba(0,0,0,0.7)", backdropFilter: "blur(6px)" }}
+              aria-label={work.favorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+              aria-pressed={Boolean(work.favorite)}
               title="Favoris">
               <Heart className={`w-3.5 h-3.5 ${work.favorite ? "fill-[#EC4899] text-[#EC4899]" : "text-white"}`} />
             </button>
             <button
               type="button"
               onClick={e => { e.stopPropagation(); onEdit?.(work); }}
-              className="w-7 h-7 rounded-full flex items-center justify-center"
+              className="work-card-hover-action w-7 h-7 rounded-full flex items-center justify-center"
               style={{ backgroundColor: "rgba(0,0,0,0.7)", backdropFilter: "blur(6px)" }}
               title="Modifier">
               <Pencil className="w-3.5 h-3.5 text-white" />
@@ -162,14 +164,14 @@ export default function WorkCard({ work, onEdit, onDelete, onStatusChange, onTog
             <button
               type="button"
               onClick={e => { e.stopPropagation(); onDelete?.(work); }}
-              className="w-7 h-7 rounded-full flex items-center justify-center"
+              className="work-card-hover-action w-7 h-7 rounded-full flex items-center justify-center"
               style={{ backgroundColor: "rgba(0,0,0,0.7)", backdropFilter: "blur(6px)" }}
               title="Supprimer">
               <Trash2 className="w-3.5 h-3.5 text-red-400" />
             </button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button type="button" className="w-7 h-7 rounded-full flex items-center justify-center ml-auto"
+                <button type="button" aria-label={`Options pour ${work.title}`} className="w-7 h-7 rounded-full flex items-center justify-center ml-auto"
                   style={{ backgroundColor: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)" }}>
                   <MoreVertical className="w-3.5 h-3.5 text-white" />
                 </button>
@@ -177,6 +179,9 @@ export default function WorkCard({ work, onEdit, onDelete, onStatusChange, onTog
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem onClick={goDetail}>
                   <Film className="w-3.5 h-3.5 mr-2" /> Ouvrir
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onEdit?.(work)}>
+                  <Pencil className="w-3.5 h-3.5 mr-2" /> Modifier
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuSub>
@@ -218,10 +223,9 @@ export default function WorkCard({ work, onEdit, onDelete, onStatusChange, onTog
           {/* Title */}
           <h3
             className="font-bold hover:opacity-70 transition-opacity cursor-pointer"
-            onClick={goDetail}
             style={{ color: "var(--text-primary)", fontSize: "16px", lineHeight: "1.35", wordBreak: "break-word" }}
           >
-            {work.title}
+            <button type="button" onClick={goDetail} className="block w-full text-left">{work.title}</button>
           </h3>
 
           {/* Creator */}

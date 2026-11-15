@@ -53,7 +53,7 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
   const { toast } = useToast();
   const { updateWork, removeWork } = useWorkMutations();
   const [showMoreFilters, setShowMoreFilters] = useState(false);
-  const [activeTab, setActiveTab] = useState("");
+  const activeTab = TYPE_TABS.some(tab => tab.key === filters.type) ? filters.type : "";
 
   // Sélection multiple
   const [selectMode, setSelectMode] = useState(false);
@@ -161,10 +161,7 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
   const filteredWorks = useMemo(() => {
     let result = [...works];
 
-    // Onglet actif = un seul type (Films / Séries / Livres). Sinon, type du panneau.
-    if (activeTab) {
-      result = result.filter(w => w.type === activeTab);
-    } else if (filters.type) {
+    if (filters.type) {
       result = result.filter(w => w.type === filters.type);
     }
 
@@ -228,7 +225,7 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
     else if (sort === "title") result.sort((a, b) => a.title?.localeCompare(b.title, "fr"));
 
     return result;
-  }, [works, searchQuery, filters, activeTab]);
+  }, [works, searchQuery, filters]);
 
   // Optimistic + rollback + toast d'erreur sont gérés par le hook useWorkMutations.
   const handleDelete = (work) => removeWork(work.id);
@@ -353,7 +350,7 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
       </div>
 
       {/* Onglets principaux Films / Livres / Tout */}
-      <div className="flex items-center gap-2 mb-4 overflow-x-auto flex-nowrap no-scrollbar" style={{ scrollbarWidth: "none" }}>
+      <div className="flex items-center gap-2 mb-4 flex-wrap" style={{ scrollbarWidth: "none" }}>
         {TYPE_TABS.map(tab => {
           const isActive = activeTab === tab.key;
           const count = tab.key === "" ? works.length : tabCounts[tab.key] || 0;
@@ -361,11 +358,12 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
           return (
             <button
               key={tab.key}
+              type="button"
+              aria-pressed={isActive}
               onClick={() => {
-                setActiveTab(tab.key);
-                if (tab.key && onFiltersChange && filters.type) onFiltersChange({ ...filters, type: "" });
+                onFiltersChange?.({ ...filters, type: tab.key });
               }}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-[12px] text-[13.5px] font-semibold transition-all"
+              className="flex min-h-11 items-center gap-2 px-3 py-2.5 rounded-[12px] text-[13.5px] font-semibold transition-all"
               style={{
                 backgroundColor: isActive ? (tab.key === "" ? "rgba(201,168,76,0.12)" : `${color}15`) : "var(--card-bg)",
                 color: isActive ? (tab.key === "" ? "#C9A84C" : color) : "var(--text-secondary)",
@@ -391,14 +389,14 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
 
       {/* Barre de filtres rapides */}
       <div
-        className="-mx-3 px-3 lg:-mx-8 lg:px-8 pb-2 pt-2 mb-3 sticky top-[52px] lg:top-[64px] z-10"
+        className="-mx-3 px-3 lg:-mx-8 lg:px-8 pb-2 pt-2 mb-3 lg:sticky lg:top-[73px] z-10"
         style={{
           backgroundColor: "var(--bg)",
           borderBottom: "1px solid var(--border)",
         }}
       >
-        {/* Statuts — scroll horizontal sur mobile */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 no-scrollbar" style={{ scrollbarWidth: "none" }}>
+        {/* Statuts */}
+        <div className="flex flex-wrap items-center gap-1.5 pb-1.5" style={{ scrollbarWidth: "none" }}>
           {(activeTab === "livre"
             ? ["Envie de lire", "En cours", "Lu"]
             : (activeTab === "film" || activeTab === "série")
@@ -422,8 +420,8 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
           })}
         </div>
 
-        {/* Types — scroll horizontal sur mobile */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 no-scrollbar" style={{ scrollbarWidth: "none" }}>
+        {/* Types */}
+        <div className="flex flex-wrap items-center gap-1.5 pb-1.5" style={{ scrollbarWidth: "none" }}>
           {(activeTab === "" ? ALL_TYPES : []).map(t => {
             const active = filters.type === t;
             return (
@@ -437,8 +435,10 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
           })}
           {/* Bouton Plateformes inline */}
           <button
+            type="button"
+            aria-expanded={showMoreFilters}
             onClick={() => setShowMoreFilters(v => !v)}
-            className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-[10px] text-[11px] font-semibold border transition-all"
+            className="flex-shrink-0 flex items-center gap-1 min-h-10 px-3 py-1.5 rounded-[10px] text-[11px] font-semibold border transition-all"
             style={{
               borderColor: showMoreFilters ? "#8B5CF6" : "var(--border)",
               backgroundColor: showMoreFilters ? "rgba(139,92,246,0.1)" : "var(--card-bg)",
@@ -450,12 +450,12 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
 
         {/* Plateformes (expandable) — scroll horizontal */}
         {showMoreFilters && (
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 no-scrollbar" style={{ scrollbarWidth: "none" }}>
+          <div className="flex flex-wrap items-center gap-1.5 pb-1.5" style={{ scrollbarWidth: "none" }}>
             {QUICK_PLATFORMS.map(p => {
               const active = (filters.platform || []).includes(p);
               return (
-                <button key={p} onClick={() => togglePlatform(p)}
-                  className="flex-shrink-0 px-3 py-1.5 rounded-[10px] text-[11px] font-semibold border transition-all"
+                <button key={p} type="button" aria-pressed={active} onClick={() => togglePlatform(p)}
+                  className="flex-shrink-0 min-h-10 px-3 py-1.5 rounded-[10px] text-[11px] font-semibold border transition-all"
                   style={{
                     borderColor: active ? "#2AA6A0" : "var(--border)",
                     backgroundColor: active ? "rgba(42,166,160,0.15)" : "var(--card-bg)",

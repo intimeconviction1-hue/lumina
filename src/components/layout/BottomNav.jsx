@@ -6,7 +6,7 @@ const navItems = [
   { label: "Bibliothèque",icon: LayoutGrid,  path: "/AllWorks",                  color: "#E56B3A" },
   { label: "Envie",       icon: Bookmark,    path: "/WantToWatch",               color: "#EC4899" },
   { label: "En cours",    icon: Clock,       path: "/AllWorks?status=En+cours",  color: "#D4AF37" },
-  { label: "Visionné",    icon: Eye,         path: "/AllWorks?status=Visionn%C3%A9", color: "#2AA6A0" },
+  { label: "Vus",    icon: Eye,         path: "/AllWorks?status=Visionn%C3%A9", color: "#2AA6A0" },
   { label: "Cadeaux", icon: Gift, path: "/Gifts" },
 ];
 
@@ -42,7 +42,6 @@ export default function BottomNav({ onNavigate }) {
             aria-current={active ? "page" : undefined}
             onClick={event => {
               if (event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) {
-                window.scrollTo(0, 0);
                 onNavigate();
               }
             }}
@@ -50,7 +49,6 @@ export default function BottomNav({ onNavigate }) {
             style={{
               color: active ? accentColor : "var(--text-muted)",
               userSelect: "none",
-              WebkitTapHighlightColor: "transparent",
             }}
           >
             <div className="flex flex-col items-center gap-0.5">
@@ -66,7 +64,7 @@ export default function BottomNav({ onNavigate }) {
                 />
               </div>
               <span style={{
-                fontSize: "9px",
+                fontSize: "clamp(9px, 2.7vw, 11px)",
                 fontWeight: active ? 700 : 500,
                 letterSpacing: "0.01em",
                 color: active ? accentColor : "var(--text-muted)",

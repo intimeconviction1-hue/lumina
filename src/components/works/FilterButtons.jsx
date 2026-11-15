@@ -9,8 +9,10 @@ export function StatusButton({ status, active, onClick, label }) {
   const color = STATUS_COLORS[status] || "#94A3B8";
   return (
     <button
+      type="button"
+      aria-pressed={active}
       onClick={onClick}
-      className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-[10px] text-[11px] font-semibold transition-all whitespace-nowrap"
+      className="flex-shrink-0 flex items-center gap-1.5 min-h-10 px-3 py-1.5 rounded-[10px] text-[11px] font-semibold transition-all whitespace-nowrap"
       style={{
         borderColor: active ? color : "var(--border)",
         border: `1.5px solid ${active ? color : "var(--border)"}`,
@@ -28,8 +30,10 @@ export function TypeButton({ type, active, onClick }) {
   const color = TYPE_COLORS[type] || "#9FA3AD";
   return (
     <button
+      type="button"
+      aria-pressed={active}
       onClick={onClick}
-      className="flex-shrink-0 px-3 py-1.5 rounded-[10px] text-[11px] font-semibold transition-all capitalize whitespace-nowrap"
+      className="flex-shrink-0 min-h-10 px-3 py-1.5 rounded-[10px] text-[11px] font-semibold transition-all capitalize whitespace-nowrap"
       style={{
         border: `1.5px solid ${active ? color : "var(--border)"}`,
         backgroundColor: active ? `${color}18` : "var(--card-bg)",

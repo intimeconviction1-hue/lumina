@@ -1,11 +1,11 @@
 import React from "react";
-import { SlidersHorizontal, Plus, User, BookMarked, Menu, X } from "lucide-react";
+import { SlidersHorizontal, Plus, User, Menu, X } from "lucide-react";
 import SearchBar from "./SearchBar";
 
-export default function Header({ searchQuery, onSearchChange, onOpenFilters, onAddWork, onOpenSidebar, sidebarOpen, searchRef, works = [] }) {
+export default function Header({ searchQuery, onSearchChange, onOpenFilters, onAddWork, onOpenSidebar, sidebarOpen, menuRef, searchRef, works = [] }) {
   return (
     <header
-      className="sticky top-0 z-50 flex items-center gap-2 px-4 py-2.5 lg:px-6 lg:py-3.5"
+      className="sticky top-0 z-30 flex items-center gap-2 px-2 py-2 sm:px-4 lg:px-6 lg:py-3.5"
       style={{
         backgroundColor: "var(--surface)",
         borderBottom: "1px solid var(--border)",
@@ -14,21 +14,17 @@ export default function Header({ searchQuery, onSearchChange, onOpenFilters, onA
     >
       {/* Menu (mobile only) — seul point d'accès à la Sidebar (Lus, Pas sorti, Audit, Tags, mode sombre…) sur petit écran. */}
       <button
+        ref={menuRef}
+        type="button"
         onClick={onOpenSidebar}
-        className="lg:hidden flex-shrink-0 w-8 h-8 rounded-[10px] flex items-center justify-center"
+        aria-expanded={sidebarOpen}
+        aria-controls={sidebarOpen ? "mobile-navigation" : undefined}
+        className="lg:hidden flex-shrink-0 w-11 h-11 touch-manipulation rounded-[10px] flex items-center justify-center"
         style={{ color: "var(--text-secondary)", backgroundColor: "var(--bg)", border: "1px solid var(--border)" }}
         aria-label={sidebarOpen ? "Fermer le menu" : "Ouvrir le menu"}
       >
         {sidebarOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
       </button>
-
-      {/* Logo zone (mobile only) */}
-      <div className="flex items-center gap-2.5 lg:hidden flex-shrink-0">
-        <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: "#E56B3A" }}>
-          <BookMarked className="w-3.5 h-3.5 text-white" />
-        </div>
-        <span className="text-[13px] font-bold hidden sm:inline" style={{ color: "var(--text-primary)" }}>Ma Culture</span>
-      </div>
 
       {/* Search with autocomplete */}
       <SearchBar
@@ -41,8 +37,10 @@ export default function Header({ searchQuery, onSearchChange, onOpenFilters, onA
       {/* Right utilities */}
       <div className="flex items-center gap-2 flex-shrink-0">
         <button
+          type="button"
+          aria-label="Filtrer la bibliothèque"
           onClick={onOpenFilters}
-          className="flex items-center gap-1.5 px-3 py-2.5 text-[12.5px] font-medium transition-all border"
+          className="flex items-center gap-1.5 justify-center min-h-11 min-w-11 touch-manipulation lg:px-3 py-2.5 text-[12.5px] font-medium transition-all border"
           style={{
             borderRadius: "var(--radius-btn)",
             borderColor: "var(--border)",
@@ -53,12 +51,14 @@ export default function Header({ searchQuery, onSearchChange, onOpenFilters, onA
           onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text-secondary)"; e.currentTarget.style.backgroundColor = "var(--surface)"; }}
         >
           <SlidersHorizontal className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Filtrer</span>
+          <span className="hidden lg:inline">Filtrer</span>
         </button>
 
         <button
+          type="button"
+          aria-label="Ajouter une œuvre"
           onClick={onAddWork}
-          className="flex items-center gap-1.5 px-4 py-2.5 text-[12.5px] font-semibold text-white transition-all"
+          className="flex items-center gap-1.5 justify-center min-h-11 min-w-11 touch-manipulation lg:px-4 py-2.5 text-[12.5px] font-semibold text-white transition-all"
           style={{
             borderRadius: "var(--radius-btn)",
             backgroundColor: "#E56B3A",
