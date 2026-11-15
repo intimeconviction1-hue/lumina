@@ -1,16 +1,18 @@
 import React, { useMemo, useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import WorksGrid from "../components/works/WorksGrid";
 import WorksLoadError from "@/components/works/WorksLoadError";
 import { useWorks, WORKS_KEY } from "@/hooks/useWorks";
 import { worksApi } from "@/api/works";
 import { useWorkMutations } from "@/hooks/useWorkMutations";
 import { StatusButton, TypeButton } from "../components/works/FilterButtons";
-import { X, CheckSquare, Square, Users } from "lucide-react";
+import { X, CheckSquare, Square, Users, SlidersHorizontal, Flame } from "lucide-react";
 import BulkActionBar from "../components/works/BulkActionBar";
 import { useToast } from "@/components/ui/use-toast";
-import { STATUS_CONFIG, TYPE_COLORS, effectiveStatus, matchesStatusFilter, STATUS_ALIASES, statusPatch } from "@/lib/statusActions";
+import { STATUS_CONFIG, TYPE_COLORS, statusPatch } from "@/lib/statusActions";
+
+import { EMPTY_FILTERS, SORT_OPTIONS, defaultSort, hasPriority } from "@/lib/catalogue";
 
 const STATUS_COLORS = Object.fromEntries(
   Object.entries(STATUS_CONFIG).map(([k, v]) => [k, v.color])
@@ -48,7 +50,7 @@ const TYPE_TABS = [
   { key: "livre", label: "Livres", emoji: "📚", color: "#6366F1" },
 ];
 
-export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChange, onEditWork }) {
+export default function AllWorks({ searchQuery = "", matchingWorks = [], filters = {}, onFiltersChange, onEditWork, onClearSearch, onOpenFilters }) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { updateWork, removeWork } = useWorkMutations();
@@ -76,29 +78,6 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
     setSelectedIds(new Set(filteredWorks.map(w => w.id)));
   };
 
-  // Consume URL params whenever location.search changes (sidebar nav, redirects from InProgress/Watched/etc.)
-  const routerLocation = useLocation();
-  React.useEffect(() => {
-    const params = new URLSearchParams(routerLocation.search);
-    const urlStatus   = params.get("status");
-    const urlGenre    = params.get("genre");
-    const urlPlatform = params.get("platform");
-    const urlType     = params.get("type");
-    const urlTag      = params.get("tag");
-    const urlPriority = params.get("priority");
-    if (onFiltersChange) {
-      const base = { type: "", status: [], genre: [], platform: [], tags: [], year_min: "", year_max: "", favorite: false, min_rating: "", priority: "", sort: "-created_date" };
-      // Normalise les statuts legacy (ex. "En veille" → "À voir") via la source unique.
-      if (urlStatus)   base.status   = [STATUS_ALIASES[urlStatus] || urlStatus];
-      if (urlGenre)    base.genre    = [urlGenre];
-      if (urlPlatform) base.platform = [urlPlatform];
-      if (urlType)     base.type     = urlType;
-      if (urlTag)      base.tags     = [urlTag];
-      if (urlPriority) base.priority = urlPriority;
-      onFiltersChange(base);
-    }
-  }, [routerLocation.key, routerLocation.search, onFiltersChange]);
-
   const toggleStatus = (s) => {
     if (!onFiltersChange) return;
     const arr = filters.status || [];
@@ -125,10 +104,7 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
     else if (key === "year")     onFiltersChange({ ...filters, year_min: "", year_max: "" });
     else if (key === "priority") onFiltersChange({ ...filters, priority: "" });
   };
-  const clearAll = () => {
-    if (!onFiltersChange) return;
-    onFiltersChange({ type: "", status: [], genre: [], platform: [], tags: [], year_min: "", year_max: "", favorite: false, min_rating: "", priority: "", sort: "-created_date" });
-  };
+  const clearAll = () => onFiltersChange?.({ ...EMPTY_FILTERS, sort: defaultSort(searchQuery) });
 
   // Build active filter badges
   const activeFilters = useMemo(() => {
@@ -157,75 +133,18 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
     livre: works.filter(w => w.type === "livre").length,
   }), [works]);
 
-  // Apply tab filter on top of existing filters
   const filteredWorks = useMemo(() => {
-    let result = [...works];
-
-    if (filters.type) {
-      result = result.filter(w => w.type === filters.type);
-    }
-
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      const qTag = q.replace(/^#/, "");
-      result = result.filter(w =>
-        w.title?.toLowerCase().includes(q) ||
-        w.creator?.toLowerCase().includes(q) ||
-        w.creator_name?.toLowerCase().includes(q) ||
-        w.genre?.some(g => g.toLowerCase().includes(q)) ||
-        w.tags?.some(t => t.toLowerCase().includes(qTag))
-      );
-    }
-
-    // Status: statut canonique unique (alias legacy + vocabulaire livre),
-    // centralisé dans matchesStatusFilter (statusActions.js).
-    if (filters.status?.length > 0) {
-      result = result.filter(w => matchesStatusFilter(w, filters.status));
-    }
-
-    // Priorité (urgent / normal / plus tard) — on exclut les œuvres déjà
-    // terminées : une priorité de visionnage ne concerne que ce qui reste à consommer.
-    if (filters.priority) {
-      result = result.filter(w => {
-        if ((w.priority || "normal") !== filters.priority) return false;
-        const s = effectiveStatus(w);
-        return s !== "Visionné" && s !== "Lu";
-      });
-    }
-
-    // Genre: multi-select (OR logic within genre, AND between sections)
-    if (filters.genre?.length > 0) {
-      result = result.filter(w => filters.genre.some(g => (w.genre || []).includes(g)));
-    }
-
-    // Platform: multi-select
-    if (filters.platform?.length > 0) {
-      result = result.filter(w => {
-        const wPlat = Array.isArray(w.platform) ? w.platform : (w.platform ? [w.platform] : []);
-        return filters.platform.some(p => wPlat.includes(p));
-      });
-    }
-
-    // Tags: multi-select
-    if (filters.tags?.length > 0) {
-      result = result.filter(w => filters.tags.some(t => (w.tags || []).includes(t)));
-    }
-
-    // Year range
-    if (filters.year_min) result = result.filter(w => (w.year || w.released_year || 0) >= Number(filters.year_min));
-    if (filters.year_max) result = result.filter(w => (w.year || w.released_year || 9999) <= Number(filters.year_max));
-
-    if (filters.favorite) result = result.filter(w => w.favorite);
-    if (filters.min_rating) result = result.filter(w => (w.rating || 0) >= filters.min_rating);
-
+    const result = [...matchingWorks];
     const sort = filters.sort || "-created_date";
-    if (sort === "-rating") result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    if (sort === "-created_date") result.sort((a, b) => String(b.created_date || "").localeCompare(String(a.created_date || "")));
+    else if (sort === "urgent") result.sort((a, b) => Number(hasPriority(b, "urgent")) - Number(hasPriority(a, "urgent")));
+    else if (sort === "-rating") result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
     else if (sort === "-year") result.sort((a, b) => (b.year || b.released_year || 0) - (a.year || a.released_year || 0));
     else if (sort === "year") result.sort((a, b) => (a.year || a.released_year || 9999) - (b.year || b.released_year || 9999));
     else if (sort === "title") result.sort((a, b) => a.title?.localeCompare(b.title, "fr"));
 
     return result;
-  }, [works, searchQuery, filters]);
+  }, [matchingWorks, filters.sort]);
 
   // Optimistic + rollback + toast d'erreur sont gérés par le hook useWorkMutations.
   const handleDelete = (work) => removeWork(work.id);
@@ -389,12 +308,37 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
 
       {/* Barre de filtres rapides */}
       <div
-        className="-mx-3 px-3 lg:-mx-8 lg:px-8 pb-2 pt-2 mb-3 lg:sticky lg:top-[73px] z-10"
+        className="-mx-3 px-3 lg:-mx-8 lg:px-8 pb-2 pt-2 mb-3"
         style={{
           backgroundColor: "var(--bg)",
           borderBottom: "1px solid var(--border)",
         }}
       >
+        <div className="mb-2 flex flex-wrap items-center gap-2">
+          <button type="button" aria-pressed={filters.priority === "urgent"}
+            onClick={() => onFiltersChange?.({ ...filters, priority: filters.priority === "urgent" ? "" : "urgent" })}
+            className="inline-flex min-h-11 items-center gap-2 rounded-lg border px-3 text-sm font-semibold"
+            style={{
+              borderColor: filters.priority === "urgent" ? "#ef4444" : "var(--border)",
+              background: filters.priority === "urgent" ? "#ef444420" : "var(--card-bg)",
+            }}>
+            <Flame className="h-4 w-4 text-red-500" /> Urgent
+          </button>
+          <button type="button" onClick={onOpenFilters}
+            className="inline-flex min-h-11 items-center gap-2 rounded-lg border px-3 text-sm font-semibold"
+            style={{ borderColor: "var(--border)", background: "var(--card-bg)" }}>
+            <SlidersHorizontal className="h-4 w-4" /> Filtres{activeFilters.length ? ` (${activeFilters.length})` : ""}
+          </button>
+          <label className="flex min-h-11 min-w-0 items-center gap-2 text-sm">
+            Trier
+            <select aria-label="Trier" value={filters.sort || EMPTY_FILTERS.sort}
+              onChange={event => onFiltersChange?.({ ...filters, sort: event.target.value })}
+              className="min-h-11 min-w-0 max-w-full rounded-lg border px-2 text-base sm:text-sm"
+              style={{ borderColor: "var(--border)", background: "var(--card-bg)" }}>
+              {SORT_OPTIONS.map(({ value, label }) => <option key={value} value={value}>{label}</option>)}
+            </select>
+          </label>
+        </div>
         {/* Statuts */}
         <div className="flex flex-wrap items-center gap-1.5 pb-1.5" style={{ scrollbarWidth: "none" }}>
           {(activeTab === "livre"
@@ -468,23 +412,27 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
           </div>
         )}
 
-        {/* Filtres actifs — scroll horizontal sur mobile */}
+        {searchQuery.trim() && (
+          <p className="mt-2 text-sm break-words" role="status" style={{ color: "var(--text-secondary)" }}>
+            {isLoading ? "Recherche…" : `${filteredWorks.length} résultat${filteredWorks.length !== 1 ? "s" : ""}`} pour « {searchQuery.trim()} »
+          </p>
+        )}
+
+        {/* Filtres actifs */}
         {activeFilters.length > 0 && (
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 pt-1 border-t no-scrollbar" style={{ borderColor: "var(--border-subtle)", scrollbarWidth: "none" }}>
-            {activeFilters.map((f, i) => (
-              <span key={i}
-                className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold"
+          <div className="mt-2 flex flex-wrap items-center gap-1.5 pb-1">
+            {activeFilters.map(f => (
+              <button key={`${f.key}:${f.val}`} type="button" onClick={() => removeFilter(f.key, f.val)}
+                aria-label={`Retirer le filtre ${f.label}`}
+                className="inline-flex min-h-10 max-w-full items-center gap-1.5 break-all rounded-full px-3 py-1 text-[12px] font-semibold"
                 style={{ backgroundColor: `${f.color}15`, color: f.color, border: `1px solid ${f.color}35` }}>
-                {f.label}
-                <button onClick={() => removeFilter(f.key, f.val)} className="hover:opacity-70 transition-opacity ml-0.5">
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
+                {f.label}<X className="h-3.5 w-3.5 shrink-0" />
+              </button>
             ))}
             <button onClick={clearAll}
-              className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold border transition-all"
+              className="flex min-h-10 items-center gap-1 px-3 rounded-full text-[11px] font-semibold border transition-all"
               style={{ borderColor: "rgba(239,68,68,0.3)", color: "#EF4444", backgroundColor: "rgba(239,68,68,0.06)" }}>
-              <X className="w-3 h-3" /> Tout effacer
+              <X className="w-3 h-3" /> Effacer les filtres
             </button>
           </div>
         )}
@@ -504,15 +452,21 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
             Aucun résultat
           </p>
           <p className="text-[13px] mb-5 max-w-xs" style={{ color: "var(--text-muted)" }}>
-            Aucune œuvre ne correspond à vos filtres actuels. Essayez d'élargir votre recherche.
+            {activeFilters.length ? "Retirez un filtre pour élargir les résultats." : searchQuery.trim()
+              ? "Essayez un autre titre, un nom ou un mot-clé." : "Les œuvres ajoutées apparaîtront ici."}
           </p>
-          <button
-            onClick={clearAll}
-            className="px-4 py-2.5 rounded-[12px] text-[13px] font-semibold transition-all hover:opacity-90"
-            style={{ backgroundColor: "rgba(229,107,58,0.1)", color: "#E56B3A", border: "1.5px solid rgba(229,107,58,0.3)" }}
-          >
-            Effacer tous les filtres
-          </button>
+          <div className="flex flex-wrap justify-center gap-2">
+            {activeFilters.length > 0 && (
+              <button type="button" onClick={clearAll} className="min-h-11 rounded-xl border px-4 text-sm font-semibold">
+                Effacer les filtres
+              </button>
+            )}
+            {searchQuery.trim() && (
+              <button type="button" onClick={onClearSearch} className="min-h-11 rounded-xl border px-4 text-sm font-semibold">
+                Effacer la recherche
+              </button>
+            )}
+          </div>
         </div>
       ) : (
         <WorksGrid
@@ -527,7 +481,7 @@ export default function AllWorks({ searchQuery = "", filters = {}, onFiltersChan
             else if (key === "platform") onFiltersChange({ ...filters, platform: [...(filters.platform || []), val].filter((v, i, a) => a.indexOf(v) === i) });
             else if (key === "tag") onFiltersChange({ ...filters, tags: [...(filters.tags || []), val].filter((v, i, a) => a.indexOf(v) === i) });
           }}
-          resultScope={JSON.stringify([routerLocation.key, searchQuery, filters, activeTab])}
+          resultScope={JSON.stringify([searchQuery, filters])}
           selectMode={selectMode}
           selectedIds={selectedIds}
           onToggleSelect={toggleSelect}

@@ -10,7 +10,7 @@ const navItems = [
   { label: "Cadeaux", icon: Gift, path: "/Gifts" },
 ];
 
-export default function BottomNav({ onNavigate }) {
+export default function BottomNav() {
   const { pathname, search } = useLocation();
   const currentStatus = new URLSearchParams(search).get("status");
 
@@ -40,11 +40,6 @@ export default function BottomNav({ onNavigate }) {
             key={item.path}
             to={item.path}
             aria-current={active ? "page" : undefined}
-            onClick={event => {
-              if (event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) {
-                onNavigate();
-              }
-            }}
             className="flex min-h-14 min-w-0 flex-1 touch-manipulation items-center justify-center py-1"
             style={{
               color: active ? accentColor : "var(--text-muted)",

@@ -30,7 +30,7 @@ function MetaItem({ icon: IconComp, label, value }) {
   );
 }
 
-export default function WorkDetail({ onEditWork }) {
+export default function WorkDetail({ onEditWork, onBack }) {
   const { updateWork, removeWork } = useWorkMutations();
   const navigate = useNavigate();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -108,9 +108,9 @@ export default function WorkDetail({ onEditWork }) {
   return (
     <div className="max-w-5xl mx-auto">
       {/* Doublon du bouton retour flottant du Layout sur mobile (lg:hidden côté Layout) — visible seulement en desktop ici. */}
-      <Link to="/AllWorks" className="hidden lg:inline-flex items-center gap-2 text-[13px] font-medium mb-7 transition-opacity hover:opacity-70" style={{ color: "var(--text-secondary)" }}>
-        <ArrowLeft className="w-3.5 h-3.5" /> Retour à la bibliothèque
-      </Link>
+      <button type="button" onClick={onBack} className="hidden lg:inline-flex items-center gap-2 text-[13px] font-medium mb-7 transition-opacity hover:opacity-70" style={{ color: "var(--text-secondary)" }}>
+        <ArrowLeft className="w-3.5 h-3.5" /> Retour
+      </button>
 
       <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
         <div className="overflow-hidden" style={{ borderRadius: "var(--radius-modal)", border: "1px solid var(--border)", boxShadow: "var(--shadow-elevated)", backgroundColor: "var(--card-bg)" }}>

@@ -1,3 +1,4 @@
+import { filterCatalogue, searchCatalogue, readCatalogueFilters, writeCatalogueFilters } from "@/lib/catalogue";
 import React, { useState, useEffect, useLayoutEffect, useRef, Suspense } from "react";
 import Sidebar from "./components/layout/Sidebar";
 import Header from "./components/layout/Header";
@@ -14,11 +15,6 @@ import { useWorks } from "@/hooks/useWorks";
 import { useWorkMutations } from "@/hooks/useWorkMutations";
 
 const CHILD_SCREENS = ["WorkDetail"]; // pages that get a back button on mobile
-const EMPTY_FILTERS = {
-  type: "", status: [], genre: [], platform: [], tags: [], year_min: "", year_max: "",
-  favorite: false, min_rating: "", priority: "", sort: "-created_date",
-};
-
 export default function Layout({ children, currentPageName }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -26,29 +22,43 @@ export default function Layout({ children, currentPageName }) {
   const menuRef = useRef(null);
 
   useLayoutEffect(() => {
-    if (navigationType !== "POP") window.scrollTo(0, 0);
-  }, [location.key, navigationType]);
+    if (navigationType === "PUSH") window.scrollTo(0, 0);
+  }, [location.pathname, location.key, navigationType]);
   const [darkMode, setDarkMode] = useState(() => {
     const saved = localStorage.getItem("cg-dark-mode");
     // Par défaut : mode clair. Dark mode uniquement si explicitement activé.
     return saved === "true";
   });
-  const [searchQuery, setSearchQuery] = useState("");
+  const inCatalogue = currentPageName === "AllWorks";
+  const params = React.useMemo(() => new URLSearchParams(inCatalogue ? location.search : ""), [inCatalogue, location.search]);
+  const searchQuery = params.get("q") || "";
+  const filters = React.useMemo(() => readCatalogueFilters(params), [params]);
 
-  const handleSearchChange = (q) => {
-    setSearchQuery(q);
-    // Naviguer vers AllWorks si on n'y est pas déjà
-    if (q && currentPageName !== "AllWorks") {
-      navigate("/AllWorks");
-    }
+  const openCatalogue = (nextParams, replace = inCatalogue) => {
+    const query = nextParams.toString();
+    if (inCatalogue && query === params.toString()) return;
+    navigate({ pathname: "/AllWorks", search: query }, { replace });
   };
+
+  const handleSearchChange = (value) => {
+    const updated = new URLSearchParams(params);
+    if (value) updated.set("q", value);
+    else updated.delete("q");
+    openCatalogue(updated);
+  };
+
+  const setFilters = (nextFilters) => openCatalogue(writeCatalogueFilters(params, nextFilters));
+  const openFilters = () => {
+    if (!inCatalogue) openCatalogue(new URLSearchParams());
+    setShowFilters(true);
+  };
+  const goBack = () => window.history.state?.idx > 0 ? navigate(-1) : navigate("/AllWorks", { replace: true });
   const [showFilters, setShowFilters] = useState(false);
   const [showAddWork, setShowAddWork] = useState(false);
   const [editingWork, setEditingWork] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const searchRef = useRef(null);
   const isChildScreen = CHILD_SCREENS.includes(currentPageName);
-  const [filters, setFilters] = useState(EMPTY_FILTERS);
 
 
   const { update, create } = useWorkMutations();
@@ -105,8 +115,9 @@ export default function Layout({ children, currentPageName }) {
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
-  const { data: works = [] } = useWorks();
-  const worksAll = works;
+  const { data: works = [], isSuccess } = useWorks();
+  const matchingWorks = React.useMemo(() =>
+    searchCatalogue(filterCatalogue(works, filters), searchQuery), [works, filters, searchQuery]);
 
   const allTags = React.useMemo(() => {
     const s = new Set();
@@ -131,6 +142,10 @@ export default function Layout({ children, currentPageName }) {
 
   const childProps = {
     searchQuery,
+    matchingWorks,
+    onBack: goBack,
+    onOpenFilters: openFilters,
+    onClearSearch: () => handleSearchChange(""),
     filters,
     onFiltersChange: setFilters,
     onEditWork: openEdit,
@@ -157,10 +172,7 @@ export default function Layout({ children, currentPageName }) {
             }}
           >
             <Dialog.Title className="sr-only">Navigation Lumina</Dialog.Title>
-            <Sidebar currentPage={currentPageName} darkMode={darkMode} onToggleDark={() => setDarkMode(d => !d)} onNavigate={() => {
-              setSearchQuery("");
-              setSidebarOpen(false);
-            }} />
+            <Sidebar currentPage={currentPageName} darkMode={darkMode} onToggleDark={() => setDarkMode(d => !d)} onNavigate={() => setSidebarOpen(false)} />
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
@@ -171,7 +183,7 @@ export default function Layout({ children, currentPageName }) {
         {isChildScreen ? (
           <div className="lg:hidden flex items-center px-4 pt-4 pb-0">
             <button
-              onClick={() => window.history.state?.idx > 0 ? navigate(-1) : navigate("/AllWorks", { replace: true })}
+              onClick={goBack}
               className="flex items-center gap-2 min-h-11 px-3 py-2 rounded-[10px] text-[13px] font-medium"
               style={{ color: "var(--text-secondary)", backgroundColor: "var(--surface)", border: "1px solid var(--border)", userSelect: "none" }}
             >
@@ -184,20 +196,18 @@ export default function Layout({ children, currentPageName }) {
         <Header
           searchQuery={searchQuery}
           onSearchChange={handleSearchChange}
-          onOpenFilters={() => {
-            if (currentPageName !== "AllWorks") {
-              setFilters(EMPTY_FILTERS);
-              setSearchQuery("");
-              navigate("/AllWorks");
-            }
-            setShowFilters(true);
+          onOpenFilters={openFilters}
+          onSelectType={type => {
+            const updated = writeCatalogueFilters(params, { ...filters, type });
+            updated.delete("q");
+            openCatalogue(updated);
           }}
           onAddWork={openAdd}
           onOpenSidebar={() => setSidebarOpen(v => !v)}
           sidebarOpen={sidebarOpen}
           menuRef={menuRef}
           searchRef={searchRef}
-          works={works}
+          works={matchingWorks}
         />
 
         <main className="lumina-main min-w-0 flex-1 px-3 py-4 lg:px-8 lg:py-8">
@@ -213,7 +223,7 @@ export default function Layout({ children, currentPageName }) {
       </div>
 
       {/* Mobile bottom navigation */}
-      <BottomNav onNavigate={() => setSearchQuery("")} />
+      <BottomNav />
 
       <WorkFormModal
         open={showAddWork}
@@ -228,7 +238,9 @@ export default function Layout({ children, currentPageName }) {
         onClose={() => setShowFilters(false)}
         filters={filters}
         onFiltersChange={setFilters}
-        works={worksAll}
+        works={works}
+        searchQuery={searchQuery}
+        showResultCount={isSuccess}
       />
     </div>
   );
