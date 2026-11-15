@@ -40,11 +40,11 @@ function CatalogueError({ query }) {
   );
 }
 
-function StudyWorks({ person, catalogue, savedStudy }) {
+function StudyWorks({ person, catalogue, savedStudy, registered }) {
   const queryClient = useQueryClient();
   const { data: works = [] } = useWorks();
   const { create } = useWorkMutations();
-  const [onlySaved, setOnlySaved] = useState(savedStudy);
+  const [viewSaved, setOnlySaved] = useState(null);
   const [role, setRole] = useState("all");
   const [filter, setFilter] = useState("");
   const [selected, setSelected] = useState([]);
@@ -74,6 +74,7 @@ function StudyWorks({ person, catalogue, savedStudy }) {
   const scoped = person.works.filter(work => role === "all" || work.roles.includes(role));
   const added = new Set(addedIds);
   const known = work => Boolean(linked.get(work.id) || added.has(work.id));
+  const onlySaved = viewSaved ?? (savedStudy && person.works.some(known));
   const visible = scoped.filter(work => (!onlySaved || known(work)) && normalize(work.title).includes(normalize(filter)));
   const candidates = scoped.filter(work => !known(work));
   const visibleCandidates = visible.filter(work => !known(work));
@@ -88,6 +89,10 @@ function StudyWorks({ person, catalogue, savedStudy }) {
       queryClient.invalidateQueries({ queryKey: studiesKey });
       setAddedIds(current => [...new Set([...current, ...ids])]);
       setSelected(current => current.filter(id => !ids.includes(id)));
+      if (!ids.length) {
+        setMessage("Étude enregistrée.");
+        return;
+      }
       setMessage(`${added} œuvre${added === 1 ? " ajoutée" : "s ajoutées"}${skipped ? ` · ${skipped} déjà dans la bibliothèque` : ""}.`);
     } catch (error) {
       setMessage(error.message || "L’ajout a échoué.");
@@ -108,6 +113,11 @@ function StudyWorks({ person, catalogue, savedStudy }) {
             </p>
           </div>
         </div>
+        {!registered && (
+          <Button type="button" variant="outline" className="mt-4 min-h-11" disabled={create.isPending} onClick={() => add([])}>
+            Enregistrer l’étude
+          </Button>
+        )}
         {person.bio && (
           <details className="mt-4 text-sm" style={secondary}>
             <summary className="cursor-pointer font-semibold">Biographie</summary>
@@ -304,7 +314,7 @@ export default function PersonStudies() {
           </ul>
         ) : <p style={secondary}>Aucune personne trouvée pour « {q} ».</p>
       )}
-      {id && profile.data && <StudyWorks key={`${catalogue}:${id}:${savedStudy}`} person={profile.data} catalogue={catalogue} savedStudy={savedStudy} />}
+      {id && profile.data && <StudyWorks key={`${catalogue}:${id}:${savedStudy}`} person={profile.data} catalogue={catalogue} savedStudy={savedStudy} registered={saved.some(study => study.catalogue === catalogue && study.id === id)} />}
     </div>
   );
 }

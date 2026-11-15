@@ -3,7 +3,7 @@ import { studyProfile, validStudyId } from './personStudies.js';
 
 export async function savePersonStudy(sql, selection, res) {
   const { catalogue, personId, workIds } = selection;
-  if (!validStudyId(catalogue, personId) || !Array.isArray(workIds) || !workIds.length
+  if (!validStudyId(catalogue, personId) || !Array.isArray(workIds)
     || workIds.length > 5000 || workIds.some(id => typeof id !== 'string' || id.length > 32)) {
     return res.status(400).json({ error: 'Sélection d’œuvres invalide.' });
   }

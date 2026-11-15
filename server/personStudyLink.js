@@ -84,7 +84,7 @@ function decode(value) {
 function cleanName(value) {
   if (typeof value !== 'string') return '';
   const name = decode(value).replace(/_/g, ' ').replace(/\s+/g, ' ')
-    .replace(/\s+[|–—-]\s+.*$/, '').replace(/\s*\([^)]*\)\s*$/, '').trim();
+    .replace(/\s*:\s*Filmographie(?:\s.*)?$/i, '').replace(/\s+[|–—-]\s+.*$/, '').replace(/\s*\([^)]*\)\s*$/, '').trim();
   return name.length >= 2 && name.length <= 120 && /\p{L}/u.test(name) ? name : '';
 }
 
@@ -126,10 +126,10 @@ export async function resolveStudyLink(value, catalogue) {
   if (host === 'themoviedb.org' && tmdb) return { id: tmdb[1], catalogue: 'cinema' };
   const book = /^\/authors\/(OL\d{1,12}A)(?:\/|$)/.exec(url.pathname);
   if (host === 'openlibrary.org' && book) return { id: book[1], catalogue: 'books' };
-  const allocine = /^\/personne\/fichepersonne_gen_cpersonne(?:=|%3D)(\d{1,12})\.html$/i.exec(url.pathname);
+  const allocine = /^\/personne\/fichepersonne(?:_gen_cpersonne(?:=|%3D)(\d{1,12})\.html|-(\d{1,12})(?:\/filmographie)?\/?)$/i.exec(url.pathname);
   if (host === 'allocine.fr' && allocine) {
     try {
-      const response = await fetch(`https://www.allocine.fr/personne/fichepersonne_gen_cpersonne=${allocine[1]}.html`, {
+      const response = await fetch(`https://www.allocine.fr/personne/fichepersonne_gen_cpersonne=${allocine[1] || allocine[2]}.html`, {
         redirect: 'error', signal: AbortSignal.timeout(6500),
       });
       if (response.ok) {
