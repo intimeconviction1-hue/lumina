@@ -3,6 +3,7 @@ import { ensureGiftRecipientsColumn, getSql, WRITABLE, ARRAY_COLS, SORT_COLUMNS,
 import { gqDocumentaries } from '../server/gqDocumentaries.js';
 import { saveGqDocumentaries } from '../server/saveGqDocumentaries.js';
 import { isPersonStudyImport } from '../server/personStudyWorkId.js';
+import { validStudyId } from '../server/personStudies.js';
 import { savePersonStudy } from '../server/savePersonStudy.js';
 
 async function addGqSelection(sql, ids, res) {
@@ -16,6 +17,16 @@ async function addGqSelection(sql, ids, res) {
 export default async function handler(req, res) {
   try {
     const sql = getSql();
+
+    if (req.method === 'DELETE' && req.query.mode === 'person-studies') {
+      const { catalogue, id } = req.query;
+      if (!validStudyId(catalogue, id)) return res.status(400).json({ error: 'Étude invalide.' });
+      const [table] = await sql`select to_regclass('person_studies') as name`;
+      if (table.name) {
+        await sql`delete from person_studies where catalogue = ${catalogue} and person_id = ${id}`;
+      }
+      return res.status(200).json({ ok: true });
+    }
 
     if (req.method === 'GET') {
       if (req.query.mode === 'person-studies') {
@@ -72,7 +83,7 @@ export default async function handler(req, res) {
       return res.status(201).json(rows[0]);
     }
 
-    res.setHeader('Allow', 'GET, POST');
+    res.setHeader('Allow', 'GET, POST, DELETE');
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (e) {
     return res.status(e?.status || 500).json({ error: String(e?.message || e) });
