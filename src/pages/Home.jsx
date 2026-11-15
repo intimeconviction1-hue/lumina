@@ -57,7 +57,7 @@ export default function Home({ onAddWork, onEditWork, onDeleteWork }) {
 
   const { data, isLoading, isError, isFetching, refetch } = useWorks();
   const { updateWork } = useWorkMutations();
-  const works = useMemo(() => (data || []).filter(work => !isProcesJustice(work)), [data]);
+  const works = useMemo(() => (data || []).filter(work => !isProcesJustice(work) && !work.from_person_study && !(work.tags || []).includes("étude de personne")), [data]);
 
   const toggleTag = (tag) => {
     setActiveTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
