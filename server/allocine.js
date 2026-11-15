@@ -80,7 +80,7 @@ export async function allocineMovie(id) {
     genre: genres.map(genre => genre.toLowerCase()),
     country: [...new Set(countries)].join(', '),
     duration_minutes: minutes || undefined,
-    cover_image: /^https:\/\//i.test(cover || '') ? cover : undefined,
+    cover_image: /^https:\/\//i.test(cover || '') && !/\/empty\/empty_[^/]+$/i.test(cover) ? cover : undefined,
     source_url: source,
   };
 }

@@ -1,3 +1,4 @@
+import { wikipediaArticle, wikipediaFilmReferences } from "./wikipedia.js";
 import { appleTvMovie, appleTvMoviePath } from './appleTv.js';
 import { fnacBook, fnacBookQuery, fnacProductPath } from './fnac.js';
 import { IMG, tmdbJSON } from './tmdb.js';
@@ -234,9 +235,15 @@ const googleHost = host => /^(?:www\.|m\.)?google\.(?:com|[a-z]{2}|(?:co|com)\.[
 const googlePath = url => url.pathname.replace(/\/+$/, '') || '/';
 
 function unwrapGoogleLink(url) {
-  for (let depth = 0; url && depth < 3; depth++) {
-    if (!googleHost(url.hostname) || googlePath(url) !== '/url') break;
-    url = publicLink(url.searchParams.get('url') || url.searchParams.get('q'));
+  for (let depth = 0; url && depth < 3 && googleHost(url.hostname); depth++) {
+    const path = googlePath(url);
+    if (path === '/url') {
+      url = publicLink(url.searchParams.get('url') || url.searchParams.get('q'));
+    } else if (path === '/imgres') {
+      url = publicLink(url.searchParams.get('imgrefurl'));
+    } else {
+      break;
+    }
   }
   return url;
 }
@@ -244,13 +251,20 @@ function unwrapGoogleLink(url) {
 async function catalogSearch(input, res) {
   const query = input?.trim().slice(0, 160);
   if (!query) return res.status(400).json({ error: 'Saisis le titre de l’œuvre à rechercher.' });
+  if (/^(?:gs_lp=)?[A-Za-z0-9_-]{64,}={0,2}$/.test(query)) {
+    return res.status(422).json({ error: 'Ce fragment ne contient pas le titre. Colle l’adresse Google complète ou saisis le titre du film.' });
+  }
   const searches = [searchBooks(query)];
   if (process.env.TMDB_API_KEY) searches.push(searchScreens(query));
   const results = await Promise.allSettled(searches);
   if (results.every(result => result.status === 'rejected')) throw new Error('Sources indisponibles');
+  const normalized = normalizedTitle(query);
+  const relevance = work => (normalizedTitle(work.title) === normalized ? 2 : 0) + Number(Boolean(work.cover_image));
+  const matches = results.flatMap(result => result.status === 'fulfilled' ? result.value : [])
+    .sort((a, b) => relevance(b) - relevance(a));
   return res.status(200).json({
     query,
-    matches: results.flatMap(result => result.status === 'fulfilled' ? result.value : []),
+    matches,
     incomplete: searches.length < 2 || results.some(result => result.status === 'rejected'),
   });
 }
@@ -323,6 +337,26 @@ export default async function handler(req, res) {
 
     const replayPath = franceTvReplayPath(url);
     if (replayPath) return res.status(200).json({ work: await franceTvReplay(replayPath) });
+
+    const wiki = wikipediaArticle(url);
+    if (wiki) {
+      const refs = await wikipediaFilmReferences(wiki.source).catch(() => ({}));
+      const allocine = refs.allocine ? await allocineMovie(refs.allocine).catch(() => null) : null;
+      const tmdb = !allocine?.cover_image && refs.tmdb && process.env.TMDB_API_KEY
+        ? await screenDetails(refs.tmdb.media, refs.tmdb.id).catch(() => null) : null;
+      if (allocine || tmdb) {
+        return res.status(200).json({
+          work: {
+            ...tmdb, ...allocine,
+            year: tmdb?.year || allocine?.year,
+            cover_image: allocine?.cover_image || tmdb?.cover_image,
+            source_url: wiki.source,
+          },
+        });
+      }
+      const matches = process.env.TMDB_API_KEY ? await searchScreens(wiki.title).catch(() => []) : [];
+      return res.status(200).json({ query: wiki.title, matches, source_url: wiki.source });
+    }
 
     const allocineId = allocineMovieId(url);
     if (allocineId) return res.status(200).json({ work: await allocineMovie(allocineId) });

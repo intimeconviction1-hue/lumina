@@ -40,7 +40,7 @@ export default function WorkLinkImport({ onFill, onSource, onAddGqSelection }) {
       }
       if (data.work?.title) {
         const fields = Object.fromEntries(Object.entries(data.work).filter(([, value]) => value != null && value !== ""));
-        onFill({ ...candidate, ...fields, source_url: unrecognizedLink.current || fields.source_url || candidate?.source_url });
+        onFill({ ...candidate, ...fields, source_url: (candidate && unrecognizedLink.current) || fields.source_url || candidate?.source_url });
         setResults(null);
         setMessage("Fiche préremplie. Vérifie les informations, puis ajoute l’œuvre.");
       } else if (data.matches?.length) {
@@ -133,7 +133,7 @@ export default function WorkLinkImport({ onFill, onSource, onAddGqSelection }) {
           </Button>
         </div>
         <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
-          Colle un lien de livre Amazon, une fiche Allociné, un livre Fnac, un replay France TV, une vidéo OK.ru ou saisis le titre.
+          Colle un lien Wikipédia, Google, Allociné, Amazon, Fnac, France TV ou OK.ru, ou saisis le titre.
         </p>
       </form>
       {results?.collection === "gq-documentaries" && (
