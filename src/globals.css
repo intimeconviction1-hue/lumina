@@ -198,32 +198,6 @@ button, a, [role="button"] {
     gap: 1rem;
   }
 
-  /* Header sticky — z-index sûr, ne recouvre pas le contenu */
-  header,
-  [class*="sticky"] {
-    z-index: 20 !important;
-  }
-
-  /* BottomNav : au-dessus du contenu mais pas du modal */
-  nav.fixed.bottom-0 {
-    z-index: 40 !important;
-  }
-
-  /* Sidebar mobile slide-over : z-index correct */
-  aside {
-    z-index: 45 !important;
-  }
-
-  /* Overlay sidebar mobile */
-  .fixed.inset-0.bg-black\/40 {
-    z-index: 44 !important;
-  }
-
-  /* Modals/dialogs : toujours au-dessus de tout */
-  [role="dialog"] {
-    z-index: 60 !important;
-  }
-
   /* Texte plus lisible dans les cards */
   .text-\[12px\]  { font-size: 13px !important; }
   .text-\[13px\]  { font-size: 14px !important; }
@@ -278,4 +252,42 @@ button, a, [role="button"] {
   background-color: #0B2040 !important;
   color: #EEF2F8 !important;
   border-left: 1px solid rgba(255,255,255,0.08) !important;
+}
+
+@media (max-width: 1023px) {
+  .lumina-main {
+    padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+  }
+
+  .lumina-main input:not([type="checkbox"]):not([type="range"]),
+  [role="dialog"] input:not([type="checkbox"]):not([type="range"]),
+  [role="dialog"] textarea,
+  [role="dialog"] select {
+    font-size: 16px;
+  }
+
+  #mobile-navigation {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .cinema-card .work-card-actions:not([hidden]) {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .cinema-card .work-card-actions > button {
+    width: 44px;
+    height: 44px;
+  }
+
+  .cinema-card .work-card-actions > .work-card-hover-action {
+    display: none;
+  }
+
+  .cinema-card .work-card-preview {
+    display: none;
+  }
 }

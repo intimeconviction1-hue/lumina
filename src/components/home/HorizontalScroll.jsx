@@ -14,9 +14,9 @@ function MiniCard({ work, index }) {
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: index * 0.06, duration: 0.3 }}
-      className="flex-shrink-0 w-36 group"
+      className="flex-shrink-0 w-36 snap-start group"
     >
-      <Link to={createPageUrl("WorkDetail") + `?id=${work.id}`}>
+      <Link className="block touch-manipulation" to={createPageUrl("WorkDetail") + `?id=${work.id}`}>
         <div
           className="overflow-hidden transition-all duration-[180ms]"
           style={{
@@ -30,7 +30,7 @@ function MiniCard({ work, index }) {
           {/* Cover */}
           <div style={{ aspectRatio: "2/3", overflow: "hidden" }}>
             {work.cover_image ? (
-              <img src={work.cover_image} alt={work.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+              <img src={work.cover_image} alt="" loading="lazy" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
             ) : (
               <div className="w-full h-full flex items-center justify-center" style={{ background: `linear-gradient(145deg, ${tColor}18, ${tColor}35)`, backgroundColor: "var(--bg)" }}>
                 <TypeIcon className="w-8 h-8" style={{ color: tColor }} />
@@ -89,7 +89,7 @@ export default function HorizontalScroll({ title, works, seeAllPage, seeAllStatu
         {hasSeeAll && works.length > 0 && (
           <button
             onClick={handleSeeAll}
-            className="flex items-center gap-1 text-[12.5px] font-medium transition-opacity hover:opacity-70"
+            className="flex min-h-11 items-center gap-1 text-[12.5px] font-medium transition-opacity hover:opacity-70"
             style={{ color: accentColor || "#2AA6A0" }}
           >
             Voir tout <ArrowRight className="w-3.5 h-3.5" />
@@ -102,7 +102,7 @@ export default function HorizontalScroll({ title, works, seeAllPage, seeAllStatu
           {emptyText || "Aucune œuvre"}
         </p>
       ) : (
-        <div className="flex gap-3 overflow-x-auto pb-2" style={{ scrollbarWidth: "none" }}>
+        <div className="flex gap-3 overflow-x-auto overscroll-x-contain snap-x snap-proximity pb-2" style={{ scrollbarWidth: "none" }}>
           {works.slice(0, 12).map((work, i) => (
             <MiniCard key={work.id} work={work} index={i} />
           ))}

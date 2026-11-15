@@ -270,7 +270,7 @@ export default function WorkFormModal({ open, onClose, work, onSave, onAddGqSele
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent
-        className="max-w-2xl max-h-[92vh] overflow-hidden flex flex-col p-0"
+        className="max-w-2xl max-h-[92dvh] overflow-hidden flex flex-col p-0"
         style={{ borderRadius: "20px", backgroundColor: "var(--card-bg)", border: "1px solid var(--border)", color: "var(--text-primary)" }}
       >
         {/* Header */}
@@ -283,7 +283,7 @@ export default function WorkFormModal({ open, onClose, work, onSave, onAddGqSele
           </DialogDescription>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-5 sm:px-8 py-6 space-y-6">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 sm:px-8 py-6 space-y-6">
 
           {open && !work && <WorkLinkImport onFill={fillFromLink} onSource={url => set("source_url", url)} onAddGqSelection={onAddGqSelection} />}
 

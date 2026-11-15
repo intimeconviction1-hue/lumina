@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useLayoutEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
 import { Search, Film, Tv, BookOpen, Radio, Mic, Video, FileText, X } from "lucide-react";
 
@@ -26,6 +27,7 @@ function fuzzyMatch(query, text) {
 }
 
 export default function SearchBar({ value, onChange, works = [], searchRef }) {
+  const navigate = useNavigate();
   const [focused, setFocused] = useState(false);
   const [rect, setRect] = useState(null);
   const containerRef = useRef(null);
@@ -59,10 +61,12 @@ export default function SearchBar({ value, onChange, works = [], searchRef }) {
       if (containerRef.current) setRect(containerRef.current.getBoundingClientRect());
     };
     update();
-    window.addEventListener("scroll", update, true);
+    window.addEventListener("scroll", update, { passive: true });
+    window.visualViewport?.addEventListener("resize", update);
     window.addEventListener("resize", update);
     return () => {
-      window.removeEventListener("scroll", update, true);
+      window.removeEventListener("scroll", update);
+      window.visualViewport?.removeEventListener("resize", update);
       window.removeEventListener("resize", update);
     };
   }, [showDropdown, value]);
@@ -74,23 +78,34 @@ export default function SearchBar({ value, onChange, works = [], searchRef }) {
       const inDropdown = dropdownRef.current && dropdownRef.current.contains(e.target);
       if (!inContainer && !inDropdown) setFocused(false);
     };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    document.addEventListener("pointerdown", handler);
+    return () => document.removeEventListener("pointerdown", handler);
   }, []);
 
-  const selectWork = (work) => { onChange(work.title); setFocused(false); };
-  const selectType = (type) => { onChange(type); setFocused(false); };
+  const selectWork = (work) => {
+    onChange("");
+    setFocused(false);
+    searchRef.current?.blur();
+    navigate("/WorkDetail?id=" + encodeURIComponent(work.id));
+  };
+  const selectType = (type) => {
+    onChange("");
+    setFocused(false);
+    searchRef.current?.blur();
+    navigate("/AllWorks?type=" + encodeURIComponent(type));
+  };
 
   const dropdown = showDropdown && rect ? createPortal(
     <div
       ref={dropdownRef}
-      className="rounded-[14px] overflow-hidden"
+      className="rounded-[14px] overflow-y-auto overscroll-contain"
       style={{
         position: "fixed",
         top: rect.bottom + 6,
-        left: rect.left,
-        width: rect.width,
-        zIndex: 9999,
+        left: window.innerWidth < 640 ? 8 : rect.left,
+        width: window.innerWidth < 640 ? window.innerWidth - 16 : rect.width,
+        maxHeight: Math.max(80, (window.visualViewport?.height || window.innerHeight) - rect.bottom - 14),
+        zIndex: 45,
         backgroundColor: "var(--surface)",
         border: "1px solid var(--border)",
         boxShadow: "var(--shadow-elevated)",
@@ -169,7 +184,7 @@ export default function SearchBar({ value, onChange, works = [], searchRef }) {
   ) : null;
 
   return (
-    <div ref={containerRef} className="relative flex-1 max-w-lg mx-auto">
+    <div ref={containerRef} className="relative min-w-0 flex-1 max-w-lg mx-auto">
       <Search
         className="absolute left-3.5 top-1/2 -translate-y-1/2 w-[14px] h-[14px] z-10 pointer-events-none"
         style={{ color: focused ? "#D4AF37" : "var(--text-muted)" }}
@@ -177,12 +192,19 @@ export default function SearchBar({ value, onChange, works = [], searchRef }) {
       <input
         ref={searchRef}
         type="text"
-        placeholder="Titre, auteur, genre, type…"
+        enterKeyHint="search"
+        aria-label="Rechercher dans la bibliothèque"
+        placeholder="Rechercher…"
         value={value}
         onChange={e => { onChange(e.target.value); setFocused(true); }}
         onFocus={() => setFocused(true)}
-        onKeyDown={e => { if (e.key === "Enter") setFocused(false); }}
-        className="w-full pl-9 pr-10 py-2.5 text-[13px] outline-none transition-all border"
+        onKeyDown={e => {
+          if (e.key === "Enter" || e.key === "Escape") {
+            setFocused(false);
+            e.currentTarget.blur();
+          }
+        }}
+        className="w-full min-h-11 pl-9 pr-11 py-2 text-base lg:text-sm outline-none transition-all border"
         style={{
           backgroundColor: "var(--bg)",
           borderColor: focused ? "rgba(212,175,55,0.5)" : "var(--border)",
@@ -193,15 +215,16 @@ export default function SearchBar({ value, onChange, works = [], searchRef }) {
       />
       {value && (
         <button
+          type="button"
+          aria-label="Effacer la recherche"
           onClick={() => { onChange(""); setFocused(false); }}
-          className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 flex items-center justify-center rounded-full transition-opacity hover:opacity-70"
-          style={{ backgroundColor: "var(--border)" }}
+          className="absolute right-0 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center rounded-full transition-opacity hover:opacity-70"
         >
           <X className="w-2.5 h-2.5" style={{ color: "var(--text-muted)" }} />
         </button>
       )}
       {!value && (
-        <kbd className="absolute right-3 top-1/2 -translate-y-1/2 px-1.5 py-0.5 rounded text-[10px] font-semibold pointer-events-none"
+        <kbd className="hidden lg:block absolute right-3 top-1/2 -translate-y-1/2 px-1.5 py-0.5 rounded text-[10px] font-semibold pointer-events-none"
           style={{ backgroundColor: "var(--border)", color: "var(--text-muted)", border: "1px solid var(--border)" }}>
           /
         </kbd>

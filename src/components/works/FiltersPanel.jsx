@@ -37,8 +37,10 @@ const Section = ({ label, children }) => (
 
 const Chip = ({ label, active, color, onClick, count }) => (
   <button
+    type="button"
+    aria-pressed={active}
     onClick={onClick}
-    className="flex items-center gap-1 px-3 py-1.5 rounded-full text-[12px] font-semibold border transition-all capitalize"
+    className="flex items-center gap-1 min-h-10 px-3 py-1.5 rounded-full text-[12px] font-semibold border transition-all capitalize"
     style={{
       borderColor: active ? (color || "#D4AF37") : "rgba(255,255,255,0.12)",
       backgroundColor: active ? `${color || "#D4AF37"}22` : "rgba(255,255,255,0.05)",
@@ -91,7 +93,7 @@ export default function FiltersPanel({ open, onClose, filters, onFiltersChange, 
 
   const applyFilters = () => {
     onFiltersChange({ ...local });
-    setTimeout(() => onClose(), 0);
+    onClose();
   };
 
   const resetFilters = () => {
@@ -126,11 +128,12 @@ export default function FiltersPanel({ open, onClose, filters, onFiltersChange, 
   return (
     <Sheet open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
       <SheetContent
-        className="lumina-filter-sheet w-[320px] flex flex-col p-0 overflow-hidden"
+        aria-describedby={undefined}
+        className="lumina-filter-sheet w-[min(100vw,360px)] h-dvh flex flex-col p-0 overflow-hidden"
         style={{ backgroundColor: "#0B2040", borderLeft: "1px solid rgba(255,255,255,0.08)", color: "#EEF2F8" }}
       >
         {/* Header */}
-        <div className="px-5 pt-5 pb-4 border-b" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
+        <div className="px-5 pt-[max(1.25rem,env(safe-area-inset-top))] pb-4 border-b" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <SlidersHorizontal className="w-4 h-4" style={{ color: "#D4AF37" }} />
@@ -151,7 +154,7 @@ export default function FiltersPanel({ open, onClose, filters, onFiltersChange, 
         </div>
 
         {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto px-5 py-5 space-y-6" style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.1) transparent" }}>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5 space-y-6" style={{ scrollbarWidth: "thin", scrollbarColor: "rgba(255,255,255,0.1) transparent" }}>
 
           {/* Sort */}
           <Section label="Trier par">
@@ -298,7 +301,7 @@ export default function FiltersPanel({ open, onClose, filters, onFiltersChange, 
         </div>
 
         {/* Sticky footer — Apply button */}
-        <div className="px-5 py-4 border-t" style={{ borderColor: "rgba(255,255,255,0.08)", backgroundColor: "#071830" }}>
+        <div className="px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t" style={{ borderColor: "rgba(255,255,255,0.08)", backgroundColor: "#071830" }}>
           <button
             type="button"
             onClick={applyFilters}

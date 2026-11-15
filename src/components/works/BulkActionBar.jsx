@@ -42,12 +42,12 @@ export default function BulkActionBar({ count, onApply, onCancel }) {
 
   return (
     <div
-      className="fixed bottom-0 left-0 right-0 z-50 lg:left-[272px]"
+      className="fixed bottom-0 left-0 right-0 z-[42] max-h-[70dvh] overflow-y-auto overscroll-contain lg:left-[272px]"
       style={{
         backgroundColor: "#0B2545",
         borderTop: "1px solid rgba(255,255,255,0.15)",
         boxShadow: "0 -8px 32px rgba(0,0,0,0.4)",
-        padding: "14px 20px 20px",
+        padding: "14px 20px calc(18px + env(safe-area-inset-bottom))",
       }}
     >
       {/* Header row */}
@@ -57,7 +57,7 @@ export default function BulkActionBar({ count, onApply, onCancel }) {
             style={{ backgroundColor: "#E56B3A" }}>{count}</span>
           œuvre{count > 1 ? "s" : ""} sélectionnée{count > 1 ? "s" : ""}
         </span>
-        <button onClick={onCancel} className="text-white/60 hover:text-white transition-colors">
+        <button onClick={onCancel} aria-label="Fermer les actions groupées" className="grid min-h-11 min-w-11 place-items-center text-white/60 hover:text-white transition-colors">
           <X className="w-4 h-4" />
         </button>
       </div>

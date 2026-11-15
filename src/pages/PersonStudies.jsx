@@ -247,7 +247,7 @@ export default function PersonStudies() {
           const query = new URLSearchParams(person.id
             ? { catalogue: person.catalogue, id: person.id, study: "saved" }
             : { catalogue: person.catalogue, study: "assi-dayan" });
-          return <Button key={`${person.catalogue}:${person.id || person.name}`} asChild size="sm" variant={active ? "default" : "outline"}>
+          return <Button key={`${person.catalogue}:${person.id || person.name}`} asChild className="min-h-11" size="sm" variant={active ? "default" : "outline"}>
             <Link to={`?${query}`} aria-current={active ? "page" : undefined}>{person.name}</Link>
           </Button>;
         })}
@@ -256,7 +256,7 @@ export default function PersonStudies() {
       <div className="space-y-3 rounded-2xl border p-3 sm:p-4" style={panel}>
         <div className="flex flex-wrap gap-2">
           {[["cinema", "Cinéma et séries"], ["books", "Auteurs de livres"]].map(([key, label]) => (
-            <Button key={key} type="button" size="sm" variant={catalogue === key ? "default" : "outline"} aria-pressed={catalogue === key}
+            <Button key={key} type="button" className="min-h-11" size="sm" variant={catalogue === key ? "default" : "outline"} aria-pressed={catalogue === key}
               onClick={() => submitSearch(draft, key)}>{label}</Button>
           ))}
         </div>
@@ -264,7 +264,7 @@ export default function PersonStudies() {
           event.preventDefault();
           submitSearch(draft);
         }}>
-          <Input value={draft} onChange={event => setDraft(event.target.value)} className="min-w-40 flex-1" maxLength={4096}
+          <Input value={draft} onChange={event => setDraft(event.target.value)} className="min-h-11 min-w-0 basis-40 flex-1" maxLength={4096}
             placeholder="Saisir un nom ou coller un lien"
             aria-label="Nom ou lien de la personne"
             onPaste={event => {

@@ -53,7 +53,7 @@ export default function RecentWorks({ works }) {
       </div>
 
       {/* Scroll horizontal sur mobile, grille sur desktop */}
-      <div className="flex gap-3 overflow-x-auto pb-1 sm:hidden" style={{ scrollbarWidth: "none" }}>
+      <div className="flex gap-3 overflow-x-auto overscroll-x-contain snap-x snap-proximity pb-1 sm:hidden" style={{ scrollbarWidth: "none" }}>
         {recent.map(work => <MiniCard key={work.id} work={work} />)}
       </div>
 
@@ -71,7 +71,7 @@ function MiniCard({ work }) {
   return (
     <Link
       to={`/WorkDetail?id=${work.id}`}
-      className="flex-shrink-0 group"
+      className="flex-shrink-0 snap-start touch-manipulation group"
       style={{ width: 88 }}
     >
       {/* Miniature */}

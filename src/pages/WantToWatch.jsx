@@ -29,7 +29,7 @@ function PriorityBadge({ priority, onClick, small }) {
   return (
     <button
       onClick={onClick}
-      className={`flex items-center gap-1 rounded-full font-semibold transition-all border ${small ? "px-2 py-0.5 text-[10.5px]" : "px-2.5 py-1 text-[11.5px]"}`}
+      className={`flex min-h-10 lg:min-h-0 items-center gap-1 rounded-full font-semibold transition-all border ${small ? "px-2 py-0.5 text-[10.5px]" : "px-2.5 py-1 text-[11.5px]"}`}
       style={{ backgroundColor: conf.bg, color: conf.color, borderColor: `${conf.color}30` }}
       title="Changer la priorité"
     >
@@ -42,7 +42,6 @@ function PriorityBadge({ priority, onClick, small }) {
 function WantCard({ work, onEdit, onDelete, onPriorityChange, onToggleFavorite }) {
   const TypeIcon = TYPE_ICONS[work.type] || FileText;
   const tColor = TYPE_COLORS[work.type] || "#667085";
-  const [menuOpen, setMenuOpen] = useState(false);
 
   const cyclePriority = () => {
     const priorities = PRIORITY_ORDER;
@@ -61,9 +60,10 @@ function WantCard({ work, onEdit, onDelete, onPriorityChange, onToggleFavorite }
       style={{ borderColor: "var(--border)", backgroundColor: "var(--card-bg)", boxShadow: "var(--shadow-card)" }}
     >
       {/* Cover */}
-      <Link to={`/WorkDetail?id=${work.id}`} className="block relative" style={{ aspectRatio: "2/3" }}>
+      <div className="relative" style={{ aspectRatio: "2/3" }}>
+      <Link to={`/WorkDetail?id=${encodeURIComponent(work.id)}`} aria-label={`Ouvrir ${work.title}`} className="absolute inset-0 block">
         {work.cover_image ? (
-          <img src={work.cover_image} alt={work.title} className="w-full h-full object-cover" />
+          <img src={work.cover_image} alt="" loading="lazy" className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center gap-2"
             style={{ background: `linear-gradient(145deg, ${tColor}18 0%, ${tColor}30 100%)` }}>
@@ -72,36 +72,40 @@ function WantCard({ work, onEdit, onDelete, onPriorityChange, onToggleFavorite }
           </div>
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-        {/* Priority badge top-left */}
-        <div className="absolute top-2 left-2">
-          <PriorityBadge priority={work.priority || "normal"} onClick={(e) => { e.preventDefault(); cyclePriority(); }} small />
+      </Link>
+        {/* Priority badge */}
+        <div className="absolute bottom-2 left-2">
+          <PriorityBadge priority={work.priority || "normal"} onClick={cyclePriority} small />
         </div>
         {/* Favorite */}
         <button
-          className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center transition-all hover:scale-110"
+          type="button"
+          aria-label={work.favorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+          aria-pressed={Boolean(work.favorite)}
+          className="absolute top-2 right-2 w-11 h-11 lg:w-7 lg:h-7 rounded-full flex items-center justify-center transition-all hover:scale-110"
           style={{ backgroundColor: "rgba(0,0,0,0.35)", backdropFilter: "blur(6px)" }}
-          onClick={(e) => { e.preventDefault(); onToggleFavorite(work); }}
+          onClick={() => onToggleFavorite(work)}
         >
           <Heart className={`w-3.5 h-3.5 ${work.favorite ? "fill-[#EC4899] text-[#EC4899]" : "text-white"}`} />
         </button>
-      </Link>
+      </div>
 
       {/* Info */}
       <div className="p-3">
-        <p className="text-[12.5px] font-semibold leading-tight line-clamp-2" style={{ color: "var(--text-primary)" }}>{work.title}</p>
+        <Link to={`/WorkDetail?id=${encodeURIComponent(work.id)}`} className="text-[12.5px] font-semibold leading-tight line-clamp-2" style={{ color: "var(--text-primary)" }}>{work.title}</Link>
         {(work.creator || work.creator_name) && (
           <p className="text-[11px] mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{work.creator || work.creator_name}</p>
         )}
         <div className="flex items-center justify-between mt-2">
           <span className="text-[10.5px] font-medium capitalize" style={{ color: tColor }}>{work.type}</span>
           <div className="flex items-center gap-1">
-            <button onClick={() => onEdit(work)}
-              className="w-6 h-6 rounded-lg flex items-center justify-center transition-all hover:opacity-80"
+            <button type="button" aria-label="Modifier" onClick={() => onEdit(work)}
+              className="w-9 h-9 lg:w-6 lg:h-6 rounded-lg flex items-center justify-center transition-all hover:opacity-80"
               style={{ backgroundColor: "var(--bg)" }}>
               <Pencil className="w-3 h-3" style={{ color: "var(--text-muted)" }} />
             </button>
-            <button onClick={() => onDelete(work)}
-              className="w-6 h-6 rounded-lg flex items-center justify-center transition-all hover:bg-red-50"
+            <button type="button" aria-label="Supprimer" onClick={() => onDelete(work)}
+              className="w-9 h-9 lg:w-6 lg:h-6 rounded-lg flex items-center justify-center transition-all hover:bg-red-50"
               style={{ backgroundColor: "var(--bg)" }}>
               <Trash2 className="w-3 h-3 text-red-400" />
             </button>
@@ -195,7 +199,7 @@ export default function WantToWatch({ onEditWork, onAddWork }) {
             const count = wantToWatch.filter(w => (w.priority || "normal") === p).length;
             return (
               <button key={p} onClick={() => setSelectedPriority(p === selectedPriority ? "all" : p)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium border transition-all"
+                className="flex min-h-10 items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium border transition-all"
                 style={{
                   borderColor: selectedPriority === p ? conf.color : "var(--border)",
                   backgroundColor: selectedPriority === p ? conf.bg : "var(--card-bg)",

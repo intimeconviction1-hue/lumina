@@ -126,8 +126,7 @@ export default function RecentlyFinished({ works }) {
             Rien de terminé ces 30 derniers jours.
           </p>
           <Link
-            to="/AllWorks"
-            onClick={() => window.dispatchEvent(new CustomEvent("sidebar-filter", { detail: { status: "En cours" } }))}
+            to="/AllWorks?status=En+cours"
             className="text-[11.5px] font-semibold shrink-0 ml-3 transition-opacity hover:opacity-70"
             style={{ color: "#2AA6A0" }}
           >
