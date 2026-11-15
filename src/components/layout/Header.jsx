@@ -2,7 +2,7 @@ import React from "react";
 import { SlidersHorizontal, Plus, User, Menu, X } from "lucide-react";
 import SearchBar from "./SearchBar";
 
-export default function Header({ searchQuery, onSearchChange, onOpenFilters, onAddWork, onOpenSidebar, sidebarOpen, menuRef, searchRef, works = [] }) {
+export default function Header({ searchQuery, onSearchChange, onSelectType, onOpenFilters, onAddWork, onOpenSidebar, sidebarOpen, menuRef, searchRef, works = [] }) {
   return (
     <header
       className="sticky top-0 z-30 flex items-center gap-2 px-2 py-2 sm:px-4 lg:px-6 lg:py-3.5"
@@ -30,6 +30,7 @@ export default function Header({ searchQuery, onSearchChange, onOpenFilters, onA
       <SearchBar
         value={searchQuery}
         onChange={onSearchChange}
+        onSelectType={onSelectType}
         works={works}
         searchRef={searchRef}
       />

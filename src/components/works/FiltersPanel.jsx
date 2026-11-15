@@ -1,19 +1,11 @@
+import { EMPTY_FILTERS, SORT_OPTIONS, defaultSort, filterCatalogue, normalizeCatalogueText, searchCatalogue } from "@/lib/catalogue";
 import React, { useMemo, useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { RotateCcw, Heart, Check, SlidersHorizontal } from "lucide-react";
 import { TYPE_COLORS } from "@/lib/statusActions";
 
 const STATUSES = ["À voir", "En cours", "Visionné", "Pas sorti", "Envie de lire", "Lu"];
-const PLATFORMS = ["Netflix", "Prime Video", "Disney+", "Canal+", "HBO", "Apple TV+", "Arte", "FranceTV", "Ciné", "OneDrive", "Yggtorrent", "Khan Israël", "IKROMI", "Lenny", "OKRU"];
 const TYPES = ["film", "série", "livre", "documentaire", "podcast", "vidéo", "article"];
-const SORT_OPTIONS = [
-  { value: "-created_date", label: "Plus récents" },
-  { value: "-year", label: "Année (récent → ancien)" },
-  { value: "year", label: "Année (ancien → récent)" },
-  { value: "-rating", label: "Mieux notés" },
-  { value: "title", label: "Alphabétique" },
-];
-
 const STATUS_COLORS = {
   "À voir":        "#94A3B8",
   "En cours":      "#D4AF37",
@@ -21,11 +13,6 @@ const STATUS_COLORS = {
   "Pas sorti":     "#6366F1",
   "Envie de lire": "#8B5CF6",
   "Lu":            "#22C55E",
-};
-
-const EMPTY_FILTERS = {
-  type: "", status: [], genre: [], platform: [], tags: [],
-  year_min: "", year_max: "", favorite: false, min_rating: "", priority: "", sort: "-created_date",
 };
 
 const Section = ({ label, children }) => (
@@ -40,7 +27,7 @@ const Chip = ({ label, active, color, onClick, count }) => (
     type="button"
     aria-pressed={active}
     onClick={onClick}
-    className="flex items-center gap-1 min-h-10 px-3 py-1.5 rounded-full text-[12px] font-semibold border transition-all capitalize"
+    className="flex items-center gap-1 min-h-10 max-w-full break-all px-3 py-1.5 rounded-full text-[12px] font-semibold border transition-all capitalize"
     style={{
       borderColor: active ? (color || "#D4AF37") : "rgba(255,255,255,0.12)",
       backgroundColor: active ? `${color || "#D4AF37"}22` : "rgba(255,255,255,0.05)",
@@ -56,18 +43,38 @@ const Chip = ({ label, active, color, onClick, count }) => (
   </button>
 );
 
-function countFilters(f) {
-  return [
-    ...(f.status || []),
-    f.type ? [f.type] : [],
-    ...(f.genre || []),
-    ...(f.platform || []),
-    ...(f.tags || []),
-    f.priority ? ["priority"] : [],
-    f.favorite ? ["fav"] : [],
-    f.min_rating ? ["rating"] : [],
-    (f.year_min || f.year_max) ? ["year"] : [],
-  ].flat().length;
+function FacetChoices({ label, choices, selected, onToggle, color, prefix = "" }) {
+  const [query, setQuery] = useState("");
+  const [expanded, setExpanded] = useState(false);
+  const term = normalizeCatalogueText(query);
+  const matching = choices.filter(([name]) => normalizeCatalogueText(name).includes(term));
+  const visible = expanded ? matching : matching.slice(0, 12);
+  const displayed = [...selected.filter(name => !visible.some(([choice]) => choice === name))
+    .map(name => [name, choices.find(([choice]) => choice === name)?.[1] || 0]), ...visible];
+  if (!displayed.length && !choices.length) return null;
+
+  return (
+    <Section label={label}>
+      {choices.length > 12 && (
+        <input type="search" value={query} onChange={event => setQuery(event.target.value)}
+          aria-label={`Rechercher dans ${label.toLowerCase()}`} placeholder="Rechercher…"
+          className="mb-2 min-h-11 w-full rounded-lg border border-white/20 bg-white/10 px-3 text-base" />
+      )}
+      <div className="flex flex-wrap gap-1.5">
+        {displayed.map(([name, count]) => (
+          <Chip key={name} label={prefix + name} count={count} color={color}
+            active={selected.includes(name)} onClick={() => onToggle(name)} />
+        ))}
+      </div>
+      {term && !matching.length && <p className="text-xs text-white/60">Aucun choix correspondant.</p>}
+      {matching.length > 12 && (
+        <button type="button" aria-expanded={expanded} onClick={() => setExpanded(value => !value)}
+          className="mt-1 min-h-10 rounded px-2 text-sm text-white underline underline-offset-4">
+          {expanded ? "Voir moins" : `Voir les ${matching.length} choix`}
+        </button>
+      )}
+    </Section>
+  );
 }
 
 const PRIORITIES = [
@@ -76,7 +83,7 @@ const PRIORITIES = [
   { value: "plus tard", label: "🕐 Plus tard", color: "#6366F1" },
 ];
 
-export default function FiltersPanel({ open, onClose, filters, onFiltersChange, works = [] }) {
+export default function FiltersPanel({ open, onClose, filters, onFiltersChange, works = [], searchQuery = "", showResultCount }) {
   // Local staging state — changes here don't propagate until "Appliquer"
   const [local, setLocal] = useState(filters);
 
@@ -97,33 +104,26 @@ export default function FiltersPanel({ open, onClose, filters, onFiltersChange, 
   };
 
   const resetFilters = () => {
-    setLocal(EMPTY_FILTERS);
-    onFiltersChange(EMPTY_FILTERS);
+    setLocal({ ...EMPTY_FILTERS, sort: defaultSort(searchQuery) });
   };
 
-  const pendingCount = countFilters(local);
   const isDirty = JSON.stringify(local) !== JSON.stringify(filters);
+  const resultCount = useMemo(() => open && showResultCount
+    ? searchCatalogue(filterCatalogue(works, local), searchQuery).length
+    : null, [open, showResultCount, works, local, searchQuery]);
 
-  // Build dynamic genre list from works
-  const allGenres = useMemo(() => {
-    const counts = {};
-    works.forEach(w => (w.genre || []).forEach(g => { counts[g] = (counts[g] || 0) + 1; }));
-    return Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([g]) => g);
+  const facets = useMemo(() => {
+    const counts = { genre: new Map(), tags: new Map(), platform: new Map() };
+    for (const work of works) {
+      for (const [key, count] of Object.entries(counts)) {
+        for (const value of new Set([work[key]].flat().filter(Boolean))) {
+          count.set(value, (count.get(value) || 0) + 1);
+        }
+      }
+    }
+    return Object.fromEntries(Object.entries(counts).map(([key, count]) =>
+      [key, [...count].sort(([a, countA], [b, countB]) => countB - countA || a.localeCompare(b, "fr"))]));
   }, [works]);
-
-  const genreCount = (g) => works.filter(w => (w.genre || []).includes(g)).length;
-
-  // Tags dynamiques (triés par fréquence), comme les genres
-  const allTags = useMemo(() => {
-    const counts = {};
-    works.forEach(w => (w.tags || []).forEach(t => { counts[t] = (counts[t] || 0) + 1; }));
-    return Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([t]) => t);
-  }, [works]);
-  const tagCount = (t) => works.filter(w => (w.tags || []).includes(t)).length;
-  const platformCount = (p) => works.filter(w => {
-    const pl = Array.isArray(w.platform) ? w.platform : (w.platform ? [w.platform] : []);
-    return pl.includes(p);
-  }).length;
 
   return (
     <Sheet open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
@@ -134,19 +134,13 @@ export default function FiltersPanel({ open, onClose, filters, onFiltersChange, 
       >
         {/* Header */}
         <div className="px-5 pt-[max(1.25rem,env(safe-area-inset-top))] pb-4 border-b" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2 pr-7">
             <div className="flex items-center gap-2">
               <SlidersHorizontal className="w-4 h-4" style={{ color: "#D4AF37" }} />
               <SheetTitle className="text-[15px] font-bold text-white">Filtres</SheetTitle>
-              {pendingCount > 0 && (
-                <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold text-white"
-                  style={{ backgroundColor: "#E56B3A", minWidth: 18, textAlign: "center" }}>
-                  {pendingCount}
-                </span>
-              )}
             </div>
             <button onClick={resetFilters}
-              className="flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-all hover:opacity-80"
+              className="flex items-center gap-1.5 min-h-10 text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-all hover:opacity-80"
               style={{ color: "#94A3B8", backgroundColor: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}>
               <RotateCcw className="w-3 h-3" /> Réinitialiser
             </button>
@@ -211,60 +205,27 @@ export default function FiltersPanel({ open, onClose, filters, onFiltersChange, 
             </div>
           </Section>
 
-          {/* Genre — dynamique */}
-          {allGenres.length > 0 && (
-            <Section label="Genre">
-              <div className="flex flex-wrap gap-1.5">
-                {allGenres.map(g => (
-                  <Chip key={g} label={g} count={genreCount(g)}
-                    active={(local.genre || []).includes(g)}
-                    onClick={() => toggleArr("genre", g)} />
-                ))}
-              </div>
-            </Section>
-          )}
-
-          {/* Tags — dynamique */}
-          {allTags.length > 0 && (
-            <Section label="Tags">
-              <div className="flex flex-wrap gap-1.5">
-                {allTags.map(t => (
-                  <Chip key={t} label={`#${t}`} color="#8B5CF6" count={tagCount(t)}
-                    active={(local.tags || []).includes(t)}
-                    onClick={() => toggleArr("tags", t)} />
-                ))}
-              </div>
-            </Section>
-          )}
-
-          {/* Platform */}
-          <Section label="Plateforme">
-            <div className="flex flex-wrap gap-1.5">
-              {PLATFORMS.map(p => {
-                const c = platformCount(p);
-                return c > 0 ? (
-                  <Chip key={p} label={p} color="#2AA6A0" count={c}
-                    active={(local.platform || []).includes(p)}
-                    onClick={() => toggleArr("platform", p)} />
-                ) : null;
-              })}
-            </div>
-          </Section>
+          <FacetChoices label="Genres" choices={facets.genre} selected={local.genre}
+            onToggle={value => toggleArr("genre", value)} />
+          <FacetChoices label="Plateformes" choices={facets.platform} selected={local.platform}
+            onToggle={value => toggleArr("platform", value)} color="#2AA6A0" />
+          <FacetChoices label="Tags" choices={facets.tags} selected={local.tags}
+            onToggle={value => toggleArr("tags", value)} color="#8B5CF6" prefix="#" />
 
           {/* Year range */}
           <Section label="Période">
             <div className="flex items-center gap-2">
-              <input type="number" value={local.year_min || ""}
+              <input type="number" aria-label="Année minimale" value={local.year_min || ""}
                 onChange={e => upd("year_min", e.target.value)}
                 placeholder="1930"
-                className="flex-1 px-3 py-2 text-[13px] rounded-xl focus:outline-none"
+                className="min-w-0 flex-1 px-3 py-2 text-[13px] rounded-xl focus:outline-none"
                 style={{ backgroundColor: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", color: "#EEF2F8" }}
               />
               <span className="text-sm" style={{ color: "#4A6080" }}>→</span>
-              <input type="number" value={local.year_max || ""}
+              <input type="number" aria-label="Année maximale" value={local.year_max || ""}
                 onChange={e => upd("year_max", e.target.value)}
                 placeholder="2030"
-                className="flex-1 px-3 py-2 text-[13px] rounded-xl focus:outline-none"
+                className="min-w-0 flex-1 px-3 py-2 text-[13px] rounded-xl focus:outline-none"
                 style={{ backgroundColor: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", color: "#EEF2F8" }}
               />
             </div>
@@ -313,7 +274,8 @@ export default function FiltersPanel({ open, onClose, filters, onFiltersChange, 
             }}
           >
             <Check className="w-4 h-4" />
-            {isDirty ? "Appliquer les filtres" : `Voir les résultats (${pendingCount > 0 ? pendingCount + " filtre" + (pendingCount > 1 ? "s" : "") : "tous"})`}
+            {resultCount === null ? (isDirty ? "Appliquer les filtres" : "Voir les résultats")
+              : `Afficher ${resultCount} résultat${resultCount !== 1 ? "s" : ""}`}
           </button>
         </div>
       </SheetContent>

@@ -12,47 +12,18 @@ const TYPE_COLORS = {
   documentaire: "#2AA6A0", podcast: "#475569", vidéo: "#475569", article: "#475569",
 };
 
-function fuzzyMatch(query, text) {
-  if (!text) return false;
-  const q = query.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  const t = text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  if (t.includes(q)) return true;
-  if (q.length >= 4) {
-    for (let i = 0; i < q.length; i++) {
-      const variant = q.slice(0, i) + q.slice(i + 1);
-      if (t.includes(variant)) return true;
-    }
-  }
-  return false;
-}
-
-export default function SearchBar({ value, onChange, works = [], searchRef }) {
+export default function SearchBar({ value, onChange, onSelectType, works = [], searchRef }) {
   const navigate = useNavigate();
   const [focused, setFocused] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
   const [rect, setRect] = useState(null);
   const containerRef = useRef(null);
   const dropdownRef = useRef(null);
 
-  const suggestions = React.useMemo(() => {
-    if (!value || value.length < 2) return [];
-    const tagQuery = value.replace(/^#/, "");
-    const matched = works.filter(w =>
-      fuzzyMatch(value, w.title) ||
-      fuzzyMatch(value, w.creator) ||
-      fuzzyMatch(value, w.creator_name) ||
-      (w.genre || []).some(g => fuzzyMatch(value, g)) ||
-      (w.tags || []).some(t => fuzzyMatch(tagQuery, t))
-    );
-    return matched.slice(0, 7);
-  }, [value, works]);
-
-  const suggestedTypes = React.useMemo(() => {
-    if (!value || value.length < 2) return [];
-    const q = value.toLowerCase();
-    return Object.keys(TYPE_ICONS).filter(t => t.includes(q));
-  }, [value]);
-
-  const showDropdown = focused && value.length >= 1 && (suggestions.length > 0 || suggestedTypes.length > 0 || value.length >= 2);
+  const suggestedTypes = Object.keys(TYPE_ICONS).filter(type =>
+    value.trim().length > 1 && type === value.trim().toLowerCase());
+  const suggestions = value.trim().length >= 2 ? works.slice(0, 6) : [];
+  const showDropdown = focused && value.trim().length >= 2;
 
   // Mesure la position du champ pour positionner le portail
   useLayoutEffect(() => {
@@ -69,7 +40,7 @@ export default function SearchBar({ value, onChange, works = [], searchRef }) {
       window.visualViewport?.removeEventListener("resize", update);
       window.removeEventListener("resize", update);
     };
-  }, [showDropdown, value]);
+  }, [showDropdown]);
 
   // Fermeture au clic en dehors (champ + panneau portail)
   useEffect(() => {
@@ -83,16 +54,33 @@ export default function SearchBar({ value, onChange, works = [], searchRef }) {
   }, []);
 
   const selectWork = (work) => {
-    onChange("");
-    setFocused(false);
-    searchRef.current?.blur();
+    finishSearch();
     navigate("/WorkDetail?id=" + encodeURIComponent(work.id));
   };
   const selectType = (type) => {
-    onChange("");
+    finishSearch();
+    onSelectType(type);
+  };
+
+  const finishSearch = () => {
     setFocused(false);
+    setActiveIndex(-1);
     searchRef.current?.blur();
-    navigate("/AllWorks?type=" + encodeURIComponent(type));
+  };
+
+  const handleKeys = event => {
+    if (event.nativeEvent.isComposing) return;
+    if ((event.key === "ArrowDown" || event.key === "ArrowUp") && showDropdown && suggestions.length) {
+      event.preventDefault();
+      const index = event.key === "ArrowDown" ? (activeIndex + 1) % suggestions.length
+        : (activeIndex <= 0 ? suggestions.length - 1 : activeIndex - 1);
+      setActiveIndex(index);
+      document.getElementById(`catalogue-suggestion-${index}`)?.scrollIntoView({ block: "nearest" });
+    } else if (event.key === "Enter" || event.key === "Escape") {
+      event.preventDefault();
+      if (event.key === "Enter" && showDropdown && suggestions[activeIndex]) selectWork(suggestions[activeIndex]);
+      else finishSearch();
+    }
   };
 
   const dropdown = showDropdown && rect ? createPortal(
@@ -136,42 +124,54 @@ export default function SearchBar({ value, onChange, works = [], searchRef }) {
         <div className={suggestedTypes.length > 0 ? "border-t" : ""} style={{ borderColor: "var(--border)" }}>
           <div className="px-3 pt-2.5 pb-1">
             <p className="text-[9.5px] font-bold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>
-              Résultats ({suggestions.length})
+              Suggestions
             </p>
           </div>
-          {suggestions.map(w => {
-            const Icon = TYPE_ICONS[w.type] || Film;
-            const color = TYPE_COLORS[w.type] || "#667085";
-            return (
-              <button
-                key={w.id}
-                onClick={() => selectWork(w)}
-                className="flex items-center gap-3 w-full px-3 py-2.5 text-left transition-colors"
-                style={{ color: "var(--text-primary)" }}
-                onMouseEnter={e => e.currentTarget.style.backgroundColor = "var(--bg)"}
-                onMouseLeave={e => e.currentTarget.style.backgroundColor = "transparent"}
-              >
-                <div className="w-8 h-10 rounded-[6px] overflow-hidden flex-shrink-0 flex items-center justify-center"
-                  style={{ backgroundColor: `${color}18` }}>
-                  {w.cover_image
-                    ? <img src={w.cover_image} alt="" className="w-full h-full object-cover" />
-                    : <Icon className="w-4 h-4" style={{ color }} />
-                  }
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[13px] font-semibold truncate" style={{ color: "var(--text-primary)" }}>{w.title}</p>
-                  <p className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>
-                    {w.creator || w.creator_name || w.type}{w.year ? ` · ${w.year}` : ""}
-                  </p>
-                </div>
-                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 capitalize"
-                  style={{ backgroundColor: `${color}12`, color }}>
-                  {w.type}
-                </span>
-              </button>
-            );
-          })}
+          <div id="catalogue-suggestions" role="listbox" aria-label="Suggestions du catalogue">
+            {suggestions.map((w, index) => {
+              const Icon = TYPE_ICONS[w.type] || Film;
+              const color = TYPE_COLORS[w.type] || "#667085";
+              return (
+                <button
+                  key={w.id}
+                  id={`catalogue-suggestion-${index}`}
+                  role="option"
+                  tabIndex={-1}
+                  aria-selected={activeIndex === index}
+                  onClick={() => selectWork(w)}
+                  className="flex items-center gap-3 w-full px-3 py-2.5 text-left transition-colors hover:bg-[var(--bg)] aria-selected:bg-[var(--bg)]"
+                  style={{ color: "var(--text-primary)" }}
+                >
+                  <div className="w-8 h-10 rounded-[6px] overflow-hidden flex-shrink-0 flex items-center justify-center"
+                    style={{ backgroundColor: `${color}18` }}>
+                    {w.cover_image
+                      ? <img src={w.cover_image} alt="" className="w-full h-full object-cover" />
+                      : <Icon className="w-4 h-4" style={{ color }} />
+                    }
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-semibold truncate" style={{ color: "var(--text-primary)" }}>{w.title}</p>
+                    <p className="text-[11px] truncate" style={{ color: "var(--text-muted)" }}>
+                      {w.creator || w.creator_name || w.type}{w.year ? ` · ${w.year}` : ""}
+                    </p>
+                  </div>
+                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 capitalize"
+                    style={{ backgroundColor: `${color}12`, color }}>
+                    {w.type}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
+      )}
+
+      {suggestions.length > 0 && (
+        <button type="button" onClick={finishSearch}
+          className="flex min-h-11 w-full items-center justify-center border-t px-4 py-2 text-sm font-semibold"
+          style={{ borderColor: "var(--border)", color: "var(--text-primary)" }}>
+          Voir les {works.length} résultat{works.length > 1 ? "s" : ""}
+        </button>
       )}
 
       {suggestions.length === 0 && suggestedTypes.length === 0 && value.length >= 2 && (
@@ -192,18 +192,20 @@ export default function SearchBar({ value, onChange, works = [], searchRef }) {
       <input
         ref={searchRef}
         type="text"
+        role="combobox"
+        aria-expanded={showDropdown && suggestions.length > 0}
+        aria-controls={showDropdown && rect && suggestions.length ? "catalogue-suggestions" : undefined}
+        aria-activedescendant={showDropdown && rect && suggestions[activeIndex] ? `catalogue-suggestion-${activeIndex}` : undefined}
+        aria-autocomplete="list"
+        autoComplete="off"
+        maxLength={180}
         enterKeyHint="search"
         aria-label="Rechercher dans la bibliothèque"
         placeholder="Rechercher…"
         value={value}
-        onChange={e => { onChange(e.target.value); setFocused(true); }}
-        onFocus={() => setFocused(true)}
-        onKeyDown={e => {
-          if (e.key === "Enter" || e.key === "Escape") {
-            setFocused(false);
-            e.currentTarget.blur();
-          }
-        }}
+        onChange={e => { onChange(e.target.value); setFocused(true); setActiveIndex(-1); }}
+        onFocus={() => { setFocused(true); setActiveIndex(-1); }}
+        onKeyDown={handleKeys}
         className="w-full min-h-11 pl-9 pr-11 py-2 text-base lg:text-sm outline-none transition-all border"
         style={{
           backgroundColor: "var(--bg)",
@@ -217,7 +219,7 @@ export default function SearchBar({ value, onChange, works = [], searchRef }) {
         <button
           type="button"
           aria-label="Effacer la recherche"
-          onClick={() => { onChange(""); setFocused(false); }}
+          onClick={() => { onChange(""); setActiveIndex(-1); searchRef.current?.focus(); }}
           className="absolute right-0 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center rounded-full transition-opacity hover:opacity-70"
         >
           <X className="w-2.5 h-2.5" style={{ color: "var(--text-muted)" }} />
