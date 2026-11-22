@@ -82,11 +82,13 @@ export function useWorkMutations() {
     update,
     remove,
     create,
-    // Wrappers renvoyant une promesse (compatibles avec l'ancien code en await).
-    // Le .catch swallow évite les rejets non gérés : l'échec est déjà signalé
-    // par le toast dans onError et le cache est déjà revenu à son état initial.
-    updateWork: (id, patch) => update.mutateAsync({ id, patch }).catch(() => {}),
-    removeWork: (id) => remove.mutateAsync(id).catch(() => {}),
-    createWork: (data) => create.mutateAsync(data).catch(() => {}),
+    // Actions pour les clics / événements : mutate déclenche les callbacks
+    // onSuccess/onError/onSettled sans créer de promesse rejetée non gérée.
+    // Pour une opération attendue dans un formulaire ou un enchaînement,
+    // utiliser update.mutateAsync / remove.mutateAsync / create.mutateAsync
+    // et gérer explicitement l'erreur côté appelant.
+    updateWork: (id, patch) => update.mutate({ id, patch }),
+    removeWork: (id) => remove.mutate(id),
+    createWork: (data) => create.mutate(data),
   };
 }
