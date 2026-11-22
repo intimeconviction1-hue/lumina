@@ -9,7 +9,8 @@
     "lint": "eslint . --quiet",
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc -p ./jsconfig.json",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "prebuild": "node scripts/merge-last-viking-once.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^4.1.2",
