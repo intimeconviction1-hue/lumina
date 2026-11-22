@@ -1,6 +1,7 @@
 import { put } from '@vercel/blob';
+import { validateCoverDataUrl } from './coverValidation.js';
 
-// Reçoit une image en data-URL base64 (JSON) et la stocke sur Vercel Blob.
+// Reçoit une image validée en data-URL base64 et la stocke sur Vercel Blob.
 // Renvoie { url } — l'URL publique à enregistrer dans cover_image.
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -9,30 +10,22 @@ export default async function handler(req, res) {
   }
   try {
     const { dataUrl, filename } = req.body || {};
-    if (!dataUrl || typeof dataUrl !== 'string') {
-      return res.status(400).json({ error: 'dataUrl requis' });
-    }
-    const m = /^data:(.+?);base64,(.*)$/s.exec(dataUrl);
-    if (!m) return res.status(400).json({ error: 'format image invalide' });
+    const validated = validateCoverDataUrl(dataUrl);
+    if (validated.error) return res.status(validated.status).json({ error: validated.error });
+    const { contentType, extension, buffer } = validated;
+    const base = String(filename || 'cover')
+      .replace(/\.[^.]+$/, '')
+      .replace(/[^a-zA-Z0-9_-]/g, '_')
+      .slice(0, 40) || 'cover';
 
-    const contentType = m[1];
-    const buffer = Buffer.from(m[2], 'base64');
-    const ext = (contentType.split('/')[1] || 'jpg').replace('jpeg', 'jpg').replace('+xml', '');
-    const base =
-      (filename || 'cover')
-        .toString()
-        .replace(/\.[^.]+$/, '')
-        .replace(/[^a-zA-Z0-9_-]/g, '_')
-        .slice(0, 40) || 'cover';
-
-    const blob = await put(`covers/${base}.${ext}`, buffer, {
+    const blob = await put(`covers/${base}.${extension}`, buffer, {
       access: 'public',
       addRandomSuffix: true,
       contentType,
     });
-
     return res.status(200).json({ url: blob.url });
-  } catch (e) {
-    return res.status(500).json({ error: String(e?.message || e) });
+  } catch (_e) {
+    // Avoid returning sensitive upstream details to the browser.
+    return res.status(500).json({ error: "Impossible d'enregistrer la couverture" });
   }
 }
