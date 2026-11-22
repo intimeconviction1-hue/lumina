@@ -56,6 +56,7 @@ export default function AllWorks({ searchQuery = "", matchingWorks = [], filters
   const { updateWork } = useWorkMutations();
   const [showMoreFilters, setShowMoreFilters] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [bulkUpdating, setBulkUpdating] = useState(false);
   const activeTab = TYPE_TABS.some(tab => tab.key === filters.type) ? filters.type : "";
 
   // Sélection multiple
@@ -188,47 +189,59 @@ export default function AllWorks({ searchQuery = "", matchingWorks = [], filters
   const handleToggleFavorite = (work) => updateWork(work.id, { favorite: !work.favorite });
 
   const handleBulkApply = async ({ tags, genres, type, status }) => {
+    if (bulkUpdating) return;
     const ids = [...selectedIds];
     const allWorksData = queryClient.getQueryData(WORKS_KEY) || [];
+    const worksById = new Map(allWorksData.map(work => [work.id, work]));
+    const patches = ids.map(id => {
+      const work = worksById.get(id);
+      if (!work) return null;
+      const patch = {};
+      if (tags.length > 0) patch.tags = [...new Set([...(work.tags || []), ...tags])];
+      if (genres.length > 0) patch.genre = [...new Set([...(work.genre || []), ...genres])];
+      if (type) patch.type = type;
+      if (status) Object.assign(patch, statusPatch({ ...work, type: type || work.type }, status));
+      return Object.keys(patch).length ? { id, patch } : null;
+    }).filter(Boolean);
 
-    // Construit les patchs et applique une mise à jour optimiste de tout le lot.
-    const patches = ids
-      .map(id => {
-        const work = allWorksData.find(w => w.id === id);
-        if (!work) return null;
-        const patch = {};
-        if (tags.length > 0) patch.tags = [...new Set([...(work.tags || []), ...tags])];
-        if (genres.length > 0) patch.genre = [...new Set([...(work.genre || []), ...genres])];
-        if (type) patch.type = type;
-        if (status) patch.status = status;
-        return Object.keys(patch).length > 0 ? { id, patch } : null;
-      })
-      .filter(Boolean);
-
-    const prevList = queryClient.getQueryData(WORKS_KEY);
-    const byId = new Map(patches.map(p => [p.id, p.patch]));
-    queryClient.setQueryData(WORKS_KEY, (old = []) =>
-      old.map(w => (byId.has(w.id) ? { ...w, ...byId.get(w.id) } : w))
-    );
-
-    try {
-      // Traiter par lots de 25 pour ne pas saturer le backend serverless.
-      for (let i = 0; i < patches.length; i += 25) {
-        const batch = patches.slice(i, i + 25);
-        await Promise.all(batch.map(({ id, patch }) => worksApi.update(id, patch)));
-      }
-    } catch (e) {
-      // Rollback global si un lot échoue.
-      if (prevList !== undefined) queryClient.setQueryData(WORKS_KEY, prevList);
-      toast({ title: "Échec de la mise à jour groupée", description: String(e?.message || e) });
+    if (!patches.length) {
+      toast({ title: "Aucune modification à appliquer" });
       return;
-    } finally {
-      queryClient.invalidateQueries({ queryKey: WORKS_KEY });
     }
 
-    toast({ title: `${ids.length} œuvre${ids.length > 1 ? "s" : ""} mise${ids.length > 1 ? "s" : ""} à jour` });
-    setSelectMode(false);
-    setSelectedIds(new Set());
+    setBulkUpdating(true);
+    const succeeded = new Set();
+    const failed = [];
+    try {
+      // Do not roll back successful server writes when another request fails.
+      // Reconcile with the server after every batch, including partial failures.
+      for (let i = 0; i < patches.length; i += 25) {
+        const batch = patches.slice(i, i + 25);
+        const results = await Promise.allSettled(batch.map(({ id, patch }) => worksApi.update(id, patch)));
+        results.forEach((result, index) => {
+          if (result.status === "fulfilled") succeeded.add(batch[index].id);
+          else failed.push({ id: batch[index].id, reason: result.reason });
+        });
+      }
+
+      // Keep failed selections so the user can retry only those items.
+      if (failed.length) {
+        setSelectedIds(new Set(failed.map(item => item.id)));
+        const firstError = failed[0].reason?.message || String(failed[0].reason);
+        toast({
+          title: `${succeeded.size} mise(s) à jour, ${failed.length} échec(s)`,
+          description: `Seules les œuvres en échec restent sélectionnées. ${firstError}`,
+          variant: "destructive",
+        });
+      } else {
+        toast({ title: `${succeeded.size} œuvre${succeeded.size > 1 ? "s" : ""} mise${succeeded.size > 1 ? "s" : ""} à jour` });
+        setSelectMode(false);
+        setSelectedIds(new Set());
+      }
+    } finally {
+      await queryClient.invalidateQueries({ queryKey: WORKS_KEY });
+      setBulkUpdating(false);
+    }
   };
 
   if (isError) {
@@ -270,6 +283,7 @@ export default function AllWorks({ searchQuery = "", matchingWorks = [], filters
               <button
                 type="button"
                 onClick={selectAll}
+                disabled={bulkUpdating}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-[12px] font-semibold transition-all"
                 style={{ backgroundColor: "rgba(229,107,58,0.1)", color: "#E56B3A", border: "1px solid rgba(229,107,58,0.3)" }}
               >
@@ -280,6 +294,7 @@ export default function AllWorks({ searchQuery = "", matchingWorks = [], filters
             <button
               type="button"
               onClick={toggleSelectMode}
+              disabled={bulkUpdating}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-[12px] font-semibold transition-all"
               style={{
                 backgroundColor: selectMode ? "rgba(229,107,58,0.12)" : "var(--card-bg)",
@@ -543,6 +558,7 @@ export default function AllWorks({ searchQuery = "", matchingWorks = [], filters
         <BulkActionBar
           count={selectedIds.size}
           onApply={handleBulkApply}
+          loading={bulkUpdating}
           onCancel={() => { setSelectMode(false); setSelectedIds(new Set()); }}
         />
       )}
