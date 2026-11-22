@@ -4,7 +4,7 @@
  */
 
 // Les statuts officiels
-export const STATUSES = ["À voir", "En cours", "Visionné", "Pas sorti", "Envie de lire", "Lu"];
+export const STATUSES = ["À voir", "En cours", "Visionné", "Pas sorti", "Envie de lire"];
 
 // Couleurs canoniques par type — source unique (carte, filtres, badges).
 export const TYPE_COLORS = {
