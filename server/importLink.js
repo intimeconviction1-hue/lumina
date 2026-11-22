@@ -4,7 +4,7 @@ import { fnacBook, fnacBookQuery, fnacProductPath } from './fnac.js';
 import { IMG, tmdbJSON } from './tmdb.js';
 import { franceTvReplay, franceTvReplayPath } from './franceTv.js';
 import { amazonBookPage, amazonProduct } from './amazonBookPage.js';
-import { allocineArticleId, allocineArticleMovie, allocineMovie, allocineMovieId } from './allocine.js';
+import { allocineArticleId, allocineArticleMovie, allocineMovie, allocineMovieId, allocineSeriesId, allocineSeries } from './allocine.js';
 import { okruVideo, okruVideoId } from './okru.js';
 import { loplovFilm, loplovFilmPath } from './loplov.js';
 import { gqDocumentaries, isGqDocumentaryList } from './gqDocumentaries.js';
@@ -360,6 +360,9 @@ export default async function handler(req, res) {
 
     const allocineId = allocineMovieId(url);
     if (allocineId) return res.status(200).json({ work: await allocineMovie(allocineId) });
+
+    const allocineTvId = allocineSeriesId(url);
+    if (allocineTvId) return res.status(200).json({ work: await allocineSeries(allocineTvId) });
 
     const articleId = allocineArticleId(url);
     if (articleId) {
