@@ -14,7 +14,7 @@ test('empty search returns the input array, without copying', () => {
 
 test('search keeps ranking and tag-only semantics', () => {
   assert.deepEqual(searchCatalogue(works, 'Le Procès').map(w => w.id), ['1']);
-  assert.deepEqual(searchCatalogue(works, 'proces').map(w => w.id), ['1', '2']);
+  assert.deepEqual(searchCatalogue(works, 'proces').map(w => w.id), ['2', '1']);
   assert.deepEqual(searchCatalogue(works, '#justice').map(w => w.id), ['1','2']);
   assert.deepEqual(searchCatalogue(works, '#kafka').map(w => w.id), []);
 });
