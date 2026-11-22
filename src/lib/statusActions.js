@@ -63,6 +63,8 @@ export function normalizeStatus(status) {
     "À voir":      "À voir",
     "Visionné":    "Visionné",
     "Pas sorti":   "Pas sorti",
+    "Envie de lire": "Envie de lire",
+    "Lu":          "Lu",
   };
   return map[status] || "À voir";
 }
@@ -108,16 +110,21 @@ export const filterStatus = effectiveStatus;
 // en fallback, et section RecentlyFinished vide en permanence.
 // Utilisée par AllWorks, Home et WorkDetail — ne pas redupliquer la logique.
 export function statusPatch(work, newStatus) {
-  const patch = { status: newStatus };
-  const now = new Date().toISOString();
+  // Une fiche livre conserve en base le statut historique "Visionné" pour "Lu".
+  // Les statuts de lecture ne doivent pas être enregistrés sur les autres types.
   const target = STATUS_ALIASES[newStatus] || newStatus;
+  const normalizedTarget = work?.type === "livre"
+    ? target === "Lu" ? "Visionné" : target === "À voir" ? "Envie de lire" : target
+    : target === "Lu" ? "Visionné" : target === "Envie de lire" ? "À voir" : target;
+  const patch = { status: normalizedTarget };
+  const now = new Date().toISOString();
 
-  if (target === "En cours") {
+  if (normalizedTarget === "En cours") {
     // Démarrage ou reprise ("Revoir" / "Relire") : on horodate le début
     // et on efface la fin précédente, sinon l'œuvre resterait "terminée".
     patch.started_at = now;
     patch.finished_at = null;
-  } else if (target === "Visionné" || target === "Lu") {
+  } else if (normalizedTarget === "Visionné") {
     patch.finished_at = now;
     // started_at volontairement non fabriqué : si l'œuvre n'est jamais passée
     // par "En cours", on n'invente pas une date de début.
