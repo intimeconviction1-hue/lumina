@@ -1,52 +1,43 @@
-const CACHE_NAME = "ma-cultura-v2";
+const CACHE_NAME = "lumina-static-v3";
 
-// Ressources à mettre en cache au démarrage
-const STATIC_ASSETS = [
-  "/",
-  "/index.html",
-  "/manifest.json",
-  "/icon-192.png",
-  "/icon-512.png"
-];
+// Ne conserver hors ligne que les ressources stables. Les pages HTML et les
+// bundles JavaScript doivent toujours venir du déploiement actuel.
+const STATIC_ASSETS = ["/manifest.json", "/icon-192.png", "/icon-512.png"];
 
-// Installation : mise en cache des ressources statiques
 self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
-  );
+  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS)));
   self.skipWaiting();
 });
 
-// Activation : suppression des anciens caches
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
-      Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)))
+      Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key)))
     )
   );
   self.clients.claim();
 });
 
-// Fetch : stratégie "Network First, fallback cache"
 self.addEventListener("fetch", (event) => {
-  // On ne gère que les requêtes GET
   if (event.request.method !== "GET") return;
-
-  // On ignore les requêtes API/backend
   const url = new URL(event.request.url);
-  if (url.pathname.startsWith("/api/") || url.hostname !== location.hostname) return;
+  if (url.origin !== self.location.origin || url.pathname.startsWith("/api/")) return;
 
+  // Ne jamais répondre avec une ancienne application provenant d'un cache
+  // persistant : cela masque notamment les nouveaux liens du menu.
+  if (event.request.mode === "navigate" ||
+      url.pathname.endsWith(".html") ||
+      url.pathname.endsWith(".js") ||
+      url.pathname.endsWith(".css")) return;
+
+  // Pour les assets stables uniquement : réseau d'abord, cache en secours.
   event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        // On met à jour le cache avec la réponse fraîche
+    fetch(event.request).then((response) => {
+      if (response.ok && response.type === "basic") {
         const clone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-        return response;
-      })
-      .catch(() => {
-        // Fallback : réponse depuis le cache si offline
-        return caches.match(event.request).then((cached) => cached || caches.match("/"));
-      })
+        event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone)));
+      }
+      return response;
+    }).catch(async () => (await caches.match(event.request)) || Response.error())
   );
 });
