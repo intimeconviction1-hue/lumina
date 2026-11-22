@@ -7,7 +7,7 @@ import { useWorks, WORKS_KEY } from "@/hooks/useWorks";
 import { worksApi } from "@/api/works";
 import { useWorkMutations } from "@/hooks/useWorkMutations";
 import { StatusButton, TypeButton } from "../components/works/FilterButtons";
-import { X, CheckSquare, Square, Users, SlidersHorizontal, Flame, Scale } from "lucide-react";
+import { X, CheckSquare, Square, Users, SlidersHorizontal, Flame, Scale, Download } from "lucide-react";
 import BulkActionBar from "../components/works/BulkActionBar";
 import { useToast } from "@/components/ui/use-toast";
 import { STATUS_CONFIG, TYPE_COLORS, statusPatch } from "@/lib/statusActions";
@@ -55,6 +55,7 @@ export default function AllWorks({ searchQuery = "", matchingWorks = [], filters
   const { toast } = useToast();
   const { updateWork } = useWorkMutations();
   const [showMoreFilters, setShowMoreFilters] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const activeTab = TYPE_TABS.some(tab => tab.key === filters.type) ? filters.type : "";
 
   // Sélection multiple
@@ -147,6 +148,42 @@ export default function AllWorks({ searchQuery = "", matchingWorks = [], filters
   }, [matchingWorks, filters.sort]);
 
   // Optimistic + rollback + toast d'erreur sont gérés par le hook useWorkMutations.
+  const handleExport = async () => {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      // Full records: the catalogue query deliberately omits personal_note and descriptions.
+      const records = await worksApi.list("-created_date", 10000);
+      if (!Array.isArray(records)) throw new Error("Réponse de bibliothèque invalide.");
+      if (records.length === 10000) {
+        throw new Error("Export interrompu : la limite de 10 000 œuvres est atteinte. Utilisez une sauvegarde de base de données.");
+      }
+      const exportedAt = new Date().toISOString();
+      const payload = {
+        format: "lumina-works-export",
+        version: 1,
+        exported_at: exportedAt,
+        count: records.length,
+        note: "Les images sont référencées par URL, elles ne sont pas incluses dans ce fichier.",
+        works: records,
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `lumina-bibliotheque-${exportedAt.slice(0, 10)}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 30000);
+      toast({ title: "Export préparé", description: `${records.length} œuvres. Vérifiez le fichier dans vos téléchargements.` });
+    } catch (error) {
+      toast({ title: "Export impossible", description: String(error?.message || error), variant: "destructive" });
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const handleStatusChange = (work, newStatus) => updateWork(work.id, statusPatch(work, newStatus));
   const handleToggleFavorite = (work) => updateWork(work.id, { favorite: !work.favorite });
 
@@ -252,6 +289,15 @@ export default function AllWorks({ searchQuery = "", matchingWorks = [], filters
             >
               {selectMode ? <><X className="w-3.5 h-3.5" /> Annuler</> : <><Square className="w-3.5 h-3.5" /> Sélectionner</>}
             </button>
+            {!selectMode && (
+              <button type="button" onClick={handleExport} disabled={exporting || isLoading || isError}
+                aria-label="Exporter toutes les œuvres en JSON"
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
+                style={{ borderColor: "var(--border)", color: "var(--text-primary)", background: "var(--card-bg)" }}>
+                <Download className="h-3.5 w-3.5" aria-hidden="true" />
+                {exporting ? "Export…" : "Exporter"}
+              </button>
+            )}
             {!selectMode && (
               <Link to="/Thematiques" className="inline-flex min-h-11 items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold"
                 style={{ borderColor: "var(--border)", color: "var(--text-primary)", backgroundColor: "var(--card-bg)" }}>

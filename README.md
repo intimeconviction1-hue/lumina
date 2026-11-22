@@ -57,3 +57,17 @@ npm run lint       # ESLint
 
 L'authentification est volontairement neutralisée (`src/lib/AuthContext.jsx` : utilisateur
 unique, toujours connecté) — Lumina est une bibliothèque perso.
+
+## Export de la bibliothèque
+
+Depuis **Toutes les œuvres**, le bouton **Exporter** télécharge un fichier JSON
+contenant toutes les fiches retournées par l’API (y compris les notes personnelles
+et descriptions). L’export effectue uniquement une lecture de la base.
+
+Important :
+- Les couvertures ne sont pas copiées : seules leurs URL sont conservées.
+- Ce fichier ne remplace pas les sauvegardes Neon et Vercel Blob.
+- Aucune fonction de restauration/import de ce JSON n’est encore fournie.
+- Vérifier le téléchargement, son nombre d’œuvres et conserver le fichier hors du site.
+- Si la limite de 10 000 œuvres est atteinte, l’export refuse de produire un fichier
+  potentiellement incomplet.
