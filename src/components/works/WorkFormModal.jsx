@@ -223,7 +223,17 @@ export default function WorkFormModal({ open, onClose, work, onSave, onAddGqSele
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    // Allow selecting the same file again after a validation error.
+    e.target.value = "";
     setImageError("");
+    if (!["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.type)) {
+      setImageError("Format non pris en charge : choisissez JPG, PNG, WEBP ou GIF.");
+      return;
+    }
+    if (!file.size || file.size > 2 * 1024 * 1024) {
+      setImageError("La couverture doit faire moins de 2 Mo.");
+      return;
+    }
     setUploading(true);
     try {
       const dataUrl = await fileToDataUrl(file);
@@ -433,7 +443,7 @@ export default function WorkFormModal({ open, onClose, work, onSave, onAddGqSele
                   style={{ borderColor: "var(--border)", backgroundColor: "var(--bg)", color: "var(--text-secondary)" }}>
                   <Upload className="w-3.5 h-3.5" />
                   {uploading ? "Upload en cours…" : "Choisir un fichier"}
-                  <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+                  <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={handleImageUpload} className="hidden" />
                 </label>
                 <Input
                   value={form.cover_image}
