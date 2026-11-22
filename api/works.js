@@ -29,6 +29,7 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'GET') {
+      res.setHeader('Cache-Control', 'private, no-store');
       if (req.query.mode === 'person-studies') {
         res.setHeader('Cache-Control', 'no-store');
         const [table] = await sql`select to_regclass('person_studies') as name`;
@@ -86,6 +87,7 @@ export default async function handler(req, res) {
     res.setHeader('Allow', 'GET, POST, DELETE');
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (e) {
-    return res.status(e?.status || 500).json({ error: String(e?.message || e) });
+    console.error('Lumina works API error:', e);
+    return res.status(500).json({ error: 'Une erreur interne est survenue.' });
   }
 }
