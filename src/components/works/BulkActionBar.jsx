@@ -4,22 +4,19 @@ import { X, Check, ChevronDown } from "lucide-react";
 const ALL_TYPES = ["film", "série", "livre", "documentaire", "podcast", "vidéo", "article"];
 const ALL_STATUSES = ["À voir", "Envie de lire", "En cours", "Visionné", "Lu", "Pas sorti"];
 
-export default function BulkActionBar({ count, onApply, onCancel }) {
+export default function BulkActionBar({ count, onApply, onCancel, loading = false }) {
   const [tags, setTags] = useState("");
   const [genres, setGenres] = useState("");
   const [type, setType] = useState("");
   const [status, setStatus] = useState("");
-  const [loading, setLoading] = useState(false);
 
   const handleApply = async () => {
-    setLoading(true);
     await onApply({
       tags: tags.split(",").map(t => t.trim().toLowerCase()).filter(Boolean),
       genres: genres.split(",").map(g => g.trim().toLowerCase()).filter(Boolean),
       type: type || null,
       status: status || null,
     });
-    setLoading(false);
   };
 
   const inputStyle = {
@@ -57,7 +54,7 @@ export default function BulkActionBar({ count, onApply, onCancel }) {
             style={{ backgroundColor: "#E56B3A" }}>{count}</span>
           œuvre{count > 1 ? "s" : ""} sélectionnée{count > 1 ? "s" : ""}
         </span>
-        <button onClick={onCancel} aria-label="Fermer les actions groupées" className="grid min-h-11 min-w-11 place-items-center text-white/60 hover:text-white transition-colors">
+        <button onClick={onCancel} disabled={loading} aria-label="Fermer les actions groupées" className="grid min-h-11 min-w-11 place-items-center text-white/60 hover:text-white transition-colors">
           <X className="w-4 h-4" />
         </button>
       </div>
@@ -117,6 +114,7 @@ export default function BulkActionBar({ count, onApply, onCancel }) {
         <button
           type="button"
           onClick={onCancel}
+          disabled={loading}
           className="px-4 py-2 rounded-[8px] text-[12.5px] font-semibold transition-all"
           style={{ backgroundColor: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.7)" }}
         >
