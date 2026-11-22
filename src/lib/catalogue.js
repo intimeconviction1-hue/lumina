@@ -60,30 +60,50 @@ function closeWord(term, word) {
     (a[0] === b[1] && a[1] === b[0] && a.slice(2) === b.slice(2));
 }
 
+// Cache per immutable React Query work object. Updated rows receive new objects,
+// so a changed title/tag/creator automatically gets a fresh search index.
+const SEARCH_INDEX = new WeakMap();
+
+function indexedWork(work) {
+  let item = SEARCH_INDEX.get(work);
+  if (item) return item;
+
+  const title = normalizeCatalogueText(work.title);
+  const tags = normalizeCatalogueText((work.tags || []).join(" "));
+  const searchable = normalizeCatalogueText([
+    work.title, work.creator, work.creator_name, work.type, work.year || work.released_year,
+    ...(work.genre || []), ...(work.tags || []), work.platform, work.country,
+  ].join(" "));
+  const titleAndCreators = normalizeCatalogueText([work.title, work.creator, work.creator_name].join(" "));
+  item = { title, tags, searchable, words: titleAndCreators.split(" ") };
+  SEARCH_INDEX.set(work, item);
+  return item;
+}
+
 export function searchCatalogue(works, query) {
   const text = normalizeCatalogueText(query);
   if (!text) return works;
   const terms = text.split(" ");
   const tagsOnly = query.trimStart().startsWith("#");
+  const matches = [];
 
-  return works.map(work => {
-    const title = normalizeCatalogueText(work.title);
-    const tags = normalizeCatalogueText((work.tags || []).join(" "));
-    const searchable = tagsOnly ? tags : normalizeCatalogueText([
-      work.title, work.creator, work.creator_name, work.type, work.year || work.released_year,
-      ...(work.genre || []), ...(work.tags || []), work.platform, work.country,
-    ].join(" "));
+  for (const work of works) {
+    const index = indexedWork(work);
+    const searchable = tagsOnly ? index.tags : index.searchable;
     const exact = terms.every(term => searchable.includes(term));
-    if (!exact) {
-      const words = normalizeCatalogueText([work.title, work.creator, work.creator_name].join(" ")).split(" ");
-      if (tagsOnly || !terms.every(term => searchable.includes(term) ||
-        (term.length >= 5 && words.some(word => closeWord(term, word))))) return null;
-    }
+    if (!exact && (tagsOnly || !terms.every(term =>
+      searchable.includes(term) || (term.length >= 5 && index.words.some(word => closeWord(term, word)))
+    ))) continue;
 
-    const ranking = !exact ? 0 : title === text ? 4 : title.startsWith(text) ? 3 :
-      terms.every(term => title.includes(term)) ? 2 : 1;
-    return { work, ranking };
-  }).filter(Boolean).sort((a, b) => b.ranking - a.ranking).map(({ work }) => work);
+    const ranking = !exact ? 0 : index.title === text ? 4 :
+      index.title.startsWith(text) ? 3 :
+      terms.every(term => index.title.includes(term)) ? 2 : 1;
+    matches.push({ work, ranking });
+  }
+
+  // Native stable sorting retains the original order for ties.
+  matches.sort((a, b) => b.ranking - a.ranking);
+  return matches.map(item => item.work);
 }
 
 export function hasPriority(work, priority) {
