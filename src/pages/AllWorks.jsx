@@ -159,14 +159,24 @@ export default function AllWorks({ searchQuery = "", matchingWorks = [], filters
       if (records.length === 10000) {
         throw new Error("Export interrompu : la limite de 10 000 œuvres est atteinte. Utilisez une sauvegarde de base de données.");
       }
+      // Person-study subscriptions live in a separate table from works.
+      const studiesResponse = await fetch("/api/works?mode=person-studies", {
+        headers: { Accept: "application/json" },
+        cache: "no-store",
+      });
+      if (!studiesResponse.ok) throw new Error("Impossible de récupérer les études de personnes.");
+      const personStudies = await studiesResponse.json();
+      if (!Array.isArray(personStudies)) throw new Error("Réponse des études de personnes invalide.");
       const exportedAt = new Date().toISOString();
       const payload = {
         format: "lumina-works-export",
         version: 1,
         exported_at: exportedAt,
         count: records.length,
+        person_studies_count: personStudies.length,
         note: "Les images sont référencées par URL, elles ne sont pas incluses dans ce fichier.",
         works: records,
+        person_studies: personStudies,
       };
       const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json;charset=utf-8" });
       const url = URL.createObjectURL(blob);
