@@ -62,7 +62,8 @@ unique, toujours connecté) — Lumina est une bibliothèque perso.
 
 Depuis **Toutes les œuvres**, le bouton **Exporter** télécharge un fichier JSON
 contenant toutes les fiches retournées par l’API (y compris les notes personnelles
-et descriptions). L’export effectue uniquement une lecture de la base.
+et descriptions), ainsi que les inscriptions aux études de personnes. L’export
+effectue uniquement une lecture de la base.
 
 Important :
 - Les couvertures ne sont pas copiées : seules leurs URL sont conservées.
@@ -71,3 +72,5 @@ Important :
 - Vérifier le téléchargement, son nombre d’œuvres et conserver le fichier hors du site.
 - Si la limite de 10 000 œuvres est atteinte, l’export refuse de produire un fichier
   potentiellement incomplet.
+
+La procédure de vérification, sauvegarde PostgreSQL et restauration de test se trouve dans [docs/BACKUP_AND_RESTORE.md](docs/BACKUP_AND_RESTORE.md).
