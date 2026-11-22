@@ -1,5 +1,5 @@
 import { put } from '@vercel/blob';
-import { validateCoverDataUrl } from './coverValidation.js';
+import { validateCoverDataUrl } from '../server/coverValidation.js';
 
 // Reçoit une image validée en data-URL base64 et la stocke sur Vercel Blob.
 // Renvoie { url } — l'URL publique à enregistrer dans cover_image.

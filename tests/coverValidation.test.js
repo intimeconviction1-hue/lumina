@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { MAX_COVER_BYTES, validateCoverDataUrl } from '../api/coverValidation.js';
+import { MAX_COVER_BYTES, validateCoverDataUrl } from '../server/coverValidation.js';
 
 function url(type, bytes) {
   return `data:${type};base64,${bytes.toString('base64')}`;
