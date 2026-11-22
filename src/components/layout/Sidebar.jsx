@@ -209,7 +209,7 @@ export default function Sidebar({ currentPage, darkMode, onToggleDark, onNavigat
         ))}
       </div>
 
-      {/* YouTube link */}
+      {/* Liens externes : YouTube et Akadem */}
       <div className="px-3 pb-2">
         <div className="px-3 mb-1.5">
           <span className="text-[9.5px] font-bold uppercase tracking-[0.14em]" style={{ color: "var(--text-muted)" }}>
@@ -235,6 +235,27 @@ export default function Sidebar({ currentPage, darkMode, onToggleDark, onNavigat
             <PlayCircle className="w-3.5 h-3.5" style={{ color: "#CC2200", strokeWidth: 1.8 }} />
           </span>
           YouTube — À regarder
+        </a>
+        <a
+          href="https://akadem.org/search?searchQuery=les+cinq+livres"
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={onNavigate}
+          className="flex items-center gap-2.5 px-3 py-2.5 mt-1 rounded-[11px] text-[13px] font-medium transition-all hover:opacity-90"
+          style={{
+            backgroundColor: "rgba(99,102,241,0.07)",
+            color: "var(--text-secondary)",
+            userSelect: "none",
+            WebkitTapHighlightColor: "transparent",
+          }}
+        >
+          <span
+            className="w-6 h-6 rounded-[8px] flex items-center justify-center flex-shrink-0"
+            style={{ backgroundColor: "rgba(99,102,241,0.1)" }}
+          >
+            <BookOpen className="w-3.5 h-3.5" style={{ color: "#6366F1", strokeWidth: 1.8 }} />
+          </span>
+          Akadem — Les cinq livres
         </a>
       </div>
 
