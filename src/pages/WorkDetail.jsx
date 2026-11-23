@@ -15,6 +15,7 @@ import { worksApi } from "@/api/works";
 import { completionDateLabel, formatWorkDate } from "@/lib/workDates";
 import { useWorkMutations } from "@/hooks/useWorkMutations";
 import WorksLoadError from "@/components/works/WorksLoadError";
+import WorkReview from "@/components/works/WorkReview";
 
 const ACTION_ICONS = { Play, Pause, CheckCircle2, RotateCcw };
 
@@ -263,6 +264,8 @@ export default function WorkDetail({ onEditWork, onBack, onDeleteWork }) {
                 )}
               </div>
 
+              <WorkReview key={workId} work={work} />
+
               {/* Bouton Regarder maintenant */}
               {work.source_url && (
                 <div className="mt-4">
@@ -295,16 +298,6 @@ export default function WorkDetail({ onEditWork, onBack, onDeleteWork }) {
                     style={{ backgroundColor: "rgba(212,175,55,0.05)", borderLeft: "3px solid #D4AF37", color: "var(--text-secondary)" }}>
                     {work.personal_note}
                   </div>
-                </div>
-              )}
-
-              {/* Short review */}
-              {work.short_review && (
-                <div className="mt-5">
-                  <h3 className="text-[12px] font-semibold uppercase tracking-[0.1em] mb-3" style={{ color: "var(--text-muted)" }}>Mini critique</h3>
-                  <p className="text-[13.5px] leading-relaxed" style={{ color: "var(--text-secondary)" }}>
-                    «&nbsp;{work.short_review}&nbsp;»
-                  </p>
                 </div>
               )}
 
