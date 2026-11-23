@@ -351,6 +351,9 @@ export default function AllWorks({ searchQuery = "", matchingWorks = [], filters
           const isActive = activeTab === tab.key;
           const count = tab.key === "" ? works.length : tabCounts[tab.key] || 0;
           const color = tab.color || "#C9A84C";
+          const film = tab.key === "film";
+          const tabBackground = isActive ? `${color}15` : "var(--card-bg)";
+          const tabBorder = isActive ? `${color}55` : "var(--border)";
           return (
             <button
               key={tab.key}
@@ -361,9 +364,11 @@ export default function AllWorks({ searchQuery = "", matchingWorks = [], filters
               }}
               className="flex min-h-11 items-center gap-2 px-3 py-2.5 rounded-[12px] text-[13.5px] font-semibold transition-all"
               style={{
-                backgroundColor: isActive ? (tab.key === "" ? "rgba(201,168,76,0.12)" : `${color}15`) : "var(--card-bg)",
-                color: isActive ? paletteText(tab.key === "" ? "#C9A84C" : color) : "var(--text-secondary)",
-                border: `1.5px solid ${isActive ? (tab.key === "" ? "rgba(201,168,76,0.4)" : `${color}55`) : "var(--border)"}`,
+                backgroundColor: film
+                  ? `var(${isActive ? "--film-button-active-bg" : "--film-button-bg"}, ${tabBackground})`
+                  : tabBackground,
+                color: film || isActive ? paletteText(color) : "var(--text-secondary)",
+                border: `1.5px solid ${film ? `var(--film-button-border, ${tabBorder})` : tabBorder}`,
                 boxShadow: isActive ? `0 2px 10px ${tab.key === "" ? "rgba(201,168,76,0.15)" : `${color}20`}` : "none",
               }}
             >
@@ -373,7 +378,7 @@ export default function AllWorks({ searchQuery = "", matchingWorks = [], filters
                 className="text-[11px] font-bold px-1.5 py-0.5 rounded-full"
                 style={{
                   backgroundColor: isActive ? (tab.key === "" ? "rgba(201,168,76,0.2)" : `${color}22`) : "var(--border-subtle)",
-                  color: isActive ? paletteText(tab.key === "" ? "#C9A84C" : color) : "var(--text-muted)",
+                  color: film || isActive ? paletteText(color) : "var(--text-muted)",
                 }}
               >
                 {count}

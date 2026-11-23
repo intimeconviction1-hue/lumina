@@ -29,6 +29,9 @@ export function StatusButton({ status, active, onClick, label }) {
 
 export function TypeButton({ type, active, onClick }) {
   const color = TYPE_COLORS[type] || "#9FA3AD";
+  const film = type === "film";
+  const background = active ? `${color}18` : "var(--card-bg)";
+  const border = active ? color : "var(--border)";
   return (
     <button
       type="button"
@@ -36,9 +39,11 @@ export function TypeButton({ type, active, onClick }) {
       onClick={onClick}
       className="flex-shrink-0 min-h-10 px-3 py-1.5 rounded-[10px] text-[11px] font-semibold transition-all capitalize whitespace-nowrap"
       style={{
-        border: `1.5px solid ${active ? color : "var(--border)"}`,
-        backgroundColor: active ? `${color}18` : "var(--card-bg)",
-        color: active ? paletteText(color) : "var(--text-secondary)",
+        border: `1.5px solid ${film ? `var(--film-button-border, ${border})` : border}`,
+        backgroundColor: film
+          ? `var(${active ? "--film-button-active-bg" : "--film-button-bg"}, ${background})`
+          : background,
+        color: film || active ? paletteText(color) : "var(--text-secondary)",
         boxShadow: active ? `0 2px 8px ${color}25` : "none",
       }}>
       {type}

@@ -195,14 +195,13 @@ export default function Sidebar({ currentPage, darkMode, onToggleDark, onNavigat
               navigate(`/AllWorks?type=${encodeURIComponent(type)}`);
               onNavigate?.();
             }}
-            className="flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-[12.5px] font-medium transition-all mb-0.5"
+            className="sidebar-type-link mb-0.5 flex min-h-11 items-center gap-2.5 rounded-[10px] px-3 py-2 text-[12.5px] font-medium transition-colors"
             style={{
-              color: "var(--text-secondary)",
-              userSelect: "none",
-              WebkitTapHighlightColor: "transparent",
+              "--shortcut-ink": paletteText(color),
+              "--shortcut-border": type === "film" ? "var(--film-button-border, transparent)" : undefined,
+              "--shortcut-bg": type === "film" ? "var(--film-button-bg, transparent)" : undefined,
+              "--shortcut-color": type === "film" ? paletteText(color) : undefined,
             }}
-            onMouseEnter={e => { e.currentTarget.style.backgroundColor = `${color}10`; e.currentTarget.style.color = color; }}
-            onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--text-secondary)"; }}
           >
             <span className="text-[15px] w-5 text-center leading-none">{emoji}</span>
             {label}

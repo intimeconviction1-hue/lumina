@@ -1,3 +1,4 @@
+import { paletteText } from "@/lib/palette";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -16,31 +17,26 @@ export default function TypeShortcuts({ works = [] }) {
     <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-3">
       {TYPES.map(({ key, label, emoji, color, bg }) => {
         const count = works.filter(w => w.type === key).length;
+        const film = key === "film";
+        const ink = paletteText(color);
         return (
           <button
             key={key}
             onClick={() => navigate(`/AllWorks?type=${encodeURIComponent(key)}`)}
-            className="flex flex-col items-center justify-center gap-1 sm:gap-2 py-3 sm:py-4 rounded-[14px] transition-all group"
+            type="button"
+            className="home-type-shortcut flex flex-col items-center justify-center gap-1 rounded-[14px] border-[1.5px] py-3 transition-colors motion-safe:transition-[transform,background-color,border-color] motion-safe:hover:-translate-y-0.5 sm:gap-2 sm:py-4"
             style={{
-              backgroundColor: bg,
-              border: `1.5px solid ${color}22`,
-            }}
-            onMouseEnter={e => {
-              e.currentTarget.style.transform = "translateY(-3px)";
-              e.currentTarget.style.boxShadow = `0 6px 20px ${color}25`;
-              e.currentTarget.style.borderColor = `${color}55`;
-            }}
-            onMouseLeave={e => {
-              e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.boxShadow = "none";
-              e.currentTarget.style.borderColor = `${color}22`;
+              "--shortcut-border": film ? `var(--film-button-border, ${color}22)` : `${color}22`,
+              "--shortcut-ink": ink,
+              backgroundColor: film ? `var(--film-button-bg, ${bg})` : bg,
+              color: ink,
             }}
           >
             <span className="text-[22px] sm:text-[28px] leading-none">{emoji}</span>
-            <span className="text-[11px] sm:text-[12.5px] font-bold" style={{ color }}>{label}</span>
+            <span className="text-[11px] sm:text-[12.5px] font-bold">{label}</span>
             <span
               className="text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-full"
-              style={{ backgroundColor: `${color}18`, color }}
+              style={{ backgroundColor: film ? `var(--film-button-active-bg, ${color}18)` : `${color}18` }}
             >
               {count}
             </span>

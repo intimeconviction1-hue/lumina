@@ -65,6 +65,9 @@
   --border: rgba(175,195,224,0.28);
   --border-subtle: rgba(175,195,224,0.14);
   --control-border: #788ba7;
+  --film-button-bg: #203d62;
+  --film-button-active-bg: #2b507b;
+  --film-button-border: #82b6f0;
   --shadow-card: 0 2px 12px rgba(0,0,0,0.35);
   --shadow-elevated: 0 12px 36px rgba(0,0,0,0.55);
   --shadow-sm: 0 1px 6px rgba(0,0,0,0.25);
@@ -306,4 +309,24 @@ textarea::placeholder {
 
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
   .cinema-card:hover > .work-card-surface { transform: translateY(-4px); }
+}
+
+/* Hover and keyboard focus share the same tones as the type labels. */
+.home-type-shortcut {
+  border-color: var(--shortcut-border);
+}
+
+.home-type-shortcut:is(:hover, :focus-visible) {
+  border-color: var(--shortcut-ink);
+}
+
+.sidebar-type-link {
+  border: 1px solid var(--shortcut-border, transparent);
+  background-color: var(--shortcut-bg, transparent);
+  color: var(--shortcut-color, var(--text-secondary));
+}
+
+.sidebar-type-link:is(:hover, :focus-visible) {
+  border-color: var(--shortcut-ink);
+  color: var(--shortcut-ink);
 }
