@@ -160,7 +160,7 @@ export default function Home({ onAddWork, onEditWork, onDeleteWork }) {
       )}
 
       {/* Derniers ajouts sous forme de cartes miniatures — masqué pendant un filtre par tags (non pertinent) */}
-      {!isLoading && works.length > 0 && activeTags.length === 0 && (
+      {!isLoading && activeTags.length === 0 && (
         <RecentWorks works={works} />
       )}
 

@@ -2,10 +2,11 @@ import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
-  ArrowLeft, Pencil, Trash2, Heart, FileText,
+  ArrowLeft, Pencil, Trash2, Check, FileText,
   Calendar, CalendarPlus, CalendarCheck, MapPin, Globe, Clock, Monitor, BookMarked, Zap, Play, Pause, CheckCircle2, RotateCcw, Flag, PlayCircle, BookOpen
 } from "lucide-react";
 import StarRating from "../components/works/StarRating";
+import FavoriteHeart from "../components/works/FavoriteHeart";
 import { motion, useReducedMotion } from "framer-motion";
 import { typeIcons, typeColors } from "../components/works/WorkCard";
 import { STATUS_CONFIG, STATUS_ACTIONS, effectiveStatus, isFinished, statusPatch } from "@/lib/statusActions";
@@ -34,7 +35,7 @@ function WorkDates({ work }) {
   const dates = [
     { label: "Date d’ajout", value: work.created_date, icon: CalendarPlus },
     { label: "Date de début", value: work.started_at, icon: Play, optional: true },
-    { label: completionDateLabel(work.type), value: work.finished_at, icon: CalendarCheck, optional: !isFinished(work) },
+    { label: completionDateLabel(work.type), value: work.finished_at, icon: CalendarCheck, optional: !isFinished(work), animate: true },
     { label: "Dernière modification", value: work.updated_date, icon: Clock, optional: true },
   ];
 
@@ -44,11 +45,11 @@ function WorkDates({ work }) {
       className="mt-5 grid grid-cols-2 gap-x-3 gap-y-3 rounded-xl border px-3 py-3 sm:px-4"
       style={{ borderColor: "var(--border)", backgroundColor: "var(--bg)" }}
     >
-      {dates.map(({ label, value, icon: Icon, optional }) => {
+      {dates.map(({ label, value, icon: Icon, optional, animate }) => {
         const formatted = formatWorkDate(value);
         if (!formatted && optional) return null;
         return (
-          <div key={label} className="min-w-0">
+          <div key={animate ? `${label}-${value}` : label} className={animate && formatted ? "lumina-fade-in min-w-0" : "min-w-0"}>
             <dt className="flex items-start gap-1.5 text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
               <Icon aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               {label}
@@ -64,7 +65,7 @@ function WorkDates({ work }) {
 }
 
 export default function WorkDetail({ onEditWork, onBack, onDeleteWork }) {
-  const { updateWork } = useWorkMutations();
+  const { update, updateWork } = useWorkMutations();
   const navigate = useNavigate();
   const reduceMotion = useReducedMotion();
 
@@ -80,7 +81,7 @@ export default function WorkDetail({ onEditWork, onBack, onDeleteWork }) {
 
   // Optimistic + rollback + toast + invalidation gérés par useWorkMutations
   // (le hook patche à la fois la liste WORKS_KEY et le détail ["work", id]).
-  const handleStatusChange = (_, newStatus) => updateWork(workId, statusPatch(work, newStatus));
+  const handleStatusChange = (newStatus) => update.mutate({ id: workId, patch: statusPatch(work, newStatus), optimistic: false });
   // work.rating / work.anticipation_rating reviennent en string depuis Postgres (colonnes numeric) : on compare en nombre.
   const handleRatingChange = (r) => updateWork(workId, { rating: r === Number(work.rating) ? 0 : r });
   const handleAnticipationChange = (r) => updateWork(workId, { anticipation_rating: r === Number(work.anticipation_rating) ? 0 : r });
@@ -133,6 +134,7 @@ export default function WorkDetail({ onEditWork, onBack, onDeleteWork }) {
   const goGenre = (g) => navigate(`/AllWorks?genre=${encodeURIComponent(g)}`);
   const logicalStatus = effectiveStatus(work);
   const sConf = STATUS_CONFIG[logicalStatus] || STATUS_CONFIG["À voir"];
+  const finished = isFinished(work);
   const actions = STATUS_ACTIONS[logicalStatus] || STATUS_ACTIONS[work.status] || [];
 
   return (
@@ -165,7 +167,7 @@ export default function WorkDetail({ onEditWork, onBack, onDeleteWork }) {
                 aria-pressed={Boolean(work.favorite)}
                 className="absolute top-4 right-4 w-11 h-11 rounded-full flex items-center justify-center transition-colors motion-safe:transition-transform motion-safe:hover:scale-105"
                 style={{ backgroundColor: "rgba(0,0,0,0.4)", backdropFilter: "blur(8px)" }}>
-                <Heart className={`w-5 h-5 ${work.favorite ? "fill-[#EC4899] text-[#EC4899]" : "text-white"}`} />
+                <FavoriteHeart className="h-5 w-5" favorite={work.favorite} />
               </button>
             </div>
 
@@ -213,16 +215,19 @@ export default function WorkDetail({ onEditWork, onBack, onDeleteWork }) {
               <div className="flex flex-wrap items-center gap-3 mt-5">
                 <span key={logicalStatus} className="lumina-fade-in inline-flex items-center gap-2 px-3.5 py-2 rounded-full text-[13px] font-semibold"
                   style={{ backgroundColor: sConf.bg, color: sConf.color }}>
-                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${logicalStatus === "En cours" ? "motion-safe:animate-pulse" : ""}`}
-                    style={{ backgroundColor: sConf.dot }} />
+                  {finished ? <Check aria-hidden="true" className="h-4 w-4" /> : (
+                    <span className={`w-2 h-2 rounded-full flex-shrink-0 ${logicalStatus === "En cours" ? "motion-safe:animate-pulse" : ""}`}
+                      style={{ backgroundColor: sConf.dot }} />
+                  )}
                   {sConf.label}
                 </span>
                 {actions.map(action => {
                   const Icon = ACTION_ICONS[action.icon];
                   return (
                     <button key={action.id}
-                      onClick={() => handleStatusChange(work, action.targetStatus)}
-                      className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full text-[13px] font-semibold border transition-all hover:opacity-90"
+                      onClick={() => handleStatusChange(action.targetStatus)}
+                      disabled={update.isPending}
+                      className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full text-[13px] font-semibold border transition-all hover:opacity-90 disabled:opacity-60"
                       style={action.variant === "primary" ? {
                         backgroundColor: "#D4AF37", color: "#0B2545", borderColor: "#D4AF37",
                       } : {
@@ -239,7 +244,7 @@ export default function WorkDetail({ onEditWork, onBack, onDeleteWork }) {
 
               {/* Note — impatience avant, satisfaction après (demi-étoiles) */}
               <div className="mt-4">
-                {isFinished(work) ? (
+                {finished ? (
                   <div>
                     <p className="text-[11px] font-semibold uppercase tracking-[0.1em] mb-2" style={{ color: "var(--text-muted)" }}>Ma note (satisfaction)</p>
                     <StarRating value={work.rating || 0} onChange={handleRatingChange} size="md" />

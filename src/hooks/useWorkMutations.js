@@ -20,11 +20,12 @@ export function useWorkMutations() {
 
   const update = useMutation({
     mutationFn: ({ id, patch }) => worksApi.update(id, patch),
-    onMutate: async ({ id, patch }) => {
+    onMutate: async ({ id, patch, optimistic = true }) => {
       await Promise.all([
         queryClient.cancelQueries({ queryKey: WORKS_KEY }),
         queryClient.cancelQueries({ queryKey: ["work", id], exact: true }),
       ]);
+      if (!optimistic) return;
       const prevWork = queryClient.getQueryData(WORKS_KEY)?.find((work) => work.id === id);
       const prevDetail = queryClient.getQueryData(["work", id]);
       patchCaches(queryClient, id, patch);

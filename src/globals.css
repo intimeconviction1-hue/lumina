@@ -295,3 +295,41 @@ button, a, [role="button"] {
     display: none;
   }
 }
+
+.work-card-surface {
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-card);
+}
+
+.work-card-open {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.cinema-card:focus-within .work-card-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .cinema-card:hover .work-card-open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .cinema-card:hover > .work-card-surface {
+    box-shadow: 0 12px 32px rgba(201,168,76,0.18), 0 2px 8px rgba(0,0,0,0.08);
+    border-color: rgba(201,168,76,0.35);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .work-card-open { transition: opacity 200ms ease; }
+  .work-card-surface { transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease; }
+  .lumina-new-work { animation: fadeUp 0.38s ease-out both; }
+  .lumina-surprise-cover { animation: fadeUp 0.13s ease-out both; }
+}
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .cinema-card:hover > .work-card-surface { transform: translateY(-4px); }
+}

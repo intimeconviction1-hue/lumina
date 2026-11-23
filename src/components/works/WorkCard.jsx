@@ -2,13 +2,15 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import {
   MoreVertical, Pencil, Trash2, ArrowRightLeft,
-  BookOpen, Film, Tv, Mic, Video, FileText, Radio, Heart
+  BookOpen, Film, Tv, Mic, Video, FileText, Radio, Heart, ArrowUpRight, Check
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger, DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
 import { STATUS_CONFIG, STATUSES, TYPE_COLORS, effectiveStatus, isFinished } from "@/lib/statusActions";
+
+import FavoriteHeart from "./FavoriteHeart";
 
 export const typeIcons = {
   livre: BookOpen, film: Film, série: Tv, documentaire: Radio,
@@ -33,6 +35,7 @@ export default function WorkCard({ work, onEdit, onDelete, onStatusChange, onTog
   const tColor = typeColors[work.type] || "#C9A84C";
   const logicalStatus = effectiveStatus(work);
   const sConfig = statusConfig[logicalStatus] || statusConfig["À voir"];
+  const finished = isFinished(work);
   const displayYear = work.year || work.released_year;
   const mainPlatform = Array.isArray(work.platform) ? work.platform[0] : work.platform;
 
@@ -53,16 +56,11 @@ export default function WorkCard({ work, onEdit, onDelete, onStatusChange, onTog
       className="group cinema-card"
     >
       <div
-        className="relative"
+        className="work-card-surface relative"
         style={{
           backgroundColor: "var(--card-bg)",
           borderRadius: "var(--radius-card)",
-          border: "1px solid var(--border)",
-          boxShadow: "var(--shadow-card)",
-          transition: "box-shadow 200ms ease, border-color 200ms ease",
         }}
-        onMouseEnter={e => { e.currentTarget.style.boxShadow = "0 12px 32px rgba(201,168,76,0.18), 0 2px 8px rgba(0,0,0,0.08)"; e.currentTarget.style.borderColor = "rgba(201,168,76,0.35)"; }}
-        onMouseLeave={e => { e.currentTarget.style.boxShadow = "var(--shadow-card)"; e.currentTarget.style.borderColor = "var(--border)"; }}
       >
         {/* Cover zone */}
         <div
@@ -85,7 +83,7 @@ export default function WorkCard({ work, onEdit, onDelete, onStatusChange, onTog
               key={work.cover_image}
               src={work.cover_image}
               alt={work.title}
-              className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.06] cursor-pointer"
+              className="absolute inset-0 w-full h-full object-cover motion-safe:transition-transform motion-safe:duration-500 motion-safe:group-hover:scale-[1.04] cursor-pointer"
               loading="lazy"
               onError={e => { e.currentTarget.style.display = "none"; }}
               onClick={goDetail}
@@ -127,7 +125,7 @@ export default function WorkCard({ work, onEdit, onDelete, onStatusChange, onTog
           </div>
 
           {/* Overlay hover : description */}
-          <div className="work-card-preview absolute inset-0 flex flex-col justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-2.5 pointer-events-none"
+          <div className="work-card-preview absolute inset-0 flex flex-col justify-end opacity-0 group-hover:opacity-100 motion-safe:transition-opacity duration-300 p-2.5 pointer-events-none"
             style={{ background: "linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.4) 50%, transparent 100%)" }}>
             {work.description_preview && (
               <p className="text-white text-[9.5px] leading-relaxed line-clamp-3 mb-8 px-0.5">
@@ -136,13 +134,23 @@ export default function WorkCard({ work, onEdit, onDelete, onStatusChange, onTog
             )}
           </div>
 
+          {!selectMode && (
+            <button
+              type="button"
+              onClick={goDetail}
+              className="work-card-open absolute left-1/2 top-1/2 z-10 inline-flex min-h-11 -translate-x-1/2 -translate-y-1/2 items-center gap-1.5 rounded-lg bg-slate-950/90 px-2.5 text-center text-xs font-semibold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+            >
+              Ouvrir la fiche <ArrowUpRight aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
+            </button>
+          )}
+
           {/* Overlay sélection */}
           {selectMode && selected && (
             <div className="absolute inset-0 pointer-events-none" style={{ backgroundColor: "rgba(229,107,58,0.25)", zIndex: 5 }} />
           )}
 
           {/* Boutons d'action — au-dessus de tout, pointer-events actifs */}
-          <div hidden={selectMode} className={`work-card-actions absolute bottom-2 left-2 right-2 items-center gap-1 transition-opacity duration-300 ${selectMode ? "hidden" : "flex pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100"}`} style={{ zIndex: 10 }}>
+          <div hidden={selectMode} className={`work-card-actions absolute bottom-2 left-2 right-2 items-center gap-1 motion-safe:transition-opacity duration-300 ${selectMode ? "hidden" : "flex pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100"}`} style={{ zIndex: 10 }}>
             <button
               type="button"
               onClick={e => { e.stopPropagation(); onToggleFavorite?.(work); }}
@@ -151,7 +159,7 @@ export default function WorkCard({ work, onEdit, onDelete, onStatusChange, onTog
               aria-label={work.favorite ? "Retirer des favoris" : "Ajouter aux favoris"}
               aria-pressed={Boolean(work.favorite)}
               title="Favoris">
-              <Heart className={`w-3.5 h-3.5 ${work.favorite ? "fill-[#EC4899] text-[#EC4899]" : "text-white"}`} />
+              <FavoriteHeart className="h-3.5 w-3.5" favorite={work.favorite} />
             </button>
             <button
               type="button"
@@ -202,12 +210,14 @@ export default function WorkCard({ work, onEdit, onDelete, onStatusChange, onTog
         <div style={{ padding: "12px 12px 14px" }}>
           {/* Status pill */}
           <div className="mb-2">
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold"
+            <span key={logicalStatus} className="lumina-fade-in inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold"
               style={{ backgroundColor: sConfig.bg, color: sConfig.color }}>
-              <span
-                className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${logicalStatus === "En cours" ? "animate-pulse" : ""}`}
-                style={{ backgroundColor: sConfig.dot }}
-              />
+              {finished ? <Check aria-hidden="true" className="h-3 w-3" /> : (
+                <span
+                  className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${logicalStatus === "En cours" ? "motion-safe:animate-pulse" : ""}`}
+                  style={{ backgroundColor: sConfig.dot }}
+                />
+              )}
               {sConfig.label}
             </span>
           </div>
@@ -285,8 +295,8 @@ export default function WorkCard({ work, onEdit, onDelete, onStatusChange, onTog
               ▶ Commencé le {new Date(work.started_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
             </p>
           )}
-          {(isFinished(work) && work.finished_at) && (
-            <p className="text-[10px] mt-2 font-medium" style={{ color: "#7E9A73" }}>
+          {(finished && work.finished_at) && (
+            <p key={work.finished_at} className="lumina-fade-in text-[10px] mt-2 font-medium" style={{ color: "#7E9A73" }}>
               ✓ Terminé le {new Date(work.finished_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
             </p>
           )}

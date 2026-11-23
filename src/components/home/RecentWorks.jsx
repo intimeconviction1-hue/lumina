@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useLayoutEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Film, Tv, BookOpen, Mic, Video, FileText, Radio } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
@@ -23,6 +23,28 @@ function timeAgo(dateStr) {
 }
 
 export default function RecentWorks({ works }) {
+  const knownIds = useRef(null);
+  const [addedIds, setAddedIds] = useState(() => new Set());
+
+  useLayoutEffect(() => {
+    const previous = knownIds.current;
+    const current = new Set(works.map(work => work.id));
+    knownIds.current = current;
+    if (!previous) return;
+
+    const added = new Set([...current].filter(id => !previous.has(id)));
+    if (added.size) setAddedIds(added);
+  }, [works]);
+
+  const clearAnimation = id => {
+    setAddedIds(current => {
+      if (!current.has(id)) return current;
+      const next = new Set(current);
+      next.delete(id);
+      return next;
+    });
+  };
+
   const recent = works.filter(work => !work.from_person_study)
     .sort((a, b) => new Date(b.created_date) - new Date(a.created_date))
     .slice(0, 8);
@@ -54,29 +76,30 @@ export default function RecentWorks({ works }) {
 
       {/* Scroll horizontal sur mobile, grille sur desktop */}
       <div className="flex gap-3 overflow-x-auto overscroll-x-contain snap-x snap-proximity pb-1 sm:hidden" style={{ scrollbarWidth: "none" }}>
-        {recent.map(work => <MiniCard key={work.id} work={work} />)}
+        {recent.map(work => <MiniCard key={work.id} work={work} animate={addedIds.has(work.id)} onReveal={clearAnimation} />)}
       </div>
 
       <div className="hidden sm:grid sm:grid-cols-4 lg:grid-cols-8 gap-3">
-        {recent.map(work => <MiniCard key={work.id} work={work} />)}
+        {recent.map(work => <MiniCard key={work.id} work={work} animate={addedIds.has(work.id)} onReveal={clearAnimation} />)}
       </div>
     </div>
   );
 }
 
-function MiniCard({ work }) {
+function MiniCard({ work, animate, onReveal }) {
   const TypeIcon = TYPE_ICONS[work.type] || FileText;
   const color = TYPE_COLORS[work.type] || "#C9A84C";
 
   return (
     <Link
       to={`/WorkDetail?id=${work.id}`}
-      className="flex-shrink-0 snap-start touch-manipulation group"
+      className={`flex-shrink-0 snap-start touch-manipulation group ${animate ? "lumina-new-work" : ""}`}
+      onAnimationEnd={event => { if (event.target === event.currentTarget) onReveal(work.id); }}
       style={{ width: 88 }}
     >
       {/* Miniature */}
       <div
-        className="overflow-hidden rounded-[10px] mb-2 transition-transform group-hover:scale-[1.04] relative"
+        className="overflow-hidden rounded-[10px] mb-2 motion-safe:transition-transform motion-safe:group-hover:scale-[1.04] relative"
         style={{ width: 88, height: 120, backgroundColor: `${color}18` }}
       >
         {work.cover_image ? (
