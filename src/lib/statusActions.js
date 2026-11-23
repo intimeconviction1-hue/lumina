@@ -73,6 +73,7 @@ export function normalizeStatus(status) {
 // distinct de "Visionné" (films/séries terminés). Réutilisé par Layout (nav) et AllWorks (URL).
 export const STATUS_ALIASES = {
   "En veille":   "À voir",
+  "en cours":    "En cours",
   "terminé":     "Visionné",
   "à découvrir": "À voir",
   "abandonné":   "À voir",
@@ -117,6 +118,8 @@ export function statusPatch(work, newStatus) {
     ? target === "Lu" ? "Visionné" : target === "À voir" ? "Envie de lire" : target
     : target === "Lu" ? "Visionné" : target === "Envie de lire" ? "À voir" : target;
   const patch = { status: normalizedTarget };
+  if (effectiveStatus(work) === effectiveStatus({ ...work, status: normalizedTarget })) return patch;
+
   const now = new Date().toISOString();
 
   if (normalizedTarget === "En cours") {

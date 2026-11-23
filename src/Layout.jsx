@@ -180,11 +180,11 @@ export default function Layout({ children, currentPageName }) {
 
       <Dialog.Root open={sidebarOpen} onOpenChange={setSidebarOpen}>
         <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 z-50 bg-black/50" />
+          <Dialog.Overlay className="fixed inset-0 z-50 bg-black/50 motion-safe:data-[state=open]:animate-in motion-safe:data-[state=open]:fade-in-0 motion-safe:data-[state=closed]:animate-out motion-safe:data-[state=closed]:fade-out-0" />
           <Dialog.Content
             id="mobile-navigation"
             aria-describedby={undefined}
-            className="fixed inset-y-0 left-0 z-50 w-[min(19rem,100vw)] outline-none"
+            className="fixed inset-y-0 left-0 z-50 w-[min(19rem,100vw)] outline-none motion-safe:data-[state=open]:animate-in motion-safe:data-[state=open]:slide-in-from-left motion-safe:data-[state=closed]:animate-out motion-safe:data-[state=closed]:slide-out-to-left"
             onCloseAutoFocus={event => {
               event.preventDefault();
               menuRef.current?.focus();

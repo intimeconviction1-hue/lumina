@@ -1,11 +1,12 @@
 import React from "react";
 import { SlidersHorizontal, Plus, User, Menu, X } from "lucide-react";
 import SearchBar from "./SearchBar";
+import HeaderClock from "./HeaderClock";
 
 export default function Header({ searchQuery, onSearchChange, onSelectType, onOpenFilters, onAddWork, onOpenSidebar, sidebarOpen, menuRef, searchRef, works = [] }) {
   return (
     <header
-      className="sticky top-0 z-30 flex items-center gap-2 px-2 py-2 sm:px-4 lg:px-6 lg:py-3.5"
+      className="sticky top-0 z-30 flex flex-wrap items-center gap-x-2 gap-y-1.5 px-2 py-2 sm:px-4 lg:flex-nowrap lg:px-6 lg:py-3.5"
       style={{
         backgroundColor: "var(--surface)",
         borderBottom: "1px solid var(--border)",
@@ -35,6 +36,8 @@ export default function Header({ searchQuery, onSearchChange, onSelectType, onOp
         searchRef={searchRef}
       />
 
+      <HeaderClock />
+
       {/* Right utilities */}
       <div className="flex items-center gap-2 flex-shrink-0">
         <button
@@ -59,7 +62,7 @@ export default function Header({ searchQuery, onSearchChange, onSelectType, onOp
           type="button"
           aria-label="Ajouter une œuvre"
           onClick={onAddWork}
-          className="flex items-center gap-1.5 justify-center min-h-11 min-w-11 touch-manipulation lg:px-4 py-2.5 text-[12.5px] font-semibold text-white transition-all"
+          className="flex items-center gap-1.5 justify-center min-h-11 min-w-11 touch-manipulation lg:px-4 py-2.5 text-[12.5px] font-semibold text-white transition-all motion-safe:active:scale-95"
           style={{
             borderRadius: "var(--radius-btn)",
             backgroundColor: "#E56B3A",

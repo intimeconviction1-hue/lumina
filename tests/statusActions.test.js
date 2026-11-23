@@ -36,3 +36,8 @@ test('starting a work clears the previous completion date', () => {
   assert.equal(patch.finished_at, null);
   assert.ok(!Number.isNaN(Date.parse(patch.started_at)));
 });
+
+test('saving the same logical status leaves existing dates untouched', () => {
+  assert.deepEqual(statusPatch({type: 'film', status: 'en cours'}, 'En cours'), {status: 'En cours'});
+  assert.deepEqual(statusPatch({type: 'livre', status: 'terminé'}, 'Lu'), {status: 'Visionné'});
+});

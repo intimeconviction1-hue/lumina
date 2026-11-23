@@ -3,13 +3,14 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft, Pencil, Trash2, Heart, FileText,
-  Calendar, MapPin, Globe, Clock, Monitor, BookMarked, Zap, Play, Pause, CheckCircle2, RotateCcw, Flag, PlayCircle, BookOpen
+  Calendar, CalendarPlus, CalendarCheck, MapPin, Globe, Clock, Monitor, BookMarked, Zap, Play, Pause, CheckCircle2, RotateCcw, Flag, PlayCircle, BookOpen
 } from "lucide-react";
 import StarRating from "../components/works/StarRating";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { typeIcons, typeColors } from "../components/works/WorkCard";
 import { STATUS_CONFIG, STATUS_ACTIONS, effectiveStatus, isFinished, statusPatch } from "@/lib/statusActions";
 import { worksApi } from "@/api/works";
+import { completionDateLabel, formatWorkDate } from "@/lib/workDates";
 import { useWorkMutations } from "@/hooks/useWorkMutations";
 import WorksLoadError from "@/components/works/WorksLoadError";
 
@@ -29,9 +30,43 @@ function MetaItem({ icon: IconComp, label, value }) {
   );
 }
 
+function WorkDates({ work }) {
+  const dates = [
+    { label: "Date d’ajout", value: work.created_date, icon: CalendarPlus },
+    { label: "Date de début", value: work.started_at, icon: Play, optional: true },
+    { label: completionDateLabel(work.type), value: work.finished_at, icon: CalendarCheck, optional: !isFinished(work) },
+    { label: "Dernière modification", value: work.updated_date, icon: Clock, optional: true },
+  ];
+
+  return (
+    <dl
+      aria-label="Dates de suivi"
+      className="mt-5 grid grid-cols-2 gap-x-3 gap-y-3 rounded-xl border px-3 py-3 sm:px-4"
+      style={{ borderColor: "var(--border)", backgroundColor: "var(--bg)" }}
+    >
+      {dates.map(({ label, value, icon: Icon, optional }) => {
+        const formatted = formatWorkDate(value);
+        if (!formatted && optional) return null;
+        return (
+          <div key={label} className="min-w-0">
+            <dt className="flex items-start gap-1.5 text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
+              <Icon aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+              {label}
+            </dt>
+            <dd className="mt-1 pl-5 text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+              {formatted ? <time dateTime={new Date(value).toISOString()}>{formatted}</time> : "Non renseignée"}
+            </dd>
+          </div>
+        );
+      })}
+    </dl>
+  );
+}
+
 export default function WorkDetail({ onEditWork, onBack, onDeleteWork }) {
   const { updateWork } = useWorkMutations();
   const navigate = useNavigate();
+  const reduceMotion = useReducedMotion();
 
   const [searchParams] = useSearchParams();
   const workId = searchParams.get("id") || new URLSearchParams(window.location.search).get("id");
@@ -107,7 +142,7 @@ export default function WorkDetail({ onEditWork, onBack, onDeleteWork }) {
         <ArrowLeft className="w-3.5 h-3.5" /> Retour
       </button>
 
-      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+      <motion.div initial={reduceMotion ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.28 }}>
         <div className="overflow-hidden" style={{ borderRadius: "var(--radius-modal)", border: "1px solid var(--border)", boxShadow: "var(--shadow-elevated)", backgroundColor: "var(--card-bg)" }}>
           <div className="flex flex-col lg:flex-row">
             {/* Cover */}
@@ -128,7 +163,7 @@ export default function WorkDetail({ onEditWork, onBack, onDeleteWork }) {
               <button onClick={handleToggleFavorite}
                 aria-label={work.favorite ? "Retirer des favoris" : "Ajouter aux favoris"}
                 aria-pressed={Boolean(work.favorite)}
-                className="absolute top-4 right-4 w-11 h-11 rounded-full flex items-center justify-center transition-all hover:scale-105"
+                className="absolute top-4 right-4 w-11 h-11 rounded-full flex items-center justify-center transition-colors motion-safe:transition-transform motion-safe:hover:scale-105"
                 style={{ backgroundColor: "rgba(0,0,0,0.4)", backdropFilter: "blur(8px)" }}>
                 <Heart className={`w-5 h-5 ${work.favorite ? "fill-[#EC4899] text-[#EC4899]" : "text-white"}`} />
               </button>
@@ -176,9 +211,9 @@ export default function WorkDetail({ onEditWork, onBack, onDeleteWork }) {
 
               {/* Statut + Actions contextuelles */}
               <div className="flex flex-wrap items-center gap-3 mt-5">
-                <span className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full text-[13px] font-semibold"
+                <span key={logicalStatus} className="lumina-fade-in inline-flex items-center gap-2 px-3.5 py-2 rounded-full text-[13px] font-semibold"
                   style={{ backgroundColor: sConf.bg, color: sConf.color }}>
-                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${logicalStatus === "En cours" ? "animate-pulse" : ""}`}
+                  <span className={`w-2 h-2 rounded-full flex-shrink-0 ${logicalStatus === "En cours" ? "motion-safe:animate-pulse" : ""}`}
                     style={{ backgroundColor: sConf.dot }} />
                   {sConf.label}
                 </span>
@@ -199,6 +234,8 @@ export default function WorkDetail({ onEditWork, onBack, onDeleteWork }) {
                   );
                 })}
               </div>
+
+              <WorkDates work={work} />
 
               {/* Note — impatience avant, satisfaction après (demi-étoiles) */}
               <div className="mt-4">

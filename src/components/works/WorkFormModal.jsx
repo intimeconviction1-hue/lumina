@@ -3,7 +3,8 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/compone
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { X, Upload, Heart, Link2, ChevronDown, ChevronUp } from "lucide-react";
-import { STATUSES, STATUS_CONFIG } from "@/lib/statusActions";
+import { STATUSES, STATUS_CONFIG, effectiveStatus, isFinished, statusPatch } from "@/lib/statusActions";
+import { completionDateLabel, workDateInputValue } from "@/lib/workDates";
 import { useWorks } from "@/hooks/useWorks";
 import { GIFT_TAG, isGiftTag } from "@/lib/gifts";
 import StarRating from "./StarRating";
@@ -145,6 +146,8 @@ export default function WorkFormModal({ open, onClose, work, onSave, onAddGqSele
   const [imageError, setImageError] = useState("");
   const [saveError, setSaveError] = useState("");
   const [showExtra, setShowExtra] = useState(false);
+  const [completionDate, setCompletionDate] = useState("");
+  const savedCompletionDate = isFinished(work) ? workDateInputValue(work.finished_at) : "";
 
   // Tags déjà utilisés dans la bibliothèque (pour l'autocomplétion)
   const { data: allWorks = [] } = useWorks();
@@ -164,15 +167,16 @@ export default function WorkFormModal({ open, onClose, work, onSave, onAddGqSele
         year: work.year || work.released_year || "",
         duration_minutes: work.duration_minutes || "",
         tags: work.tags || [],
-        status: work.status || "À voir",
+        status: effectiveStatus(work),
       });
     } else {
       setForm(emptyForm);
     }
+    setCompletionDate(savedCompletionDate);
     setShowExtra(false);
     setImageError("");
     setSaveError("");
-  }, [work, open]);
+  }, [work, open, savedCompletionDate]);
 
   const set = (field, value) => setForm(p => ({ ...p, [field]: value }));
 
@@ -267,6 +271,14 @@ export default function WorkFormModal({ open, onClose, work, onSave, onAddGqSele
         page_count: form.page_count ? Number(form.page_count) : null,
       };
       delete data.gift_recipients;
+      delete data.created_date;
+      delete data.updated_date;
+      delete data.started_at;
+      delete data.finished_at;
+      Object.assign(data, statusPatch({ ...work, type: form.type }, form.status));
+      if (isFinished(form) && completionDate !== savedCompletionDate) {
+        data.finished_at = completionDate ? `${completionDate}T12:00:00.000Z` : null;
+      }
       await onSave(data);
       setSaving(false);
     } catch (err) {
@@ -275,7 +287,7 @@ export default function WorkFormModal({ open, onClose, work, onSave, onAddGqSele
     }
   };
 
-  const isWatched = form.status === "Visionné" || form.status === "Lu";
+  const isWatched = isFinished(form);
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -362,6 +374,19 @@ export default function WorkFormModal({ open, onClose, work, onSave, onAddGqSele
               })}
             </div>
           </div>
+
+          {isWatched && (
+            <label className="block text-sm font-medium" style={{ color: "var(--text-secondary)" }}>
+              {completionDateLabel(form.type)}
+              <Input
+                type="date"
+                className="mt-1.5 w-full sm:w-52"
+                style={FIELD_STYLE}
+                value={completionDate}
+                onChange={event => setCompletionDate(event.target.value)}
+              />
+            </label>
+          )}
 
           {/* — PRIORITÉ (visible si à consommer : "À voir" ou "Envie de lire") — */}
           {(form.status === "À voir" || form.status === "Envie de lire") && (
