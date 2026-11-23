@@ -1,3 +1,4 @@
+import { paletteText } from "@/lib/palette";
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -33,7 +34,7 @@ function MiniCard({ work, index }) {
               <img src={work.cover_image} alt="" loading="lazy" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
             ) : (
               <div className="w-full h-full flex items-center justify-center" style={{ background: `linear-gradient(145deg, ${tColor}18, ${tColor}35)`, backgroundColor: "var(--bg)" }}>
-                <TypeIcon className="w-8 h-8" style={{ color: tColor }} />
+                <TypeIcon className="w-8 h-8" style={{ color: paletteText(tColor) }} />
               </div>
             )}
           </div>
@@ -90,7 +91,7 @@ export default function HorizontalScroll({ title, works, seeAllPage, seeAllStatu
           <button
             onClick={handleSeeAll}
             className="flex min-h-11 items-center gap-1 text-[12.5px] font-medium transition-opacity hover:opacity-70"
-            style={{ color: accentColor || "#2AA6A0" }}
+            style={{ color: paletteText(accentColor || "#2AA6A0") }}
           >
             Voir tout <ArrowRight className="w-3.5 h-3.5" />
           </button>

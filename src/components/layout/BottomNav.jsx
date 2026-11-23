@@ -1,3 +1,4 @@
+import { paletteText } from "@/lib/palette";
 import { Link, useLocation } from "react-router-dom";
 import { Home, LayoutGrid, Bookmark, Clock, Eye, Gift } from "lucide-react";
 
@@ -42,7 +43,7 @@ export default function BottomNav() {
             aria-current={active ? "page" : undefined}
             className="flex min-h-14 min-w-0 flex-1 touch-manipulation items-center justify-center py-1"
             style={{
-              color: active ? accentColor : "var(--text-muted)",
+              color: active ? paletteText(accentColor) : "var(--text-muted)",
               userSelect: "none",
             }}
           >
@@ -62,7 +63,7 @@ export default function BottomNav() {
                 fontSize: "clamp(9px, 2.7vw, 11px)",
                 fontWeight: active ? 700 : 500,
                 letterSpacing: "0.01em",
-                color: active ? accentColor : "var(--text-muted)",
+                color: active ? paletteText(accentColor) : "var(--text-muted)",
               }}>
                 {item.label}
               </span>

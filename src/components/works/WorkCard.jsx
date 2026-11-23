@@ -1,3 +1,4 @@
+import { paletteText } from "@/lib/palette";
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -74,9 +75,9 @@ export default function WorkCard({ work, onEdit, onDelete, onStatusChange, onTog
             onClick={goDetail}
           >
             <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ backgroundColor: `${tColor}22`, border: `1px solid ${tColor}30` }}>
-              <TypeIcon className="w-6 h-6" style={{ color: tColor }} />
+              <TypeIcon className="w-6 h-6" style={{ color: paletteText(tColor) }} />
             </div>
-            <span className="text-[10px] font-semibold uppercase tracking-[0.18em]" style={{ color: `${tColor}99` }}>{work.type}</span>
+            <span className="text-[10px] font-semibold uppercase tracking-[0.18em]" style={{ color: paletteText(tColor) }}>{work.type}</span>
           </div>
           {work.cover_image && (
             <img
@@ -112,7 +113,7 @@ export default function WorkCard({ work, onEdit, onDelete, onStatusChange, onTog
           {/* Top badges */}
           <div className="absolute top-2 left-2 right-2 flex items-start justify-between gap-1.5 pointer-events-none">
             <span className="hidden sm:flex items-center gap-1 min-w-0 max-w-[78%] px-1.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wide"
-              style={{ backgroundColor: `${tColor}f2`, color: "#fff", backdropFilter: "blur(6px)" }}>
+              style={{ backgroundColor: "#101e33", color: "#fff" }}>
               <TypeIcon className="w-2 h-2 flex-shrink-0" />
               <span className="truncate">{work.type}</span>
             </span>
@@ -198,7 +199,7 @@ export default function WorkCard({ work, onEdit, onDelete, onStatusChange, onTog
                   </DropdownMenuSubContent>
                 </DropdownMenuSub>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={() => onDelete?.(work)} className="text-red-500 focus:text-red-500">
+                <DropdownMenuItem onSelect={() => onDelete?.(work)} style={{ color: paletteText("#EF4444") }}>
                   <Trash2 className="w-3.5 h-3.5 mr-2" /> Supprimer
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -211,7 +212,7 @@ export default function WorkCard({ work, onEdit, onDelete, onStatusChange, onTog
           {/* Status pill */}
           <div className="mb-2">
             <span key={logicalStatus} className="lumina-fade-in inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold"
-              style={{ backgroundColor: sConfig.bg, color: sConfig.color }}>
+              style={{ backgroundColor: sConfig.bg, color: paletteText(sConfig.color) }}>
               {finished ? <Check aria-hidden="true" className="h-3 w-3" /> : (
                 <span
                   className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${logicalStatus === "En cours" ? "motion-safe:animate-pulse" : ""}`}
@@ -245,7 +246,7 @@ export default function WorkCard({ work, onEdit, onDelete, onStatusChange, onTog
                 return (
                   <button key={g} type="button" onClick={e => goFilter(e, "genre", g)}
                     className="text-[11px] font-medium px-2 py-0.5 rounded-md capitalize hover:opacity-70 transition-opacity cursor-pointer"
-                    style={{ backgroundColor: `${gc}15`, color: gc, border: `1px solid ${gc}35` }}>
+                    style={{ backgroundColor: `${gc}15`, color: paletteText(gc), border: `1px solid ${gc}35` }}>
                     {g}
                   </button>
                 );
@@ -270,20 +271,20 @@ export default function WorkCard({ work, onEdit, onDelete, onStatusChange, onTog
             {mainPlatform && (
               <button type="button" onClick={e => goFilter(e, "platform", mainPlatform)}
                 className="text-[10px] font-medium px-1.5 py-0.5 rounded-md hover:opacity-70 transition-opacity cursor-pointer"
-                style={{ backgroundColor: "rgba(126,154,115,0.12)", color: "#7E9A73" }}>
+                style={{ backgroundColor: "rgba(126,154,115,0.12)", color: paletteText("#7E9A73") }}>
                 {mainPlatform}
               </button>
             )}
             {work.rating > 0 && (
               <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md"
-                style={{ backgroundColor: "rgba(233,196,106,0.15)", color: "#D4A600" }}>
+                style={{ backgroundColor: "rgba(233,196,106,0.15)", color: paletteText("#D4A600") }}>
                 ★ {work.rating}/5
               </span>
             )}
             {work.tags?.slice(0, 1).map(tag => (
               <button key={tag} type="button" onClick={e => goFilter(e, "tag", tag)}
                 className="text-[10px] font-medium px-1.5 py-0.5 rounded-md hover:opacity-70 transition-opacity cursor-pointer"
-                style={{ backgroundColor: "rgba(155,106,108,0.1)", color: "#9B6A6C" }}>
+                style={{ backgroundColor: "rgba(155,106,108,0.1)", color: paletteText("#9B6A6C") }}>
                 #{tag}
               </button>
             ))}
@@ -296,7 +297,7 @@ export default function WorkCard({ work, onEdit, onDelete, onStatusChange, onTog
             </p>
           )}
           {(finished && work.finished_at) && (
-            <p key={work.finished_at} className="lumina-fade-in text-[10px] mt-2 font-medium" style={{ color: "#7E9A73" }}>
+            <p key={work.finished_at} className="lumina-fade-in text-[10px] mt-2 font-medium" style={{ color: paletteText("#7E9A73") }}>
               ✓ Terminé le {new Date(work.finished_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
             </p>
           )}
@@ -307,7 +308,7 @@ export default function WorkCard({ work, onEdit, onDelete, onStatusChange, onTog
               type="button"
               onClick={e => { e.stopPropagation(); onEdit?.(work); }}
               className="lg:hidden mt-2 w-full flex items-center justify-center gap-1 py-1.5 rounded-[8px] text-[11px] font-semibold"
-              style={{ backgroundColor: "rgba(229,107,58,0.1)", color: "#E56B3A", border: "1px solid rgba(229,107,58,0.25)" }}
+              style={{ backgroundColor: "rgba(229,107,58,0.1)", color: paletteText("#E56B3A"), border: "1px solid rgba(229,107,58,0.25)" }}
             >
               <Pencil className="w-3 h-3" /> Modifier
             </button>

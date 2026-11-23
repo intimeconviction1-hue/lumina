@@ -1,3 +1,4 @@
+import { paletteText } from "@/lib/palette";
 import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { X } from "lucide-react";
@@ -39,7 +40,7 @@ export default function TagCloud({ works, activeTags, onTagToggle, onReset }) {
           <button
             onClick={onReset}
             className="flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-full transition-all hover:opacity-80"
-            style={{ backgroundColor: "rgba(239,68,68,0.08)", color: "#EF4444", border: "1px solid rgba(239,68,68,0.2)" }}
+            style={{ backgroundColor: "rgba(239,68,68,0.08)", color: paletteText("#EF4444"), border: "1px solid rgba(239,68,68,0.2)" }}
           >
             <X className="w-3 h-3" />
             Réinitialiser
@@ -56,16 +57,15 @@ export default function TagCloud({ works, activeTags, onTagToggle, onReset }) {
               onClick={() => onTagToggle(tag)}
               className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11.5px] font-medium transition-all hover:opacity-80 active:scale-95"
               style={{
-                backgroundColor: active ? color : `${color}12`,
-                color: active ? "#fff" : color,
-                border: `1px solid ${active ? color : `${color}35`}`,
+                backgroundColor: active ? `${color}30` : `${color}12`,
+                color: paletteText(color),
+                border: `1px solid ${active ? paletteText(color) : `${color}35`}`,
                 fontWeight: active ? "600" : "500",
               }}
             >
               #{tag}
               <span
                 className="text-[10px] font-bold ml-0.5"
-                style={{ opacity: active ? 0.8 : 0.6 }}
               >
                 {count}
               </span>

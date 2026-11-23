@@ -1,3 +1,4 @@
+import { paletteText } from "@/lib/palette";
 import React, { useState, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Home, LayoutGrid, Clock, Eye, Sun, Moon, Clapperboard, Calendar, Bookmark, Trash2, PlayCircle, BookOpen, BookCheck, ShieldAlert, BookImage, Tags, Users, X, Gift, Scale } from "lucide-react";
@@ -128,7 +129,7 @@ export default function Sidebar({ currentPage, darkMode, onToggleDark, onNavigat
               className="flex items-center gap-2.5 min-h-11 px-3 py-2.5 rounded-[11px] text-[13px] font-medium transition-all"
               style={{
                 backgroundColor: active ? `${accentColor}12` : "transparent",
-                color: active ? accentColor : "var(--text-secondary)",
+                color: active ? paletteText(accentColor) : "var(--text-secondary)",
                 fontWeight: active ? "600" : "500",
                 userSelect: "none",
                 WebkitTapHighlightColor: "transparent",
@@ -138,7 +139,7 @@ export default function Sidebar({ currentPage, darkMode, onToggleDark, onNavigat
                 className="w-6 h-6 rounded-[8px] flex items-center justify-center flex-shrink-0"
                 style={{ backgroundColor: active ? `${accentColor}18` : "transparent" }}
               >
-                <item.icon className="w-3.5 h-3.5" style={{ strokeWidth: 1.8, color: active ? accentColor : undefined }} />
+                <item.icon className="w-3.5 h-3.5" style={{ strokeWidth: 1.8, color: active ? paletteText(accentColor) : undefined }} />
               </span>
               {item.label}
             </Link>
@@ -162,7 +163,7 @@ export default function Sidebar({ currentPage, darkMode, onToggleDark, onNavigat
                   key={g}
                   onClick={() => { navigate(`/AllWorks?genre=${encodeURIComponent(g)}`); onNavigate?.(); }}
                   className="px-2.5 py-1 rounded-full text-[11px] font-medium capitalize transition-all hover:opacity-80"
-                  style={{ backgroundColor: `${color}12`, color, border: `1px solid ${color}30` }}
+                  style={{ backgroundColor: `${color}12`, color: paletteText(color), border: `1px solid ${color}30` }}
                 >
                   {g}
                   <span className="ml-1 text-[10px] opacity-60">{genreCounts[g]}</span>
@@ -223,7 +224,7 @@ export default function Sidebar({ currentPage, darkMode, onToggleDark, onNavigat
           className="flex items-center gap-2.5 px-3 py-2.5 rounded-[11px] text-[13px] font-medium transition-all hover:opacity-90"
           style={{
             backgroundColor: "rgba(255,0,0,0.07)",
-            color: "#CC2200",
+            color: paletteText("#CC2200"),
             userSelect: "none",
             WebkitTapHighlightColor: "transparent",
           }}
@@ -232,7 +233,7 @@ export default function Sidebar({ currentPage, darkMode, onToggleDark, onNavigat
             className="w-6 h-6 rounded-[8px] flex items-center justify-center flex-shrink-0"
             style={{ backgroundColor: "rgba(255,0,0,0.1)" }}
           >
-            <PlayCircle className="w-3.5 h-3.5" style={{ color: "#CC2200", strokeWidth: 1.8 }} />
+            <PlayCircle className="w-3.5 h-3.5" style={{ color: paletteText("#CC2200"), strokeWidth: 1.8 }} />
           </span>
           YouTube — À regarder
         </a>
@@ -253,7 +254,7 @@ export default function Sidebar({ currentPage, darkMode, onToggleDark, onNavigat
             className="w-6 h-6 rounded-[8px] flex items-center justify-center flex-shrink-0"
             style={{ backgroundColor: "rgba(99,102,241,0.1)" }}
           >
-            <BookOpen className="w-3.5 h-3.5" style={{ color: "#6366F1", strokeWidth: 1.8 }} />
+            <BookOpen className="w-3.5 h-3.5" style={{ color: paletteText("#6366F1"), strokeWidth: 1.8 }} />
           </span>
           Akadem — Les cinq livres
         </a>
@@ -275,7 +276,7 @@ export default function Sidebar({ currentPage, darkMode, onToggleDark, onNavigat
               style={{ backgroundColor: "var(--border)" }}
             >
               {darkMode
-                ? <Sun className="w-3 h-3" style={{ color: "#D4AF37" }} />
+                ? <Sun className="w-3 h-3" style={{ color: paletteText("#D4AF37") }} />
                 : <Moon className="w-3 h-3" />
               }
             </span>
@@ -285,8 +286,8 @@ export default function Sidebar({ currentPage, darkMode, onToggleDark, onNavigat
 
         <button
           onClick={() => setShowDeleteAccount(true)}
-          className="flex items-center gap-2 px-3 py-2.5 w-full rounded-[11px] text-[12px] font-medium transition-all hover:bg-red-50"
-          style={{ color: "#EF4444", userSelect: "none" }}
+          className="flex items-center gap-2 px-3 py-2.5 w-full rounded-[11px] text-[12px] font-medium transition-all hover:bg-red-500/15"
+          style={{ color: paletteText("#EF4444"), userSelect: "none" }}
         >
           <Trash2 className="w-3.5 h-3.5" />
           Supprimer mon compte

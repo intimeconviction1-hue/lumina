@@ -1,3 +1,4 @@
+import { paletteText } from "@/lib/palette";
 import { EMPTY_FILTERS, SORT_OPTIONS, defaultSort, filterCatalogue, normalizeCatalogueText, searchCatalogue } from "@/lib/catalogue";
 import React, { useMemo, useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -17,7 +18,7 @@ const STATUS_COLORS = {
 
 const Section = ({ label, children }) => (
   <div>
-    <p className="text-[10px] font-bold uppercase tracking-[0.14em] mb-2.5" style={{ color: "#7A8FA6" }}>{label}</p>
+    <p className="text-[10px] font-bold uppercase tracking-[0.14em] mb-2.5" style={{ color: paletteText("#7A8FA6") }}>{label}</p>
     {children}
   </div>
 );
@@ -29,16 +30,16 @@ const Chip = ({ label, active, color, onClick, count }) => (
     onClick={onClick}
     className="flex items-center gap-1 min-h-10 max-w-full break-all px-3 py-1.5 rounded-full text-[12px] font-semibold border transition-all capitalize"
     style={{
-      borderColor: active ? (color || "#D4AF37") : "rgba(255,255,255,0.12)",
+      borderColor: active ? paletteText(color || "#D4AF37") : "rgba(255,255,255,0.12)",
       backgroundColor: active ? `${color || "#D4AF37"}22` : "rgba(255,255,255,0.05)",
-      color: active ? (color || "#D4AF37") : "rgba(255,255,255,0.6)",
+      color: active ? paletteText(color || "#D4AF37") : "var(--text-secondary)",
       boxShadow: active ? `0 0 0 1px ${color || "#D4AF37"}55` : "none",
     }}
   >
-    {active && <span className="w-1.5 h-1.5 rounded-full mr-0.5" style={{ backgroundColor: color || "#D4AF37" }} />}
+    {active && <span className="w-1.5 h-1.5 rounded-full mr-0.5" style={{ backgroundColor: paletteText(color || "#D4AF37") }} />}
     {label}
     {count !== undefined && (
-      <span className="text-[10px] ml-0.5 opacity-60">{count}</span>
+      <span className="text-[10px] ml-0.5">{count}</span>
     )}
   </button>
 );
@@ -58,7 +59,7 @@ function FacetChoices({ label, choices, selected, onToggle, color, prefix = "" }
       {choices.length > 12 && (
         <input type="search" value={query} onChange={event => setQuery(event.target.value)}
           aria-label={`Rechercher dans ${label.toLowerCase()}`} placeholder="Rechercher…"
-          className="mb-2 min-h-11 w-full rounded-lg border border-white/20 bg-white/10 px-3 text-base" />
+          className="mb-2 min-h-11 w-full rounded-lg border border-[var(--control-border)] bg-white/10 px-3 text-base" />
       )}
       <div className="flex flex-wrap gap-1.5">
         {displayed.map(([name, count]) => (
@@ -136,12 +137,12 @@ export default function FiltersPanel({ open, onClose, filters, onFiltersChange, 
         <div className="px-5 pt-[max(1.25rem,env(safe-area-inset-top))] pb-4 border-b" style={{ borderColor: "rgba(255,255,255,0.08)" }}>
           <div className="flex items-center justify-between gap-2 pr-7">
             <div className="flex items-center gap-2">
-              <SlidersHorizontal className="w-4 h-4" style={{ color: "#D4AF37" }} />
+              <SlidersHorizontal className="w-4 h-4" style={{ color: paletteText("#D4AF37") }} />
               <SheetTitle className="text-[15px] font-bold text-white">Filtres</SheetTitle>
             </div>
             <button onClick={resetFilters}
               className="flex items-center gap-1.5 min-h-10 text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-all hover:opacity-80"
-              style={{ color: "#94A3B8", backgroundColor: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}>
+              style={{ color: paletteText("#94A3B8"), backgroundColor: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}>
               <RotateCcw className="w-3 h-3" /> Réinitialiser
             </button>
           </div>
@@ -160,10 +161,10 @@ export default function FiltersPanel({ open, onClose, filters, onFiltersChange, 
                     className="text-left px-3 py-2 rounded-[8px] text-[12.5px] font-medium transition-all flex items-center justify-between"
                     style={{
                       backgroundColor: isActive ? "rgba(212,175,55,0.12)" : "transparent",
-                      color: isActive ? "#D4AF37" : "rgba(255,255,255,0.55)",
+                      color: isActive ? paletteText("#D4AF37") : "var(--text-secondary)",
                     }}>
                     {o.label}
-                    {isActive && <Check className="w-3.5 h-3.5" style={{ color: "#D4AF37" }} />}
+                    {isActive && <Check className="w-3.5 h-3.5" style={{ color: paletteText("#D4AF37") }} />}
                   </button>
                 );
               })}
@@ -219,14 +220,14 @@ export default function FiltersPanel({ open, onClose, filters, onFiltersChange, 
                 onChange={e => upd("year_min", e.target.value)}
                 placeholder="1930"
                 className="min-w-0 flex-1 px-3 py-2 text-[13px] rounded-xl focus:outline-none"
-                style={{ backgroundColor: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", color: "#EEF2F8" }}
+                style={{ backgroundColor: "rgba(255,255,255,0.07)", border: "1px solid var(--control-border)", color: "#EEF2F8" }}
               />
-              <span className="text-sm" style={{ color: "#4A6080" }}>→</span>
+              <span className="text-sm" style={{ color: paletteText("#4A6080") }}>→</span>
               <input type="number" aria-label="Année maximale" value={local.year_max || ""}
                 onChange={e => upd("year_max", e.target.value)}
                 placeholder="2030"
                 className="min-w-0 flex-1 px-3 py-2 text-[13px] rounded-xl focus:outline-none"
-                style={{ backgroundColor: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.12)", color: "#EEF2F8" }}
+                style={{ backgroundColor: "rgba(255,255,255,0.07)", border: "1px solid var(--control-border)", color: "#EEF2F8" }}
               />
             </div>
           </Section>
@@ -240,7 +241,7 @@ export default function FiltersPanel({ open, onClose, filters, onFiltersChange, 
                   style={{
                     borderColor: local.min_rating >= n ? "#D4AF37" : "rgba(255,255,255,0.1)",
                     backgroundColor: local.min_rating >= n ? "rgba(212,175,55,0.15)" : "transparent",
-                    color: local.min_rating >= n ? "#D4AF37" : "rgba(255,255,255,0.4)",
+                    color: local.min_rating >= n ? paletteText("#D4AF37") : "var(--text-muted)",
                   }}>
                   {Number.isInteger(n) ? `${n}★` : `${n}☆`}
                 </button>
@@ -253,7 +254,7 @@ export default function FiltersPanel({ open, onClose, filters, onFiltersChange, 
             className="flex items-center gap-2 px-4 py-2.5 rounded-[12px] border w-full text-[13px] font-medium transition-all"
             style={{
               borderColor: local.favorite ? "#EC4899" : "rgba(255,255,255,0.1)",
-              color: local.favorite ? "#EC4899" : "rgba(255,255,255,0.5)",
+              color: local.favorite ? paletteText("#EC4899") : "var(--text-secondary)",
               backgroundColor: local.favorite ? "rgba(236,72,153,0.1)" : "transparent",
             }}>
             <Heart className={`w-4 h-4 ${local.favorite ? "fill-[#EC4899]" : ""}`} />
@@ -269,7 +270,7 @@ export default function FiltersPanel({ open, onClose, filters, onFiltersChange, 
             className="w-full py-3 rounded-[12px] text-[14px] font-bold transition-all flex items-center justify-center gap-2"
             style={{
               backgroundColor: isDirty ? "#E56B3A" : "#2AA6A0",
-              color: "#ffffff",
+              color: "#132032",
               boxShadow: isDirty ? "0 4px 16px rgba(229,107,58,0.4)" : "0 4px 16px rgba(42,166,160,0.3)",
             }}
           >

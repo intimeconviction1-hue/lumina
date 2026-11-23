@@ -1,3 +1,4 @@
+import { paletteText } from "@/lib/palette";
 import React from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
@@ -65,7 +66,7 @@ function ResumeCard({ work, index }) {
             <p className="text-[11.5px] truncate" style={{ color: "var(--text-muted)" }}>{work.creator}</p>
           )}
           {signal && (
-            <p className="text-[11px] mt-0.5 font-medium" style={{ color: "#D4AF37" }}>{signal}</p>
+            <p className="text-[11px] mt-0.5 font-medium" style={{ color: paletteText("#D4AF37") }}>{signal}</p>
           )}
         </div>
 
@@ -104,7 +105,7 @@ export default function ResumeSection({ works, onAddWork }) {
           <Link
             to="/AllWorks?status=En+cours"
             className="text-[11.5px] font-medium transition-opacity hover:opacity-70"
-            style={{ color: "#D4AF37" }}
+            style={{ color: paletteText("#D4AF37") }}
           >
             Tout voir
           </Link>
@@ -122,7 +123,7 @@ export default function ResumeSection({ works, onAddWork }) {
           <Link
             to="/AllWorks?status=%C3%80+voir"
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-[10px] text-[12px] font-semibold transition-all hover:opacity-90"
-            style={{ backgroundColor: "rgba(212,175,55,0.1)", color: "#B8942E", border: "1px solid rgba(212,175,55,0.25)" }}
+            style={{ backgroundColor: "rgba(212,175,55,0.1)", color: paletteText("#B8942E"), border: "1px solid rgba(212,175,55,0.25)" }}
           >
             <Play className="w-3.5 h-3.5" /> Voir la liste À voir
           </Link>

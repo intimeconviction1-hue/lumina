@@ -1,3 +1,4 @@
+import { paletteText } from "@/lib/palette";
 import React, { useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useWorks } from "@/hooks/useWorks";
@@ -14,9 +15,9 @@ function Section({ title, works, emptyMsg, badStatusSummary }) {
     return (
       <div className="rounded-[12px] p-4" style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border)" }}>
         <div className="flex items-center gap-2 mb-1">
-          <CheckCircle className="w-4 h-4" style={{ color: "#2AA6A0" }} />
+          <CheckCircle className="w-4 h-4" style={{ color: paletteText("#2AA6A0") }} />
           <span className="text-[13px] font-semibold" style={{ color: "var(--text-primary)" }}>{title}</span>
-          <span className="ml-auto text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#2AA6A018", color: "#2AA6A0" }}>0</span>
+          <span className="ml-auto text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#2AA6A018", color: paletteText("#2AA6A0") }}>0</span>
         </div>
         <p className="text-[12px] pl-6" style={{ color: "var(--text-muted)" }}>{emptyMsg}</p>
       </div>
@@ -25,14 +26,14 @@ function Section({ title, works, emptyMsg, badStatusSummary }) {
   return (
     <div className="rounded-[12px] p-4" style={{ backgroundColor: "var(--surface)", border: "1px solid var(--border)" }}>
       <div className="flex items-center gap-2 mb-3">
-        <AlertTriangle className="w-4 h-4" style={{ color: "#E56B3A" }} />
+        <AlertTriangle className="w-4 h-4" style={{ color: paletteText("#E56B3A") }} />
         <span className="text-[13px] font-semibold" style={{ color: "var(--text-primary)" }}>{title}</span>
-        <span className="ml-auto text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#E56B3A18", color: "#E56B3A" }}>{works.length}</span>
+        <span className="ml-auto text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#E56B3A18", color: paletteText("#E56B3A") }}>{works.length}</span>
       </div>
       {badStatusSummary && badStatusSummary.length > 0 && (
         <div className="pl-6 mb-3 flex flex-wrap gap-1.5">
           {badStatusSummary.map(([status, count]) => (
-            <span key={status} className="text-[11.5px] px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: "rgba(229,107,58,0.1)", color: "#E56B3A", border: "1px solid rgba(229,107,58,0.2)" }}>
+            <span key={status} className="text-[11.5px] px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: "rgba(229,107,58,0.1)", color: paletteText("#E56B3A"), border: "1px solid rgba(229,107,58,0.2)" }}>
               {status} : {count}
             </span>
           ))}
@@ -44,7 +45,7 @@ function Section({ title, works, emptyMsg, badStatusSummary }) {
             <Link
               to={`/WorkDetail?id=${w.id}`}
               className="text-[12.5px] hover:underline"
-              style={{ color: "#0B2545" }}
+              style={{ color: paletteText("#0B2545") }}
             >
               {w.title || <em style={{ color: "var(--text-muted)" }}>(sans titre)</em>}
               {w._extra && <span className="ml-1.5 text-[11px]" style={{ color: "var(--text-muted)" }}>{w._extra}</span>}

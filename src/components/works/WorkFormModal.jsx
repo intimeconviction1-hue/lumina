@@ -1,3 +1,4 @@
+import { paletteText } from "@/lib/palette";
 import React, { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -28,7 +29,7 @@ const PRIORITIES = [
 ];
 
 // Couleurs pilotées par les tokens du thème (clair + sombre) — cf. globals.css.
-const FIELD_STYLE = { backgroundColor: "var(--bg)", borderColor: "var(--border)", color: "var(--text-primary)" };
+const FIELD_STYLE = { backgroundColor: "var(--bg)", borderColor: "var(--control-border)", color: "var(--text-primary)" };
 const INACTIVE_PILL = { borderColor: "var(--border)", backgroundColor: "transparent", color: "var(--text-secondary)" };
 
 const emptyForm = {
@@ -61,7 +62,7 @@ function Chips({ items, selected = [], onChange, color = "#D4AF37" }) {
           <button key={item} type="button" onClick={() => toggle(item)}
             className="px-2.5 py-1 rounded-full text-[11.5px] font-medium border transition-all capitalize"
             style={active
-              ? { borderColor: color, backgroundColor: `${color}15`, color }
+              ? { borderColor: color, backgroundColor: `${color}15`, color: paletteText(color) }
               : INACTIVE_PILL}>
             {item}
           </button>
@@ -114,7 +115,7 @@ function TagInput({ tags = [], onChange, suggestions = [] }) {
           {matches.map(t => (
             <button key={t} type="button" onClick={() => add(t)}
               className="px-2.5 py-1 rounded-full text-[11.5px] font-medium border border-dashed transition-all"
-              style={{ borderColor: "rgba(139,92,246,0.35)", color: "#7C3AED", backgroundColor: "rgba(139,92,246,0.04)" }}>
+              style={{ borderColor: "rgba(139,92,246,0.35)", color: paletteText("#7C3AED"), backgroundColor: "rgba(139,92,246,0.04)" }}>
               #{t}
             </button>
           ))}
@@ -126,7 +127,7 @@ function TagInput({ tags = [], onChange, suggestions = [] }) {
         <div className="flex flex-wrap gap-1.5 mt-2">
           {tags.map(t => (
             <span key={t} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11.5px] font-medium"
-              style={{ backgroundColor: "rgba(139,92,246,0.08)", color: "#7C3AED", border: "1px solid rgba(139,92,246,0.2)" }}>
+              style={{ backgroundColor: "rgba(139,92,246,0.08)", color: paletteText("#7C3AED"), border: "1px solid rgba(139,92,246,0.2)" }}>
               #{t}
               <button type="button" onClick={() => onChange(tags.filter(x => x !== t))} className="hover:opacity-70 transition-opacity">
                 <X className="w-2.5 h-2.5" />
@@ -332,7 +333,7 @@ export default function WorkFormModal({ open, onClose, work, onSave, onAddGqSele
                   <button key={t} type="button" onClick={() => set("type", t)}
                     className="px-2.5 py-1 rounded-full text-[11.5px] font-medium border transition-all capitalize"
                     style={form.type === t
-                      ? { borderColor: "#0B2545", backgroundColor: "#0B254520", color: "var(--text-primary)" }
+                      ? { borderColor: paletteText("#0B2545"), backgroundColor: "light-dark(#e8eff7, #304c72)", color: "var(--text-primary)" }
                       : INACTIVE_PILL}>
                     {t}
                   </button>
@@ -365,7 +366,7 @@ export default function WorkFormModal({ open, onClose, work, onSave, onAddGqSele
                   <button key={s} type="button" onClick={() => set("status", storeVal)}
                     className="px-4 py-2 rounded-full text-[12.5px] font-semibold border transition-all"
                     style={isActive
-                      ? { borderColor: conf.color, backgroundColor: conf.bg, color: conf.color }
+                      ? { borderColor: paletteText(conf.color), backgroundColor: conf.bg, color: paletteText(conf.color) }
                       : INACTIVE_PILL}>
                     {isActive && <span className="w-1.5 h-1.5 rounded-full inline-block mr-1.5 -mb-0.5" style={{ backgroundColor: conf.dot }} />}
                     {displayLabel}
@@ -397,7 +398,7 @@ export default function WorkFormModal({ open, onClose, work, onSave, onAddGqSele
                   <button key={p.value} type="button" onClick={() => set("priority", p.value)}
                     className="flex-1 py-2 rounded-[12px] text-[12.5px] font-semibold border transition-all"
                     style={form.priority === p.value
-                      ? { borderColor: p.color, backgroundColor: `${p.color}12`, color: p.color }
+                      ? { borderColor: p.color, backgroundColor: `${p.color}12`, color: paletteText(p.color) }
                       : INACTIVE_PILL}>
                     {p.label}
                   </button>
@@ -479,7 +480,7 @@ export default function WorkFormModal({ open, onClose, work, onSave, onAddGqSele
                 />
               </div>
             </div>
-            {imageError && <p role="alert" className="mt-2 text-[12px] text-red-500">{imageError}</p>}
+            {imageError && <p role="alert" className="mt-2 text-[12px]" style={{ color: paletteText("#EF4444") }}>{imageError}</p>}
           </div>
 
           {/* — URL SOURCE — */}
@@ -538,7 +539,7 @@ export default function WorkFormModal({ open, onClose, work, onSave, onAddGqSele
           <button type="button" onClick={() => set("favorite", !form.favorite)}
             className="flex items-center gap-2 px-4 py-2 rounded-full border text-[13px] font-medium transition-all"
             style={form.favorite
-              ? { borderColor: "#EC4899", color: "#EC4899", backgroundColor: "rgba(236,72,153,0.06)" }
+              ? { borderColor: "#EC4899", color: paletteText("#EC4899"), backgroundColor: "rgba(236,72,153,0.06)" }
               : { borderColor: "var(--border)", color: "var(--text-muted)", backgroundColor: "transparent" }}>
             <Heart className={`w-4 h-4 ${form.favorite ? "fill-[#EC4899]" : ""}`} />
             {form.favorite ? "Dans les favoris" : "Ajouter aux favoris"}
@@ -564,7 +565,7 @@ export default function WorkFormModal({ open, onClose, work, onSave, onAddGqSele
                         <button key={l} type="button" onClick={() => set("language", form.language === l ? "" : l)}
                           className="flex-1 py-2 rounded-[10px] text-[12.5px] font-semibold border transition-all"
                           style={form.language === l
-                            ? { borderColor: "#0B2545", backgroundColor: "#0B254520", color: "var(--text-primary)" }
+                            ? { borderColor: paletteText("#0B2545"), backgroundColor: "light-dark(#e8eff7, #304c72)", color: "var(--text-primary)" }
                             : INACTIVE_PILL}>
                           {l}
                         </button>
@@ -592,7 +593,7 @@ export default function WorkFormModal({ open, onClose, work, onSave, onAddGqSele
 
         {/* Footer */}
         <div className="flex flex-col px-5 sm:px-8 py-4 border-t flex-shrink-0" style={{ borderColor: "var(--border-subtle)", backgroundColor: "transparent" }}>
-          {saveError && <p role="alert" className="mb-2 text-[12px] text-red-500">{saveError}</p>}
+          {saveError && <p role="alert" className="mb-2 text-[12px]" style={{ color: paletteText("#EF4444") }}>{saveError}</p>}
           <div className="flex gap-3">
           <button type="button" onClick={onClose}
             className="px-6 py-3 rounded-[12px] text-[13.5px] font-medium border transition-colors hover:opacity-80"
@@ -601,7 +602,7 @@ export default function WorkFormModal({ open, onClose, work, onSave, onAddGqSele
           </button>
           <button type="button" onClick={handleSubmit} disabled={saving || uploading || !form.title.trim()}
             className="flex-1 py-3 rounded-[12px] text-[13.5px] font-semibold text-white transition-all disabled:opacity-50"
-            style={{ background: "linear-gradient(135deg, #0B2545, #163a6b)", boxShadow: "0 4px 14px rgba(11,37,69,0.2)" }}>
+            style={{ background: "linear-gradient(135deg, #0B2545, #163a6b)", boxShadow: "0 4px 14px rgba(11,37,69,0.2)", border: "1px solid var(--control-border)" }}>
             {saving ? "Enregistrement…" : uploading ? "Envoi de l'image…" : work ? "Enregistrer les modifications" : "Ajouter à la bibliothèque"}
           </button>
           </div>

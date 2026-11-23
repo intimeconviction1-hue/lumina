@@ -1,3 +1,4 @@
+import { paletteText } from "@/lib/palette";
 import React, { useEffect, useState } from "react";
 import WorkCard from "./WorkCard";
 import { LayoutGrid, List, Star } from "lucide-react";
@@ -39,7 +40,7 @@ function WorkRow({ work, onEdit, onDelete, onToggleFavorite }) {
           ) : (
             <div className="w-full h-full flex items-center justify-center"
               style={{ background: `linear-gradient(145deg, ${tColor}22, ${tColor}44)` }}>
-              <TypeIcon className="w-4 h-4" style={{ color: tColor }} />
+              <TypeIcon className="w-4 h-4" style={{ color: paletteText(tColor) }} />
             </div>
           )}
         </div>
@@ -76,7 +77,7 @@ function WorkRow({ work, onEdit, onDelete, onToggleFavorite }) {
       </div>
 
       <span className="hidden sm:flex items-center gap-1 px-2 py-1 rounded-full text-[12px] font-semibold capitalize flex-shrink-0"
-        style={{ backgroundColor: `${tColor}18`, color: tColor }}>
+        style={{ backgroundColor: `${tColor}18`, color: paletteText(tColor) }}>
         <TypeIcon className="w-2.5 h-2.5" />
         {work.type}
       </span>
@@ -94,7 +95,7 @@ function WorkRow({ work, onEdit, onDelete, onToggleFavorite }) {
       </div>
 
       <span className="flex items-center gap-1 px-2 py-1 rounded-full text-[12px] font-semibold flex-shrink-0"
-        style={{ backgroundColor: sConfig.bg, color: sConfig.color }}>
+        style={{ backgroundColor: sConfig.bg, color: paletteText(sConfig.color) }}>
         <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: sConfig.dot }} />
         <span className="hidden sm:inline">{sConfig.label}</span>
       </span>
@@ -102,7 +103,7 @@ function WorkRow({ work, onEdit, onDelete, onToggleFavorite }) {
       <div className="flex items-center gap-1 lg:opacity-0 lg:group-hover:opacity-100 lg:focus-within:opacity-100 transition-opacity flex-shrink-0">
         <button type="button" aria-label={work.favorite ? "Retirer des favoris" : "Ajouter aux favoris"} aria-pressed={Boolean(work.favorite)} onClick={() => onToggleFavorite?.(work)}
           className="w-9 h-10 lg:w-7 lg:h-7 rounded-lg flex items-center justify-center"
-          style={{ color: work.favorite ? "#EC4899" : "var(--text-muted)" }}>
+          style={{ color: work.favorite ? paletteText("#EC4899") : "var(--text-muted)" }}>
           <span className="text-[13px]">{work.favorite ? "♥" : "♡"}</span>
         </button>
         <button type="button" aria-label="Modifier" onClick={() => onEdit?.(work)}

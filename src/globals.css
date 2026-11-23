@@ -1,6 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;1,14..32,400&display=swap');
 
 :root {
+  color-scheme: light;
+
   /* Brand Palette */
   --brand-navy: #0B2545;
   --brand-gold: #E56B3A;
@@ -13,9 +15,10 @@
   --card-bg: #ffffff;
   --text-primary: #1a1a1a;
   --text-secondary: #4a4a4a;
-  --text-muted: #888888;
+  --text-muted: #626a76;
   --border: #e2e2e2;
   --border-subtle: #f0f0f0;
+  --control-border: #7a8799;
   --shadow-card: 0 1px 4px rgba(0,0,0,0.08), 0 2px 10px rgba(0,0,0,0.05);
   --shadow-elevated: 0 4px 20px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.06);
   --shadow-sm: 0 1px 3px rgba(0,0,0,0.07);
@@ -27,8 +30,6 @@
   --transition: 180ms cubic-bezier(0.4,0,0.2,1);
   --accent: #E56B3A;
   --accent-soft: rgba(229,107,58,0.1);
-  --primary: #E56B3A;
-  --secondary: #7E9A73;
 
   /* Status colors */
   --status-a-voir: #F4A261;
@@ -54,14 +55,16 @@
 }
 
 [data-theme="dark"] {
+  color-scheme: dark;
   --bg: #071b35;
   --surface: #0e2440;
   --card-bg: #122952;
   --text-primary: #EEF2F8;
-  --text-secondary: #94A3B8;
-  --text-muted: #4A6080;
-  --border: rgba(212,175,55,0.1);
-  --border-subtle: rgba(255,255,255,0.04);
+  --text-secondary: #C1CDE0;
+  --text-muted: #A7B8CF;
+  --border: rgba(175,195,224,0.28);
+  --border-subtle: rgba(175,195,224,0.14);
+  --control-border: #788ba7;
   --shadow-card: 0 2px 12px rgba(0,0,0,0.35);
   --shadow-elevated: 0 12px 36px rgba(0,0,0,0.55);
   --shadow-sm: 0 1px 6px rgba(0,0,0,0.25);
@@ -153,6 +156,12 @@ button, a, [role="button"] {
 @tailwind components;
 @tailwind utilities;
 
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-muted);
+  opacity: 1;
+}
+
 /* Force dialog/sheet backgrounds to be opaque */
 [role="dialog"] {
   background-color: #ffffff !important;
@@ -169,20 +178,6 @@ button, a, [role="button"] {
    MOBILE — max-width: 767px
    ============================================ */
 @media (max-width: 767px) {
-
-  /* Fond clair sur mobile — même palette que desktop */
-  :root {
-    --bg: #f8f9fa;
-    --surface: #ffffff;
-    --card-bg: #ffffff;
-    --border: #e2e2e2;
-    --border-subtle: #f0f0f0;
-    --text-primary: #1a1a1a;
-    --text-secondary: #4a4a4a;
-    --text-muted: #888888;
-    --shadow-sm: 0 1px 3px rgba(0,0,0,0.07);
-    --shadow-card: 0 1px 4px rgba(0,0,0,0.08), 0 2px 10px rgba(0,0,0,0.05);
-  }
 
   /* Police légèrement plus grande sur mobile */
   body {
@@ -218,33 +213,8 @@ button, a, [role="button"] {
   .p-6 { padding: 1.25rem !important; }
 }
 
-/* Dark mode mobile — préserver les couleurs sombres */
-@media (max-width: 767px) {
-  [data-theme="dark"] {
-    --bg: #071b35;
-    --surface: #0e2440;
-    --card-bg: #122952;
-    --text-primary: #EEF2F8;
-    --text-secondary: #94A3B8;
-    --border: rgba(212,175,55,0.12);
-  }
-}
-
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
-/* ============================================
-   Compat shadcn — résout la collision de `--border`.
-   index.css définit --border en HSL (pour `hsl(var(--border))`),
-   globals.css le redéfinit en hex (pour `1px solid var(--border)`).
-   On redonne aux surfaces Radix/shadcn une bordure nette et cohérente.
-   ============================================ */
-[role="menu"],
-[role="dialog"],
-[role="listbox"],
-[data-radix-popper-content-wrapper] > * {
-  border-color: var(--border) !important;
-}
-
 /* ============================================
    Panneau de filtres (colonne droite) : fond bleu marine forcé.
    Il gère son propre thème sombre en interne (texte/chips clairs),
@@ -253,6 +223,10 @@ button, a, [role="button"] {
    ============================================ */
 .lumina-filter-sheet[role="dialog"],
 [data-theme="dark"] .lumina-filter-sheet[role="dialog"] {
+  color-scheme: dark;
+  --text-secondary: #C1CDE0;
+  --text-muted: #A7B8CF;
+  --control-border: #788ba7;
   background-color: #0B2040 !important;
   color: #EEF2F8 !important;
   border-left: 1px solid rgba(255,255,255,0.08) !important;

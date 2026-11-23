@@ -1,3 +1,4 @@
+import { paletteText } from "@/lib/palette";
 import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useWorks } from "@/hooks/useWorks";
@@ -30,7 +31,7 @@ function PriorityBadge({ priority, onClick, small }) {
     <button
       onClick={onClick}
       className={`flex min-h-10 lg:min-h-0 items-center gap-1 rounded-full font-semibold transition-all border ${small ? "px-2 py-0.5 text-[10.5px]" : "px-2.5 py-1 text-[11.5px]"}`}
-      style={{ backgroundColor: conf.bg, color: conf.color, borderColor: `${conf.color}30` }}
+      style={{ backgroundColor: conf.bg, color: paletteText(conf.color), borderColor: `${conf.color}30` }}
       title="Changer la priorité"
     >
       <Icon className={small ? "w-2.5 h-2.5" : "w-3 h-3"} />
@@ -67,8 +68,8 @@ function WantCard({ work, onEdit, onDelete, onPriorityChange, onToggleFavorite }
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center gap-2"
             style={{ background: `linear-gradient(145deg, ${tColor}18 0%, ${tColor}30 100%)` }}>
-            <TypeIcon className="w-8 h-8" style={{ color: tColor }} />
-            <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: tColor }}>{work.type}</span>
+            <TypeIcon className="w-8 h-8" style={{ color: paletteText(tColor) }} />
+            <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: paletteText(tColor) }}>{work.type}</span>
           </div>
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
@@ -97,7 +98,7 @@ function WantCard({ work, onEdit, onDelete, onPriorityChange, onToggleFavorite }
           <p className="text-[11px] mt-0.5 truncate" style={{ color: "var(--text-muted)" }}>{work.creator || work.creator_name}</p>
         )}
         <div className="flex items-center justify-between mt-2">
-          <span className="text-[10.5px] font-medium capitalize" style={{ color: tColor }}>{work.type}</span>
+          <span className="text-[10.5px] font-medium capitalize" style={{ color: paletteText(tColor) }}>{work.type}</span>
           <div className="flex items-center gap-1">
             <button type="button" aria-label="Modifier" onClick={() => onEdit(work)}
               className="w-9 h-9 lg:w-6 lg:h-6 rounded-lg flex items-center justify-center transition-all hover:opacity-80"
@@ -156,7 +157,7 @@ export default function WantToWatch({ onEditWork, onDeleteWork, onAddWork }) {
     <div className="max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-5">
-        <span className="text-[10.5px] font-bold uppercase tracking-[0.16em]" style={{ color: "#C9A84C" }}>✦ Liste de souhaits</span>
+        <span className="text-[10.5px] font-bold uppercase tracking-[0.16em]" style={{ color: paletteText("#C9A84C") }}>✦ Liste de souhaits</span>
         <div className="flex items-end justify-between mt-0.5 flex-wrap gap-3">
           <div>
             <h2 className="text-[26px] font-bold" style={{ color: "var(--text-primary)" }}>Envie de voir</h2>
@@ -164,7 +165,7 @@ export default function WantToWatch({ onEditWork, onDeleteWork, onAddWork }) {
               {wantToWatch.length} œuvre{wantToWatch.length !== 1 ? "s" : ""} à découvrir
               {urgentCount > 0 && (
                 <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold"
-                  style={{ backgroundColor: "rgba(239,68,68,0.1)", color: "#EF4444" }}>
+                  style={{ backgroundColor: "rgba(239,68,68,0.1)", color: paletteText("#EF4444") }}>
                   <Flame className="w-3 h-3" /> {urgentCount} urgent{urgentCount > 1 ? "s" : ""}
                 </span>
               )}
@@ -189,7 +190,7 @@ export default function WantToWatch({ onEditWork, onDeleteWork, onAddWork }) {
             style={{
               borderColor: selectedPriority === "all" ? "#D4AF37" : "var(--border)",
               backgroundColor: selectedPriority === "all" ? "rgba(212,175,55,0.1)" : "var(--card-bg)",
-              color: selectedPriority === "all" ? "#B8942E" : "var(--text-secondary)",
+              color: selectedPriority === "all" ? paletteText("#B8942E") : "var(--text-secondary)",
             }}>
             Toutes
           </button>
@@ -206,7 +207,7 @@ export default function WantToWatch({ onEditWork, onDeleteWork, onAddWork }) {
                 }}>
                 <conf.icon className="w-3 h-3" />
                 {conf.label}
-                <span className="text-[10px] font-bold opacity-70">({count})</span>
+                <span className="text-[10px] font-bold">({count})</span>
               </button>
             );
           })}
@@ -221,7 +222,7 @@ export default function WantToWatch({ onEditWork, onDeleteWork, onAddWork }) {
                 style={{
                   borderColor: selectedType === t ? (TYPE_COLORS[t] || "#667085") : "var(--border)",
                   backgroundColor: selectedType === t ? `${TYPE_COLORS[t] || "#667085"}18` : "var(--card-bg)",
-                  color: selectedType === t ? (TYPE_COLORS[t] || "#667085") : "var(--text-secondary)",
+                  color: selectedType === t ? paletteText(TYPE_COLORS[t]) : "var(--text-secondary)",
                 }}>
                 {t} ({count})
               </button>
@@ -246,7 +247,7 @@ export default function WantToWatch({ onEditWork, onDeleteWork, onAddWork }) {
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
             style={{ backgroundColor: "rgba(212,175,55,0.08)", border: "1px solid rgba(212,175,55,0.15)" }}>
-            <Play className="w-7 h-7" style={{ color: "#D4AF37" }} />
+            <Play className="w-7 h-7" style={{ color: paletteText("#D4AF37") }} />
           </div>
           <p className="text-[16px] font-semibold mb-1" style={{ color: "var(--text-primary)" }}>Votre liste est vide</p>
           <p className="text-[13px] mb-5" style={{ color: "var(--text-muted)" }}>Ajoutez des œuvres à regarder plus tard</p>
@@ -279,11 +280,11 @@ export default function WantToWatch({ onEditWork, onDeleteWork, onAddWork }) {
                 <div className="flex items-center gap-2.5 mb-3">
                   <div className="w-7 h-7 rounded-[9px] flex items-center justify-center flex-shrink-0"
                     style={{ backgroundColor: conf.bg }}>
-                    <Icon className="w-3.5 h-3.5" style={{ color: conf.color }} />
+                    <Icon className="w-3.5 h-3.5" style={{ color: paletteText(conf.color) }} />
                   </div>
-                  <h3 className="text-[14px] font-bold" style={{ color: conf.color }}>{conf.label}</h3>
+                  <h3 className="text-[14px] font-bold" style={{ color: paletteText(conf.color) }}>{conf.label}</h3>
                   <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
-                    style={{ backgroundColor: conf.bg, color: conf.color }}>
+                    style={{ backgroundColor: conf.bg, color: paletteText(conf.color) }}>
                     {group.length}
                   </span>
                   <div className="flex-1 h-px" style={{ backgroundColor: `${conf.color}20` }} />

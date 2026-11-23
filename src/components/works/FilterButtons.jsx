@@ -1,3 +1,4 @@
+import { paletteText } from "@/lib/palette";
 import React from "react";
 import { STATUS_CONFIG, TYPE_COLORS } from "@/lib/statusActions";
 
@@ -17,7 +18,7 @@ export function StatusButton({ status, active, onClick, label }) {
         borderColor: active ? color : "var(--border)",
         border: `1.5px solid ${active ? color : "var(--border)"}`,
         backgroundColor: active ? `${color}18` : "var(--card-bg)",
-        color: active ? color : "var(--text-secondary)",
+        color: active ? paletteText(color) : "var(--text-secondary)",
         boxShadow: active ? `0 2px 8px ${color}25` : "none",
       }}>
       <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
@@ -37,7 +38,7 @@ export function TypeButton({ type, active, onClick }) {
       style={{
         border: `1.5px solid ${active ? color : "var(--border)"}`,
         backgroundColor: active ? `${color}18` : "var(--card-bg)",
-        color: active ? color : "var(--text-secondary)",
+        color: active ? paletteText(color) : "var(--text-secondary)",
         boxShadow: active ? `0 2px 8px ${color}25` : "none",
       }}>
       {type}

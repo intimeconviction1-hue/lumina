@@ -1,3 +1,4 @@
+import { paletteText } from "@/lib/palette";
 import React, { useMemo } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
@@ -108,7 +109,7 @@ function SuggestionCard({ work, reason, index }) {
             <p className="text-[11.5px] truncate" style={{ color: "var(--text-muted)" }}>{work.creator}</p>
           )}
           {reason && (
-            <p className="text-[11px] mt-0.5 font-medium" style={{ color: "#8B5CF6" }}>
+            <p className="text-[11px] mt-0.5 font-medium" style={{ color: paletteText("#8B5CF6") }}>
               ✦ {reason}
             </p>
           )}
@@ -178,7 +179,7 @@ export default function MoodSuggestions({ works, enVeille, onAddWork }) {
             Selon ton humeur
           </span>
         </div>
-        <span className="text-[11px] capitalize px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: "rgba(139,92,246,0.08)", color: "#8B5CF6" }}>
+        <span className="text-[11px] capitalize px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: "rgba(139,92,246,0.08)", color: paletteText("#8B5CF6") }}>
           {slotLabel}
         </span>
       </div>
@@ -194,7 +195,7 @@ export default function MoodSuggestions({ works, enVeille, onAddWork }) {
           <button
             onClick={onAddWork}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-[10px] text-[12px] font-semibold transition-all hover:opacity-90"
-            style={{ backgroundColor: "rgba(139,92,246,0.1)", color: "#8B5CF6", border: "1px solid rgba(139,92,246,0.25)" }}
+            style={{ backgroundColor: "rgba(139,92,246,0.1)", color: paletteText("#8B5CF6"), border: "1px solid rgba(139,92,246,0.25)" }}
           >
             <Plus className="w-3.5 h-3.5" /> Ajouter une œuvre
           </button>

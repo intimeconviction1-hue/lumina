@@ -1,3 +1,4 @@
+import { paletteText } from "@/lib/palette";
 import React from "react";
 import { SlidersHorizontal, Plus, User, Menu, X } from "lucide-react";
 import SearchBar from "./SearchBar";
@@ -51,7 +52,7 @@ export default function Header({ searchQuery, onSearchChange, onSelectType, onOp
             color: "var(--text-secondary)",
             backgroundColor: "var(--surface)",
           }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(229,107,58,0.4)"; e.currentTarget.style.color = "#E56B3A"; e.currentTarget.style.backgroundColor = "rgba(229,107,58,0.06)"; }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = "rgba(229,107,58,0.4)"; e.currentTarget.style.color = paletteText("#E56B3A"); e.currentTarget.style.backgroundColor = "rgba(229,107,58,0.06)"; }}
           onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--border)"; e.currentTarget.style.color = "var(--text-secondary)"; e.currentTarget.style.backgroundColor = "var(--surface)"; }}
         >
           <SlidersHorizontal className="w-3.5 h-3.5" />
@@ -62,7 +63,7 @@ export default function Header({ searchQuery, onSearchChange, onSelectType, onOp
           type="button"
           aria-label="Ajouter une œuvre"
           onClick={onAddWork}
-          className="flex items-center gap-1.5 justify-center min-h-11 min-w-11 touch-manipulation lg:px-4 py-2.5 text-[12.5px] font-semibold text-white transition-all motion-safe:active:scale-95"
+          className="flex items-center gap-1.5 justify-center min-h-11 min-w-11 touch-manipulation lg:px-4 py-2.5 text-[12.5px] font-semibold text-[#23150e] transition-all motion-safe:active:scale-95"
           style={{
             borderRadius: "var(--radius-btn)",
             backgroundColor: "#E56B3A",
@@ -77,7 +78,7 @@ export default function Header({ searchQuery, onSearchChange, onSelectType, onOp
           className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
           style={{ backgroundColor: "rgba(229,107,58,0.1)", border: "1.5px solid rgba(229,107,58,0.25)" }}
         >
-          <User className="w-3.5 h-3.5" style={{ color: "#E56B3A" }} />
+          <User className="w-3.5 h-3.5" style={{ color: paletteText("#E56B3A") }} />
         </div>
       </div>
     </header>

@@ -1,3 +1,4 @@
+import { paletteText } from "@/lib/palette";
 import React, { useState, useRef, useEffect, useLayoutEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
@@ -110,7 +111,7 @@ export default function SearchBar({ value, onChange, onSelectType, works = [], s
               return (
                 <button key={t} onClick={() => selectType(t)}
                   className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11.5px] font-medium border transition-all capitalize"
-                  style={{ borderColor: `${TYPE_COLORS[t]}40`, backgroundColor: `${TYPE_COLORS[t]}10`, color: TYPE_COLORS[t] }}>
+                  style={{ borderColor: `${TYPE_COLORS[t]}40`, backgroundColor: `${TYPE_COLORS[t]}10`, color: paletteText(TYPE_COLORS[t]) }}>
                   <Icon className="w-3 h-3" />
                   {t}
                 </button>
@@ -146,7 +147,7 @@ export default function SearchBar({ value, onChange, onSelectType, works = [], s
                     style={{ backgroundColor: `${color}18` }}>
                     {w.cover_image
                       ? <img src={w.cover_image} alt="" className="w-full h-full object-cover" />
-                      : <Icon className="w-4 h-4" style={{ color }} />
+                      : <Icon className="w-4 h-4" style={{ color: paletteText(color) }} />
                     }
                   </div>
                   <div className="flex-1 min-w-0">
@@ -156,7 +157,7 @@ export default function SearchBar({ value, onChange, onSelectType, works = [], s
                     </p>
                   </div>
                   <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 capitalize"
-                    style={{ backgroundColor: `${color}12`, color }}>
+                    style={{ backgroundColor: `${color}12`, color: paletteText(color) }}>
                     {w.type}
                   </span>
                 </button>
@@ -187,7 +188,7 @@ export default function SearchBar({ value, onChange, onSelectType, works = [], s
     <div ref={containerRef} className="relative min-w-0 flex-1 max-w-lg mx-auto">
       <Search
         className="absolute left-3.5 top-1/2 -translate-y-1/2 w-[14px] h-[14px] z-10 pointer-events-none"
-        style={{ color: focused ? "#D4AF37" : "var(--text-muted)" }}
+        style={{ color: focused ? paletteText("#D4AF37") : "var(--text-muted)" }}
       />
       <input
         ref={searchRef}
@@ -209,7 +210,7 @@ export default function SearchBar({ value, onChange, onSelectType, works = [], s
         className="w-full min-h-11 pl-9 pr-11 py-2 text-base lg:text-sm outline-none transition-all border"
         style={{
           backgroundColor: "var(--bg)",
-          borderColor: focused ? "rgba(212,175,55,0.5)" : "var(--border)",
+          borderColor: focused ? paletteText("#D4AF37") : "var(--control-border)",
           borderRadius: "var(--radius-input)",
           color: "var(--text-primary)",
           boxShadow: focused ? "0 0 0 3px rgba(212,175,55,0.08)" : "none",

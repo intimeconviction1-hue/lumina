@@ -1,3 +1,4 @@
+import { paletteText } from "@/lib/palette";
 import React, { useLayoutEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Film, Tv, BookOpen, Mic, Video, FileText, Radio } from "lucide-react";
@@ -68,7 +69,7 @@ export default function RecentWorks({ works }) {
         <Link
           to="/AllWorks"
           className="text-[11.5px] font-medium transition-opacity hover:opacity-70"
-          style={{ color: "#E56B3A" }}
+          style={{ color: paletteText("#E56B3A") }}
         >
           Tout voir
         </Link>
@@ -106,13 +107,13 @@ function MiniCard({ work, animate, onReveal }) {
           <img src={work.cover_image} alt={work.title} className="w-full h-full object-cover" loading="lazy" />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <TypeIcon className="w-7 h-7" style={{ color }} />
+            <TypeIcon className="w-7 h-7" style={{ color: paletteText(color) }} />
           </div>
         )}
         {/* Badge type */}
         <div
           className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded-full text-white"
-          style={{ backgroundColor: `${color}dd`, fontSize: 8, fontWeight: 700, letterSpacing: "0.04em", backdropFilter: "blur(4px)" }}
+          style={{ backgroundColor: "#101e33", fontSize: 8, fontWeight: 700, letterSpacing: "0.04em" }}
         >
           {work.type}
         </div>

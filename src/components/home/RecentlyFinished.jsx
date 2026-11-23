@@ -1,3 +1,4 @@
+import { paletteText } from "@/lib/palette";
 import React from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
@@ -58,7 +59,7 @@ function FinishedCard({ work, index }) {
             {work.title}
           </p>
           {signal && (
-            <p className="text-[11px] font-medium mt-0.5" style={{ color: "#2AA6A0" }}>{signal}</p>
+            <p className="text-[11px] font-medium mt-0.5" style={{ color: paletteText("#2AA6A0") }}>{signal}</p>
           )}
           {/* Rating */}
           {work.rating > 0 && (
@@ -114,7 +115,7 @@ export default function RecentlyFinished({ works }) {
           </span>
         </div>
         {recent.length > 0 && (
-          <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold" style={{ backgroundColor: "rgba(42,166,160,0.1)", color: "#2AA6A0" }}>
+          <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold" style={{ backgroundColor: "rgba(42,166,160,0.1)", color: paletteText("#2AA6A0") }}>
             {recent.length} ce mois
           </span>
         )}
@@ -128,7 +129,7 @@ export default function RecentlyFinished({ works }) {
           <Link
             to="/AllWorks?status=En+cours"
             className="text-[11.5px] font-semibold shrink-0 ml-3 transition-opacity hover:opacity-70"
-            style={{ color: "#2AA6A0" }}
+            style={{ color: paletteText("#2AA6A0") }}
           >
             Voir En cours →
           </Link>

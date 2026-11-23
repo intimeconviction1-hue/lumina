@@ -1,3 +1,4 @@
+import { paletteText } from "@/lib/palette";
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
@@ -119,7 +120,7 @@ export default function WorkDetail({ onEditWork, onBack, onDeleteWork }) {
           {workId ? "Cette œuvre n'existe pas ou a été supprimée." : "Aucun identifiant fourni."}
         </p>
         <Link to="/AllWorks" className="px-4 py-2.5 rounded-[12px] text-[13px] font-semibold transition-all hover:opacity-90"
-          style={{ backgroundColor: "rgba(229,107,58,0.1)", color: "#E56B3A", border: "1.5px solid rgba(229,107,58,0.3)" }}>
+          style={{ backgroundColor: "rgba(229,107,58,0.1)", color: paletteText("#E56B3A"), border: "1.5px solid rgba(229,107,58,0.3)" }}>
           <ArrowLeft className="w-4 h-4 inline mr-1.5" />Retour à la bibliothèque
         </Link>
       </div>
@@ -152,9 +153,9 @@ export default function WorkDetail({ onEditWork, onBack, onDeleteWork }) {
               <div className="w-full h-44 sm:h-56 lg:h-full lg:min-h-[400px] flex flex-col items-center justify-center gap-4"
                 style={{ background: `linear-gradient(145deg, ${tColor}18 0%, ${tColor}35 100%)` }}>
                 <div className="w-20 h-20 rounded-3xl flex items-center justify-center" style={{ backgroundColor: `${tColor}25` }}>
-                  <TypeIcon className="w-10 h-10" style={{ color: tColor }} />
+                  <TypeIcon className="w-10 h-10" style={{ color: paletteText(tColor) }} />
                 </div>
-                <span className="text-[12px] font-semibold uppercase tracking-[0.18em]" style={{ color: tColor }}>{work.type}</span>
+                <span className="text-[12px] font-semibold uppercase tracking-[0.18em]" style={{ color: paletteText(tColor) }}>{work.type}</span>
               </div>
               {work.cover_image && (
                 <img key={work.cover_image} src={work.cover_image} alt={work.title}
@@ -176,7 +177,7 @@ export default function WorkDetail({ onEditWork, onBack, onDeleteWork }) {
               {/* Type + Modify/Delete */}
               <div className="flex items-start justify-between gap-4 mb-5">
                 <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-semibold"
-                  style={{ backgroundColor: `${tColor}15`, color: tColor }}>
+                  style={{ backgroundColor: `${tColor}15`, color: paletteText(tColor) }}>
                   <TypeIcon className="w-3.5 h-3.5" />
                   {work.type}
                 </span>
@@ -188,8 +189,8 @@ export default function WorkDetail({ onEditWork, onBack, onDeleteWork }) {
                   </button>
                   <button onClick={() => onDeleteWork?.(work)}
                     aria-label="Supprimer l’œuvre"
-                    className="grid min-h-11 min-w-11 place-items-center rounded-[10px] border text-red-500 transition-colors hover:bg-red-50"
-                    style={{ borderColor: "var(--border)" }}>
+                    className="grid min-h-11 min-w-11 place-items-center rounded-[10px] border transition-colors hover:bg-red-500/15"
+                    style={{ borderColor: "var(--border)", color: paletteText("#EF4444") }}>
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -214,7 +215,7 @@ export default function WorkDetail({ onEditWork, onBack, onDeleteWork }) {
               {/* Statut + Actions contextuelles */}
               <div className="flex flex-wrap items-center gap-3 mt-5">
                 <span key={logicalStatus} className="lumina-fade-in inline-flex items-center gap-2 px-3.5 py-2 rounded-full text-[13px] font-semibold"
-                  style={{ backgroundColor: sConf.bg, color: sConf.color }}>
+                  style={{ backgroundColor: sConf.bg, color: paletteText(sConf.color) }}>
                   {finished ? <Check aria-hidden="true" className="h-4 w-4" /> : (
                     <span className={`w-2 h-2 rounded-full flex-shrink-0 ${logicalStatus === "En cours" ? "motion-safe:animate-pulse" : ""}`}
                       style={{ backgroundColor: sConf.dot }} />
@@ -313,7 +314,7 @@ export default function WorkDetail({ onEditWork, onBack, onDeleteWork }) {
                   {work.genre.map(g => (
                     <button key={g} onClick={() => goGenre(g)}
                       className="px-2.5 py-1 rounded-full text-[12px] font-medium capitalize hover:opacity-70 transition-opacity cursor-pointer"
-                      style={{ backgroundColor: "rgba(229,107,58,0.08)", color: "#C9613A", border: "1px solid rgba(229,107,58,0.2)" }}>
+                      style={{ backgroundColor: "rgba(229,107,58,0.08)", color: paletteText("#C9613A"), border: "1px solid rgba(229,107,58,0.2)" }}>
                       {g}
                     </button>
                   ))}
@@ -338,7 +339,7 @@ export default function WorkDetail({ onEditWork, onBack, onDeleteWork }) {
                 <div className="mt-5 flex flex-wrap gap-1.5">
                   {work.tags.map(t => (
                     <span key={t} className="px-2.5 py-1 rounded-full text-[12px] font-medium"
-                      style={{ backgroundColor: "rgba(139,92,246,0.08)", color: "#8B5CF6", border: "1px solid rgba(139,92,246,0.2)" }}>
+                      style={{ backgroundColor: "rgba(139,92,246,0.08)", color: paletteText("#8B5CF6"), border: "1px solid rgba(139,92,246,0.2)" }}>
                       #{t}
                     </span>
                   ))}

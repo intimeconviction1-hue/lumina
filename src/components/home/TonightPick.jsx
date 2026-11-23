@@ -1,3 +1,4 @@
+import { paletteText } from "@/lib/palette";
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
@@ -146,7 +147,7 @@ function Pill({ label, active, onClick }) {
       style={{
         borderColor: active ? "#C9A84C" : "var(--border)",
         backgroundColor: active ? "rgba(201,168,76,0.12)" : "var(--bg)",
-        color: active ? "#B8942E" : "var(--text-secondary)",
+        color: active ? paletteText("#B8942E") : "var(--text-secondary)",
       }}
     >
       {label}
@@ -200,7 +201,7 @@ export default function TonightPick({ enVeille, onAddWork }) {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-[14px] font-bold truncate" style={{ color: "var(--text-primary)" }}>{work.title}</p>
-            <p className="text-[11.5px] mt-0.5 font-medium" style={{ color: "#C9A84C" }}>✦ {reason}</p>
+            <p className="text-[11.5px] mt-0.5 font-medium" style={{ color: paletteText("#C9A84C") }}>✦ {reason}</p>
           </div>
           <ArrowRight className="w-4 h-4 opacity-0 group-hover:opacity-60 transition-opacity" style={{ color: "var(--text-muted)" }} />
         </Link>
@@ -253,7 +254,7 @@ export default function TonightPick({ enVeille, onAddWork }) {
           <button
             onClick={onAddWork}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-[10px] text-[12px] font-semibold"
-            style={{ backgroundColor: "rgba(201,168,76,0.1)", color: "#B8942E", border: "1px solid rgba(201,168,76,0.25)" }}
+            style={{ backgroundColor: "rgba(201,168,76,0.1)", color: paletteText("#B8942E"), border: "1px solid rgba(201,168,76,0.25)" }}
           >
             <Plus className="w-3.5 h-3.5" /> Ajouter une œuvre
           </button>
@@ -323,7 +324,7 @@ export default function TonightPick({ enVeille, onAddWork }) {
               </motion.button>
 
               {error && (
-                <p className="text-[11.5px] mt-2 text-center" style={{ color: "#EF4444" }}>{error}</p>
+                <p className="text-[11.5px] mt-2 text-center" style={{ color: paletteText("#EF4444") }}>{error}</p>
               )}
             </motion.div>
           ) : result.no_match ? (

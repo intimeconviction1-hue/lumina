@@ -1,3 +1,4 @@
+import { paletteText } from "@/lib/palette";
 import React, { useMemo, useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
@@ -267,7 +268,7 @@ export default function AllWorks({ searchQuery = "", matchingWorks = [], filters
             const gc = GENRE_COLORS_MAP[g] || "#C9A84C";
             return (
               <div key={g} className="flex items-center gap-2 px-4 py-2 rounded-[12px] text-[13px] font-bold"
-                style={{ backgroundColor: gc, color: "#fff", boxShadow: `0 4px 14px ${gc}50` }}>
+                style={{ backgroundColor: `${gc}22`, color: paletteText(gc), border: `1px solid ${paletteText(gc)}` }}>
                 🏷️ Genre : {g}
                 <button type="button" onClick={() => removeFilter("genre", g)}
                   className="ml-1 hover:opacity-70 transition-opacity">
@@ -281,7 +282,7 @@ export default function AllWorks({ searchQuery = "", matchingWorks = [], filters
 
       {/* Header */}
       <div className="mb-4">
-        <span className="text-[10.5px] font-bold uppercase tracking-[0.16em]" style={{ color: "#C9A84C" }}>
+        <span className="text-[10.5px] font-bold uppercase tracking-[0.16em]" style={{ color: paletteText("#C9A84C") }}>
           ✦ Bibliothèque
         </span>
         <div className="flex items-end justify-between mt-0.5 gap-3 flex-wrap">
@@ -295,7 +296,7 @@ export default function AllWorks({ searchQuery = "", matchingWorks = [], filters
                 onClick={selectAll}
                 disabled={bulkUpdating}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-[12px] font-semibold transition-all"
-                style={{ backgroundColor: "rgba(229,107,58,0.1)", color: "#E56B3A", border: "1px solid rgba(229,107,58,0.3)" }}
+                style={{ backgroundColor: "rgba(229,107,58,0.1)", color: paletteText("#E56B3A"), border: "1px solid rgba(229,107,58,0.3)" }}
               >
                 <CheckSquare className="w-3.5 h-3.5" />
                 Tout sélectionner ({filteredWorks.length})
@@ -308,7 +309,7 @@ export default function AllWorks({ searchQuery = "", matchingWorks = [], filters
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-[8px] text-[12px] font-semibold transition-all"
               style={{
                 backgroundColor: selectMode ? "rgba(229,107,58,0.12)" : "var(--card-bg)",
-                color: selectMode ? "#E56B3A" : "var(--text-secondary)",
+                color: selectMode ? paletteText("#E56B3A") : "var(--text-secondary)",
                 border: `1px solid ${selectMode ? "rgba(229,107,58,0.4)" : "var(--border)"}`,
               }}
             >
@@ -361,7 +362,7 @@ export default function AllWorks({ searchQuery = "", matchingWorks = [], filters
               className="flex min-h-11 items-center gap-2 px-3 py-2.5 rounded-[12px] text-[13.5px] font-semibold transition-all"
               style={{
                 backgroundColor: isActive ? (tab.key === "" ? "rgba(201,168,76,0.12)" : `${color}15`) : "var(--card-bg)",
-                color: isActive ? (tab.key === "" ? "#C9A84C" : color) : "var(--text-secondary)",
+                color: isActive ? paletteText(tab.key === "" ? "#C9A84C" : color) : "var(--text-secondary)",
                 border: `1.5px solid ${isActive ? (tab.key === "" ? "rgba(201,168,76,0.4)" : `${color}55`) : "var(--border)"}`,
                 boxShadow: isActive ? `0 2px 10px ${tab.key === "" ? "rgba(201,168,76,0.15)" : `${color}20`}` : "none",
               }}
@@ -372,7 +373,7 @@ export default function AllWorks({ searchQuery = "", matchingWorks = [], filters
                 className="text-[11px] font-bold px-1.5 py-0.5 rounded-full"
                 style={{
                   backgroundColor: isActive ? (tab.key === "" ? "rgba(201,168,76,0.2)" : `${color}22`) : "var(--border-subtle)",
-                  color: isActive ? (tab.key === "" ? "#C9A84C" : color) : "var(--text-muted)",
+                  color: isActive ? paletteText(tab.key === "" ? "#C9A84C" : color) : "var(--text-muted)",
                 }}
               >
                 {count}
@@ -462,7 +463,7 @@ export default function AllWorks({ searchQuery = "", matchingWorks = [], filters
             style={{
               borderColor: showMoreFilters ? "#8B5CF6" : "var(--border)",
               backgroundColor: showMoreFilters ? "rgba(139,92,246,0.1)" : "var(--card-bg)",
-              color: showMoreFilters ? "#8B5CF6" : "var(--text-secondary)",
+              color: showMoreFilters ? paletteText("#8B5CF6") : "var(--text-secondary)",
             }}>
             {showMoreFilters ? "−" : "+"} Plateformes
           </button>
@@ -479,7 +480,7 @@ export default function AllWorks({ searchQuery = "", matchingWorks = [], filters
                   style={{
                     borderColor: active ? "#2AA6A0" : "var(--border)",
                     backgroundColor: active ? "rgba(42,166,160,0.15)" : "var(--card-bg)",
-                    color: active ? "#2AA6A0" : "var(--text-secondary)",
+                    color: active ? paletteText("#2AA6A0") : "var(--text-secondary)",
                   }}>
                   {p}
                 </button>
@@ -501,13 +502,13 @@ export default function AllWorks({ searchQuery = "", matchingWorks = [], filters
               <button key={`${f.key}:${f.val}`} type="button" onClick={() => removeFilter(f.key, f.val)}
                 aria-label={`Retirer le filtre ${f.label}`}
                 className="inline-flex min-h-10 max-w-full items-center gap-1.5 break-all rounded-full px-3 py-1 text-[12px] font-semibold"
-                style={{ backgroundColor: `${f.color}15`, color: f.color, border: `1px solid ${f.color}35` }}>
+                style={{ backgroundColor: `${f.color}15`, color: paletteText(f.color), border: `1px solid ${f.color}35` }}>
                 {f.label}<X className="h-3.5 w-3.5 shrink-0" />
               </button>
             ))}
             <button onClick={clearAll}
               className="flex min-h-10 items-center gap-1 px-3 rounded-full text-[11px] font-semibold border transition-all"
-              style={{ borderColor: "rgba(239,68,68,0.3)", color: "#EF4444", backgroundColor: "rgba(239,68,68,0.06)" }}>
+              style={{ borderColor: "rgba(239,68,68,0.3)", color: paletteText("#EF4444"), backgroundColor: "rgba(239,68,68,0.06)" }}>
               <X className="w-3 h-3" /> Effacer les filtres
             </button>
           </div>
